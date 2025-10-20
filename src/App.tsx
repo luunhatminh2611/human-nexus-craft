@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
 import OrgChart from "./pages/OrgChart";
 import Training from "./pages/Training";
+import TrainingDetail from "./pages/TrainingDetail";
 import Salary from "./pages/Salary";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Training />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/training/:id"
+            element={
+              <ProtectedRoute>
+                <TrainingDetail />
               </ProtectedRoute>
             }
           />

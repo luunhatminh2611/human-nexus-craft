@@ -42,6 +42,19 @@ export interface Training {
   status: 'Upcoming' | 'Ongoing' | 'Completed';
   completionRate?: number;
   deadline?: string;
+  instructor?: string;
+  location?: string;
+  maxParticipants?: number;
+}
+
+export interface TrainingEnrollment {
+  id: string;
+  trainingId: string;
+  employeeId: string;
+  enrolledDate: string;
+  completionDate?: string;
+  status: 'Enrolled' | 'In Progress' | 'Completed' | 'Cancelled';
+  progress: number;
 }
 
 export interface SalaryStructure {
@@ -368,6 +381,9 @@ const mockData = {
       durationDays: 2,
       status: 'Completed' as const,
       completionRate: 95,
+      instructor: 'TS. Nguyễn Văn A',
+      location: 'Phòng hội nghị A',
+      maxParticipants: 30,
     },
     {
       id: 'tr002',
@@ -378,6 +394,9 @@ const mockData = {
       status: 'Ongoing' as const,
       completionRate: 60,
       deadline: '2025-12-31',
+      instructor: 'ThS. Trần Thị B',
+      location: 'Phòng đào tạo B',
+      maxParticipants: 25,
     },
     {
       id: 'tr003',
@@ -388,6 +407,9 @@ const mockData = {
       status: 'Upcoming' as const,
       completionRate: 0,
       deadline: '2026-03-31',
+      instructor: 'GS. Lê Văn C',
+      location: 'Trung tâm đào tạo',
+      maxParticipants: 20,
     },
     {
       id: 'tr004',
@@ -398,6 +420,9 @@ const mockData = {
       status: 'Ongoing' as const,
       completionRate: 45,
       deadline: '2025-11-30',
+      instructor: 'Kỹ sư Phạm Văn D',
+      location: 'Phòng lab máy tính',
+      maxParticipants: 15,
     },
     {
       id: 'tr005',
@@ -407,8 +432,28 @@ const mockData = {
       durationDays: 3,
       status: 'Completed' as const,
       completionRate: 88,
+      instructor: 'Chuyên gia Hoàng Thị E',
+      location: 'Phòng hội nghị C',
+      maxParticipants: 40,
     },
   ] as Training[],
+
+  trainingEnrollments: [
+    { id: 'enr001', trainingId: 'tr001', employeeId: 'emp001', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100 },
+    { id: 'enr002', trainingId: 'tr001', employeeId: 'emp002', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100 },
+    { id: 'enr003', trainingId: 'tr001', employeeId: 'emp004', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100 },
+    { id: 'enr004', trainingId: 'tr001', employeeId: 'emp005', enrolledDate: '2024-03-01', completionDate: '2024-03-03', status: 'Completed' as const, progress: 100 },
+    { id: 'enr005', trainingId: 'tr001', employeeId: 'emp008', enrolledDate: '2024-05-01', completionDate: '2024-05-03', status: 'Completed' as const, progress: 100 },
+    { id: 'enr006', trainingId: 'tr001', employeeId: 'emp010', enrolledDate: '2024-01-10', completionDate: '2024-01-12', status: 'Completed' as const, progress: 100 },
+    { id: 'enr007', trainingId: 'tr002', employeeId: 'emp003', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 60 },
+    { id: 'enr008', trainingId: 'tr002', employeeId: 'emp006', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 55 },
+    { id: 'enr009', trainingId: 'tr002', employeeId: 'emp009', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 65 },
+    { id: 'enr010', trainingId: 'tr004', employeeId: 'emp002', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 45 },
+    { id: 'enr011', trainingId: 'tr004', employeeId: 'emp004', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 50 },
+    { id: 'enr012', trainingId: 'tr004', employeeId: 'emp010', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 40 },
+    { id: 'enr013', trainingId: 'tr005', employeeId: 'emp006', enrolledDate: '2024-06-01', completionDate: '2024-06-04', status: 'Completed' as const, progress: 100 },
+    { id: 'enr014', trainingId: 'tr005', employeeId: 'emp009', enrolledDate: '2024-06-01', completionDate: '2024-06-04', status: 'Completed' as const, progress: 100 },
+  ] as TrainingEnrollment[],
 
   salaryStructures: [
     {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -21,15 +21,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, Eye } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 import mockData from '@/mock/data';
 
 export default function Employees() {
   const navigate = useNavigate();
+  const { role, employeeId } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDept, setFilterDept] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  const filteredEmployees = mockData.employees.filter((emp) => {
+  // Filter based on role
+  const baseEmployees = useMemo(() => {
+    if (role === 'Admin') {
+      return mockData.employees;
+    } else if (role === 'Manager') {
+      return mockData.employees.filter(e => e.managerId === employeeId || e.id === employeeId);
+    }
+    return [];
+  }, [role, employeeId]);
+
+  const filteredEmployees = baseEmployees.filter((emp) => {
     const matchesSearch =
       emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -71,10 +83,14 @@ export default function Employees() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Danh sách nhân viên</h1>
-            <p className="text-muted-foreground">Quản lý thông tin nhân viên</p>
+            <h1 className="text-3xl font-bold">
+              {role === 'Manager' ? 'Quản lý team' : 'Danh sách nhân viên'}
+            </h1>
+            <p className="text-muted-foreground">
+              {role === 'Manager' ? 'Danh sách thành viên trong team' : 'Quản lý thông tin nhân viên'}
+            </p>
           </div>
-          <Button>Thêm nhân viên</Button>
+          {role === 'Admin' && <Button>Thêm nhân viên</Button>}
         </div>
 
         {/* Filters */}
@@ -174,7 +190,7 @@ export default function Employees() {
         </Card>
 
         <div className="text-sm text-muted-foreground">
-          Hiển thị {filteredEmployees.length} / {mockData.employees.length} nhân viên
+          Hiển thị {filteredEmployees.length} / {baseEmployees.length} nhân viên
         </div>
       </div>
     </Layout>

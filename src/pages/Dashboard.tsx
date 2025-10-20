@@ -2,6 +2,7 @@ import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/store/authStore';
 import mockData from '@/mock/data';
+import { useMemo } from 'react';
 import {
   Users,
   UserPlus,
@@ -31,21 +32,32 @@ import {
 export default function Dashboard() {
   const { role, employeeId } = useAuthStore();
 
+  // Filter employees based on role
+  const filteredEmployees = useMemo(() => {
+    if (role === 'Admin') {
+      return mockData.employees;
+    } else if (role === 'Manager') {
+      return mockData.employees.filter(e => e.managerId === employeeId || e.id === employeeId);
+    } else {
+      return mockData.employees.filter(e => e.id === employeeId);
+    }
+  }, [role, employeeId]);
+
   // Calculate statistics
-  const totalEmployees = mockData.employees.length;
-  const activeEmployees = mockData.employees.filter((e) => e.status === 'Active').length;
-  const onLeave = mockData.employees.filter((e) => e.status === 'On Leave').length;
-  const probation = mockData.employees.filter((e) => e.status === 'Probation').length;
+  const totalEmployees = filteredEmployees.length;
+  const activeEmployees = filteredEmployees.filter((e) => e.status === 'Active').length;
+  const onLeave = filteredEmployees.filter((e) => e.status === 'On Leave').length;
+  const probation = filteredEmployees.filter((e) => e.status === 'Probation').length;
 
   // New hires in last 30 days
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const newHires = mockData.employees.filter(
+  const newHires = filteredEmployees.filter(
     (e) => new Date(e.startDate) > thirtyDaysAgo && e.status !== 'Resigned'
   ).length;
 
   // Resignations in last 30 days (using status)
-  const resigned = mockData.employees.filter((e) => e.status === 'Resigned').length;
+  const resigned = filteredEmployees.filter((e) => e.status === 'Resigned').length;
 
   // Training completion rate
   const totalTrainings = mockData.trainings.length;
@@ -55,25 +67,25 @@ export default function Dashboard() {
   // Department distribution
   const deptData = mockData.departments.map((dept) => ({
     name: dept.name,
-    count: mockData.employees.filter((e) => e.departmentId === dept.id && e.status !== 'Resigned')
+    count: filteredEmployees.filter((e) => e.departmentId === dept.id && e.status !== 'Resigned')
       .length,
-  }));
+  })).filter(d => d.count > 0);
 
   // Grade distribution
   const gradeData = [
     {
       name: 'G1',
-      value: mockData.employees.filter((e) => e.grade === 'G1' && e.status !== 'Resigned').length,
+      value: filteredEmployees.filter((e) => e.grade === 'G1' && e.status !== 'Resigned').length,
     },
     {
       name: 'G2',
-      value: mockData.employees.filter((e) => e.grade === 'G2' && e.status !== 'Resigned').length,
+      value: filteredEmployees.filter((e) => e.grade === 'G2' && e.status !== 'Resigned').length,
     },
     {
       name: 'G3',
-      value: mockData.employees.filter((e) => e.grade === 'G3' && e.status !== 'Resigned').length,
+      value: filteredEmployees.filter((e) => e.grade === 'G3' && e.status !== 'Resigned').length,
     },
-  ];
+  ].filter(g => g.value > 0);
 
   // Headcount trend (mock 12 months)
   const headcountTrend = [
@@ -169,113 +181,167 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Charts */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Headcount Trend */}
+        {/* Charts - Only show for Admin and Manager */}
+        {(role === 'Admin' || role === 'Manager') && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Headcount Trend - Admin only */}
+            {role === 'Admin' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Xu hướng nhân sự (12 tháng)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={headcountTrend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="count"
+                        stroke="hsl(var(--chart-1))"
+                        strokeWidth={2}
+                        name="Số lượng"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Department Distribution */}
+            {deptData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Phân bổ theo phòng ban</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={deptData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Nhân viên" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Grade Distribution */}
+            {gradeData.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Phân bổ theo bậc</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={gradeData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {gradeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Quick Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Thống kê nhanh</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Nhân viên chính thức</span>
+                  <span className="font-semibold">{activeEmployees}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Thử việc</span>
+                  <span className="font-semibold text-warning">{probation}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Đã nghỉ việc</span>
+                  <span className="font-semibold text-destructive">{resigned}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Tổng phòng ban</span>
+                  <span className="font-semibold">{mockData.departments.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Khóa đào tạo</span>
+                  <span className="font-semibold">{mockData.trainings.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Cơ cấu lương</span>
+                  <span className="font-semibold">{mockData.salaryStructures.length}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Employee Personal Info - for Employee role only */}
+        {role === 'Employee' && employeeId && (
           <Card>
             <CardHeader>
-              <CardTitle>Xu hướng nhân sự (12 tháng)</CardTitle>
+              <CardTitle>Thông tin cá nhân</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={headcountTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke="hsl(var(--chart-1))"
-                    strokeWidth={2}
-                    name="Số lượng"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Department Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Phân bổ theo phòng ban</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={deptData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Nhân viên" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Grade Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Phân bổ theo bậc</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={gradeData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {gradeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Thống kê nhanh</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Nhân viên chính thức</span>
-                <span className="font-semibold">{activeEmployees}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Thử việc</span>
-                <span className="font-semibold text-warning">{probation}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Đã nghỉ việc</span>
-                <span className="font-semibold text-destructive">{resigned}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Tổng phòng ban</span>
-                <span className="font-semibold">{mockData.departments.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Khóa đào tạo</span>
-                <span className="font-semibold">{mockData.trainings.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Cơ cấu lương</span>
-                <span className="font-semibold">{mockData.salaryStructures.length}</span>
+              <div className="space-y-4">
+                {(() => {
+                  const employee = mockData.employees.find(e => e.id === employeeId);
+                  if (!employee) return <p>Không tìm thấy thông tin nhân viên</p>;
+                  const dept = mockData.departments.find(d => d.id === employee.departmentId);
+                  return (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Họ tên</p>
+                        <p className="font-semibold">{employee.firstName} {employee.lastName}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-semibold">{employee.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Phòng ban</p>
+                        <p className="font-semibold">{dept?.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Chức vụ</p>
+                        <p className="font-semibold">{employee.position}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Bậc</p>
+                        <p className="font-semibold">{employee.grade}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Trạng thái</p>
+                        <p className="font-semibold">{employee.status}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
     </Layout>
   );
