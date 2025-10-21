@@ -4,13 +4,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Employees from "./pages/Employees";
-import OrgChart from "./pages/OrgChart";
-import Training from "./pages/Training";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminEmployees from "./pages/admin/Employees";
+import AdminOrgChart from "./pages/admin/OrgChart";
+import AdminTraining from "./pages/admin/Training";
+import AdminSalary from "./pages/admin/Salary";
+import AdminProfile from "./pages/admin/Profile";
+import ManagerDashboard from "./pages/manager/Dashboard";
+import ManagerEmployees from "./pages/manager/Employees";
+import ManagerOrgChart from "./pages/manager/OrgChart";
+import ManagerTraining from "./pages/manager/Training";
+import ManagerProfile from "./pages/manager/Profile";
 import TrainingDetail from "./pages/TrainingDetail";
-import Salary from "./pages/Salary";
-import Profile from "./pages/Profile";
 import EmployeeProfile from "./pages/employee/Profile";
 import EmployeePayroll from "./pages/employee/Payroll";
 import EmployeeLearning from "./pages/employee/Learning";
@@ -33,9 +38,11 @@ function RoleBasedRedirect() {
   
   if (role === 'Employee') {
     return <Navigate to="/employee/profile" replace />;
+  } else if (role === 'Manager') {
+    return <Navigate to="/manager/dashboard" replace />;
   }
   
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/admin/dashboard" replace />;
 }
 
 const App = () => (
@@ -54,38 +61,115 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          {/* Admin Routes */}
           <Route
-            path="/dashboard"
+            path="/admin/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <AdminDashboard />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/employees"
+            path="/admin/employees"
             element={
               <ProtectedRoute>
-                <Employees />
+                <AdminEmployees />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/org-chart"
+            path="/admin/org-chart"
             element={
               <ProtectedRoute>
-                <OrgChart />
+                <AdminOrgChart />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/training"
+            path="/admin/training"
             element={
               <ProtectedRoute>
-                <Training />
+                <AdminTraining />
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/salary"
+            element={
+              <ProtectedRoute>
+                <AdminSalary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/profile"
+            element={
+              <ProtectedRoute>
+                <AdminProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/profile/:id"
+            element={
+              <ProtectedRoute>
+                <AdminProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Manager Routes */}
+          <Route
+            path="/manager/dashboard"
+            element={
+              <ProtectedRoute>
+                <ManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/employees"
+            element={
+              <ProtectedRoute>
+                <ManagerEmployees />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/org-chart"
+            element={
+              <ProtectedRoute>
+                <ManagerOrgChart />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/training"
+            element={
+              <ProtectedRoute>
+                <ManagerTraining />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/profile"
+            element={
+              <ProtectedRoute>
+                <ManagerProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/profile/:id"
+            element={
+              <ProtectedRoute>
+                <ManagerProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Shared Training Detail */}
           <Route
             path="/training/:id"
             element={
@@ -94,30 +178,8 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/salary"
-            element={
-              <ProtectedRoute>
-                <Salary />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/:id"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
+
+          {/* Employee Routes */}
           <Route
             path="/employee/profile"
             element={

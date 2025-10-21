@@ -42,15 +42,23 @@ export function Layout({ children }: LayoutProps) {
         { label: 'Đào tạo', icon: BookOpen, path: '/employee/learning' },
         { label: 'Đánh giá', icon: FileText, path: '/employee/performance' },
       ];
+    } else if (role === 'Manager') {
+      return [
+        { label: 'Dashboard', icon: LayoutDashboard, path: '/manager/dashboard' },
+        { label: 'Team', icon: Users, path: '/manager/employees' },
+        { label: 'Sơ đồ tổ chức', icon: Network, path: '/manager/org-chart' },
+        { label: 'Đào tạo', icon: BookOpen, path: '/manager/training' },
+        { label: 'Hồ sơ', icon: User, path: '/manager/profile' },
+      ];
     }
     
     return [
-      { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-      { label: 'Nhân viên', icon: Users, path: '/employees', roles: ['Admin', 'Manager'] },
-      { label: 'Sơ đồ tổ chức', icon: Network, path: '/org-chart', roles: ['Admin', 'Manager'] },
-      { label: 'Đào tạo', icon: BookOpen, path: '/training' },
-      { label: 'Lương', icon: DollarSign, path: '/salary', roles: ['Admin', 'Manager'] },
-      { label: 'Hồ sơ', icon: User, path: '/profile' },
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+      { label: 'Nhân viên', icon: Users, path: '/admin/employees' },
+      { label: 'Sơ đồ tổ chức', icon: Network, path: '/admin/org-chart' },
+      { label: 'Đào tạo', icon: BookOpen, path: '/admin/training' },
+      { label: 'Lương', icon: DollarSign, path: '/admin/salary' },
+      { label: 'Hồ sơ', icon: User, path: '/admin/profile' },
     ];
   };
 
@@ -65,7 +73,6 @@ export function Layout({ children }: LayoutProps) {
             <h1 className="text-xl font-bold text-primary">HRM System</h1>
             <nav className="hidden md:flex items-center gap-1">
               {navigationItems.map((item) => {
-                if (item.roles && role && !item.roles.includes(role)) return null;
                 const Icon = item.icon;
                 return (
                   <Button
@@ -97,7 +104,11 @@ export function Layout({ children }: LayoutProps) {
               <DropdownMenuContent align="end" className="w-56 bg-popover">
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <DropdownMenuItem onClick={() => {
+                  if (role === 'Employee') navigate('/employee/profile');
+                  else if (role === 'Manager') navigate('/manager/profile');
+                  else navigate('/admin/profile');
+                }}>
                   <User className="mr-2 h-4 w-4" />
                   Hồ sơ cá nhân
                 </DropdownMenuItem>

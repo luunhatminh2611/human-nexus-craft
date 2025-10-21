@@ -178,7 +178,7 @@ export default function Employees() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate(`/profile/${emp.id}`)}
+                      onClick={() => navigate(`/admin/profile/${emp.id}`)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
