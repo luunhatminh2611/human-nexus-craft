@@ -91,7 +91,77 @@ export interface MedicalRecord {
     reason: string;
     diagnosis?: string;
     notes?: string;
+    resultFile?: string;
   }>;
+  insurance?: Array<{
+    type: string;
+    number: string;
+    expiryDate: string;
+    nextCheckupDate?: string;
+  }>;
+}
+
+export interface PayrollHistory {
+  id: string;
+  employeeId: string;
+  month: string;
+  year: number;
+  grossSalary: number;
+  netSalary: number;
+  basicSalary: number;
+  allowances: { [key: string]: number };
+  bonuses: { [key: string]: number };
+  deductions: { [key: string]: number };
+  tax: number;
+  insurance: number;
+  paymentDate: string;
+}
+
+export interface PerformanceReview {
+  id: string;
+  employeeId: string;
+  reviewerId: string;
+  period: string;
+  year: number;
+  selfAssessment?: {
+    goals: { goal: string; achievement: string; score: number }[];
+    strengths: string;
+    improvements: string;
+    comments: string;
+  };
+  managerAssessment?: {
+    goals: { goal: string; feedback: string; score: number }[];
+    overallRating: number;
+    strengths: string;
+    improvements: string;
+    comments: string;
+  };
+  status: 'Draft' | 'Submitted' | 'Reviewed' | 'Completed';
+  submittedDate?: string;
+  reviewedDate?: string;
+}
+
+export interface Goal {
+  id: string;
+  employeeId: string;
+  title: string;
+  description: string;
+  targetDate: string;
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'Delayed';
+  progress: number;
+  assignedBy: string;
+  createdDate: string;
+}
+
+export interface TrainingFeedback {
+  id: string;
+  trainingId: string;
+  employeeId: string;
+  rating: number;
+  contentRating: number;
+  instructorRating: number;
+  comments: string;
+  date: string;
 }
 
 export interface Grade {
@@ -728,6 +798,20 @@ const mockData = {
           reason: 'Đau lưng',
           diagnosis: 'Đau lưng nghề nghiệp',
           notes: 'Khuyên nghỉ ngơi 1 tuần, vật lý trị liệu',
+          resultFile: 'medical-result-007.pdf',
+        },
+      ],
+      insurance: [
+        {
+          type: 'Bảo hiểm y tế',
+          number: 'BHYT-007-2024',
+          expiryDate: '2025-12-31',
+          nextCheckupDate: '2025-06-15',
+        },
+        {
+          type: 'Bảo hiểm xã hội',
+          number: 'BHXH-007-2024',
+          expiryDate: '2025-12-31',
         },
       ],
     },
@@ -816,6 +900,132 @@ const mockData = {
     { id: 'pos007', title: 'Nhân viên vận hành', departmentId: 'dept004', gradeId: 'G1' },
     { id: 'pos008', title: 'Nhân viên nhân sự', departmentId: 'dept001', gradeId: 'G1' },
   ] as Position[],
+
+  payrollHistory: [
+    {
+      id: 'pay-001',
+      employeeId: 'emp001',
+      month: '12',
+      year: 2024,
+      grossSalary: 65000000,
+      netSalary: 52000000,
+      basicSalary: 50000000,
+      allowances: { housing: 10000000, transport: 5000000 },
+      bonuses: {},
+      deductions: {},
+      tax: 10000000,
+      insurance: 3000000,
+      paymentDate: '2024-12-25',
+    },
+    {
+      id: 'pay-002',
+      employeeId: 'emp007',
+      month: '12',
+      year: 2024,
+      grossSalary: 18000000,
+      netSalary: 15500000,
+      basicSalary: 15000000,
+      allowances: { transport: 1500000, housing: 1500000 },
+      bonuses: {},
+      deductions: {},
+      tax: 1500000,
+      insurance: 1000000,
+      paymentDate: '2024-12-25',
+    },
+    {
+      id: 'pay-003',
+      employeeId: 'emp007',
+      month: '11',
+      year: 2024,
+      grossSalary: 18000000,
+      netSalary: 15500000,
+      basicSalary: 15000000,
+      allowances: { transport: 1500000, housing: 1500000 },
+      bonuses: {},
+      deductions: {},
+      tax: 1500000,
+      insurance: 1000000,
+      paymentDate: '2024-11-25',
+    },
+  ] as PayrollHistory[],
+
+  performanceReviews: [
+    {
+      id: 'perf-001',
+      employeeId: 'emp007',
+      reviewerId: 'emp002',
+      period: 'Q4',
+      year: 2024,
+      selfAssessment: {
+        goals: [
+          { goal: 'Hoàn thành 5 dự án web', achievement: 'Đã hoàn thành 6 dự án', score: 5 },
+          { goal: 'Học React Native', achievement: 'Đã hoàn thành khóa học cơ bản', score: 4 },
+        ],
+        strengths: 'Làm việc chủ động, sáng tạo',
+        improvements: 'Cần cải thiện kỹ năng làm việc nhóm',
+        comments: 'Tôi đã cố gắng hết sức trong quý này',
+      },
+      managerAssessment: {
+        goals: [
+          { goal: 'Hoàn thành 5 dự án web', feedback: 'Xuất sắc, vượt mục tiêu', score: 5 },
+          { goal: 'Học React Native', feedback: 'Tốt, có thể áp dụng vào dự án', score: 4 },
+        ],
+        overallRating: 4.5,
+        strengths: 'Kỹ thuật tốt, tự học nhanh',
+        improvements: 'Nên tham gia nhiều hơn vào các cuộc họp team',
+        comments: 'Nhân viên xuất sắc, đáng để đầu tư phát triển',
+      },
+      status: 'Completed',
+      submittedDate: '2024-12-20',
+      reviewedDate: '2024-12-28',
+    },
+    {
+      id: 'perf-002',
+      employeeId: 'emp007',
+      reviewerId: 'emp002',
+      period: 'Q1',
+      year: 2025,
+      status: 'Draft',
+    },
+  ] as PerformanceReview[],
+
+  goals: [
+    {
+      id: 'goal-001',
+      employeeId: 'emp007',
+      title: 'Hoàn thành module thanh toán',
+      description: 'Phát triển và test module thanh toán tích hợp Stripe',
+      targetDate: '2025-02-28',
+      status: 'In Progress',
+      progress: 60,
+      assignedBy: 'emp002',
+      createdDate: '2025-01-01',
+    },
+    {
+      id: 'goal-002',
+      employeeId: 'emp007',
+      title: 'Học TypeScript nâng cao',
+      description: 'Hoàn thành khóa học TypeScript Advanced Patterns',
+      targetDate: '2025-03-31',
+      status: 'In Progress',
+      progress: 30,
+      assignedBy: 'emp007',
+      createdDate: '2025-01-05',
+    },
+  ] as Goal[],
+
+  trainingFeedbacks: [
+    {
+      id: 'feedback-001',
+      trainingId: 'tr001',
+      employeeId: 'emp007',
+      rating: 5,
+      contentRating: 5,
+      instructorRating: 5,
+      comments: 'Khóa học rất bổ ích, giảng viên nhiệt tình',
+      date: '2024-05-15',
+    },
+  ] as TrainingFeedback[],
 };
 
 export default mockData;

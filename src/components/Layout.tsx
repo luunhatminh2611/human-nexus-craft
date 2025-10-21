@@ -34,14 +34,27 @@ export function Layout({ children }: LayoutProps) {
     navigate('/login');
   };
 
-  const navigationItems = [
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { label: 'Nhân viên', icon: Users, path: '/employees', roles: ['Admin', 'Manager'] },
-    { label: 'Sơ đồ tổ chức', icon: Network, path: '/org-chart', roles: ['Admin', 'Manager'] },
-    { label: 'Đào tạo', icon: BookOpen, path: '/training' },
-    { label: 'Lương', icon: DollarSign, path: '/salary', roles: ['Admin', 'Manager'] },
-    { label: 'Hồ sơ', icon: User, path: '/profile' },
-  ];
+  const getNavigationItems = () => {
+    if (role === 'Employee') {
+      return [
+        { label: 'Hồ sơ', icon: User, path: '/employee/profile' },
+        { label: 'Lương & Phúc lợi', icon: DollarSign, path: '/employee/payroll' },
+        { label: 'Đào tạo', icon: BookOpen, path: '/employee/learning' },
+        { label: 'Đánh giá', icon: FileText, path: '/employee/performance' },
+      ];
+    }
+    
+    return [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+      { label: 'Nhân viên', icon: Users, path: '/employees', roles: ['Admin', 'Manager'] },
+      { label: 'Sơ đồ tổ chức', icon: Network, path: '/org-chart', roles: ['Admin', 'Manager'] },
+      { label: 'Đào tạo', icon: BookOpen, path: '/training' },
+      { label: 'Lương', icon: DollarSign, path: '/salary', roles: ['Admin', 'Manager'] },
+      { label: 'Hồ sơ', icon: User, path: '/profile' },
+    ];
+  };
+
+  const navigationItems = getNavigationItems();
 
   return (
     <div className="min-h-screen bg-background">

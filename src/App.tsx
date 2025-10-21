@@ -11,6 +11,10 @@ import Training from "./pages/Training";
 import TrainingDetail from "./pages/TrainingDetail";
 import Salary from "./pages/Salary";
 import Profile from "./pages/Profile";
+import EmployeeProfile from "./pages/employee/Profile";
+import EmployeePayroll from "./pages/employee/Payroll";
+import EmployeeLearning from "./pages/employee/Learning";
+import EmployeePerformance from "./pages/employee/Performance";
 import NotFound from "./pages/NotFound";
 import { useAuthStore } from "./store/authStore";
 
@@ -24,6 +28,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RoleBasedRedirect() {
+  const { role } = useAuthStore();
+  
+  if (role === 'Employee') {
+    return <Navigate to="/employee/profile" replace />;
+  }
+  
+  return <Navigate to="/dashboard" replace />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -32,7 +46,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <RoleBasedRedirect />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -94,6 +115,38 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/profile"
+            element={
+              <ProtectedRoute>
+                <EmployeeProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/payroll"
+            element={
+              <ProtectedRoute>
+                <EmployeePayroll />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/learning"
+            element={
+              <ProtectedRoute>
+                <EmployeeLearning />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/performance"
+            element={
+              <ProtectedRoute>
+                <EmployeePerformance />
               </ProtectedRoute>
             }
           />
