@@ -57,7 +57,6 @@ export default function Salary() {
   
   // New structure dialog state
   const [newStructureName, setNewStructureName] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState('G1');
   const [salaryItems, setSalaryItems] = useState<SalaryItem[]>([]);
   
   // New item form state
@@ -171,7 +170,7 @@ export default function Salary() {
       type: itemType,
       method: itemMethod,
       value: parseFloat(itemValue),
-      applicableGrades: [selectedGrade],
+      applicableGrades: ['G1', 'G2', 'G3'],
     };
 
     setSalaryItems([...salaryItems, newItem]);
@@ -203,14 +202,13 @@ export default function Salary() {
     // In real app, this would save to database
     toast({
       title: 'Thành công',
-      description: `Đã tạo cơ cấu lương "${newStructureName}" cho cấp bậc ${selectedGrade}`,
+      description: `Đã tạo cơ cấu lương "${newStructureName}"`,
     });
     
     setIsDialogOpen(false);
     // Reset form
     setNewStructureName('');
     setSalaryItems([]);
-    setSelectedGrade('G1');
   };
 
   return (
@@ -242,30 +240,14 @@ export default function Salary() {
                 </DialogHeader>
                 
                 <div className="space-y-6">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="structure-name">Tên cơ cấu lương</Label>
-                      <Input
-                        id="structure-name"
-                        placeholder="VD: Cơ cấu lương G1 - Nhân viên"
-                        value={newStructureName}
-                        onChange={(e) => setNewStructureName(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="grade">Áp dụng cho cấp bậc</Label>
-                      <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-                        <SelectTrigger id="grade">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="G1">G1 - Nhân viên</SelectItem>
-                          <SelectItem value="G2">G2 - Chuyên viên/Quản lý</SelectItem>
-                          <SelectItem value="G3">G3 - Điều hành</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="structure-name">Tên cơ cấu lương</Label>
+                    <Input
+                      id="structure-name"
+                      placeholder="VD: Cơ cấu lương chung"
+                      value={newStructureName}
+                      onChange={(e) => setNewStructureName(e.target.value)}
+                    />
                   </div>
 
                   <div className="border rounded-lg p-4 space-y-4">

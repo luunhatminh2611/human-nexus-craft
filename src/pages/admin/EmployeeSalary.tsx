@@ -28,8 +28,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import mockData from '@/mock/data';
-import { Plus, Minus, Trash2, DollarSign, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, Trash2, DollarSign, ArrowLeft, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,14 +44,21 @@ export default function EmployeeSalary() {
   const navigate = useNavigate();
   const [selectedEmployee, setSelectedEmployee] = useState(mockData.employees[0].id);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isItemListOpen, setIsItemListOpen] = useState(false);
   
-  // New custom item form state
-  const [itemName, setItemName] = useState('');
-  const [itemType, setItemType] = useState<'EARNING' | 'DEDUCTION'>('EARNING');
-  const [itemMethod, setItemMethod] = useState<'FIXED' | 'PERCENT_BASE'>('FIXED');
-  const [itemValue, setItemValue] = useState('');
+  // Selected item from list
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
 
   const currentEmployee = mockData.employees.find((e) => e.id === selectedEmployee);
+
+  // Get all available salary items from structures
+  const getAllAvailableItems = () => {
+    const allItems = mockData.salaryStructures.flatMap(s => s.items);
+    // Remove duplicates by id
+    return allItems.filter((item, index, self) =>
+      index === self.findIndex((t) => t.id === item.id)
+    );
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -66,11 +79,24 @@ export default function EmployeeSalary() {
     return allItems.filter(item => item.applicableGrades.includes(currentEmployee.grade));
   };
 
-  const handleAddCustomItem = () => {
-    if (!itemName || !itemValue) {
+  const handleAddItemFromList = () => {
+    if (!selectedItemId) {
       toast({
         title: 'Lỗi',
-        description: 'Vui lòng điền đầy đủ thông tin',
+        description: 'Vui lòng chọn khoản mục',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const selectedItem = getAllAvailableItems().find(item => item.id === selectedItemId);
+    if (!selectedItem) return;
+
+    // Check if item already exists in custom items
+    if (currentEmployee?.customSalaryItems?.some(item => item.id === selectedItemId)) {
+      toast({
+        title: 'Lỗi',
+        description: 'Khoản mục này đã tồn tại',
         variant: 'destructive',
       });
       return;
@@ -79,13 +105,11 @@ export default function EmployeeSalary() {
     // In real app, this would save to database
     toast({
       title: 'Thành công',
-      description: `Đã thêm khoản mục "${itemName}" cho ${currentEmployee?.firstName} ${currentEmployee?.lastName}`,
+      description: `Đã thêm khoản mục "${selectedItem.name}" cho ${currentEmployee?.firstName} ${currentEmployee?.lastName}`,
     });
     
     setIsDialogOpen(false);
-    // Reset form
-    setItemName('');
-    setItemValue('');
+    setSelectedItemId('');
   };
 
   const handleRemoveCustomItem = (itemId: string) => {
@@ -186,7 +210,7 @@ export default function EmployeeSalary() {
         </Card>
 
         {currentEmployee && (
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-3 gap-6">
             {/* Employee Info & Salary Summary */}
             <Card>
               <CardHeader>
@@ -239,6 +263,52 @@ export default function EmployeeSalary() {
               </CardContent>
             </Card>
 
+            {/* Available Salary Items List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <List className="h-5 w-5 text-primary" />
+                  Danh sách khoản mục
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                  {getAllAvailableItems().map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1">
+                          {item.type === 'EARNING' ? (
+                            <Plus className="h-4 w-4 text-success mt-0.5" />
+                          ) : (
+                            <Minus className="h-4 w-4 text-destructive mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{item.name}</p>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant={item.type === 'EARNING' ? 'default' : 'destructive'} className="text-xs">
+                                {item.type === 'EARNING' ? 'Thu nhập' : 'Khấu trừ'}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {item.method === 'FIXED'
+                                ? formatCurrency(item.value)
+                                : `${item.value}%`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Salary Structure */}
             <Card>
               <CardHeader>
@@ -251,69 +321,90 @@ export default function EmployeeSalary() {
                         Thêm khoản mục
                       </Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-2xl">
                       <DialogHeader>
-                        <DialogTitle>Thêm khoản mục lương tùy chỉnh</DialogTitle>
+                        <DialogTitle>Thêm khoản mục lương</DialogTitle>
                         <DialogDescription>
-                          Thêm khoản mục lương riêng cho {currentEmployee.firstName} {currentEmployee.lastName}
+                          Chọn khoản mục từ danh sách để thêm cho {currentEmployee.firstName} {currentEmployee.lastName}
                         </DialogDescription>
                       </DialogHeader>
                       
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="custom-item-name">Tên khoản mục</Label>
-                          <Input
-                            id="custom-item-name"
-                            placeholder="VD: Thưởng dự án đặc biệt"
-                            value={itemName}
-                            onChange={(e) => setItemName(e.target.value)}
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="custom-item-type">Loại</Label>
-                          <Select value={itemType} onValueChange={(v) => setItemType(v as 'EARNING' | 'DEDUCTION')}>
-                            <SelectTrigger id="custom-item-type">
-                              <SelectValue />
+                          <Label htmlFor="item-select">Chọn khoản mục</Label>
+                          <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                            <SelectTrigger id="item-select">
+                              <SelectValue placeholder="Chọn khoản mục từ danh sách..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="EARNING">Thu nhập</SelectItem>
-                              <SelectItem value="DEDUCTION">Khấu trừ</SelectItem>
+                              {getAllAvailableItems().map((item) => (
+                                <SelectItem key={item.id} value={item.id}>
+                                  <div className="flex items-center gap-2">
+                                    {item.type === 'EARNING' ? (
+                                      <Plus className="h-3 w-3 text-success" />
+                                    ) : (
+                                      <Minus className="h-3 w-3 text-destructive" />
+                                    )}
+                                    <span>{item.name}</span>
+                                    <span className="text-muted-foreground text-xs">
+                                      ({item.method === 'FIXED' ? formatCurrency(item.value) : `${item.value}%`})
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="custom-item-method">Phương thức tính</Label>
-                          <Select value={itemMethod} onValueChange={(v) => setItemMethod(v as 'FIXED' | 'PERCENT_BASE')}>
-                            <SelectTrigger id="custom-item-method">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="FIXED">Cố định</SelectItem>
-                              <SelectItem value="PERCENT_BASE">% Lương cơ bản</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="custom-item-value">
-                            Giá trị {itemMethod === 'PERCENT_BASE' ? '(%)' : '(VND)'}
-                          </Label>
-                          <Input
-                            id="custom-item-value"
-                            type="number"
-                            placeholder="0"
-                            value={itemValue}
-                            onChange={(e) => setItemValue(e.target.value)}
-                          />
                         </div>
 
+                        {selectedItemId && (
+                          <div className="p-4 border rounded-lg bg-muted/50">
+                            {(() => {
+                              const item = getAllAvailableItems().find(i => i.id === selectedItemId);
+                              if (!item) return null;
+                              return (
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    {item.type === 'EARNING' ? (
+                                      <Plus className="h-4 w-4 text-success" />
+                                    ) : (
+                                      <Minus className="h-4 w-4 text-destructive" />
+                                    )}
+                                    <h4 className="font-semibold">{item.name}</h4>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>
+                                      <span className="text-muted-foreground">Loại:</span>{' '}
+                                      <Badge variant={item.type === 'EARNING' ? 'default' : 'destructive'} className="text-xs">
+                                        {item.type === 'EARNING' ? 'Thu nhập' : 'Khấu trừ'}
+                                      </Badge>
+                                    </div>
+                                    <div>
+                                      <span className="text-muted-foreground">Phương thức:</span>{' '}
+                                      <Badge variant="outline" className="text-xs">
+                                        {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
+                                      </Badge>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <span className="text-muted-foreground">Giá trị:</span>{' '}
+                                      <span className="font-medium">
+                                        {item.method === 'FIXED' ? formatCurrency(item.value) : `${item.value}%`}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+
                         <div className="flex justify-end gap-2 pt-4">
-                          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                          <Button variant="outline" onClick={() => {
+                            setIsDialogOpen(false);
+                            setSelectedItemId('');
+                          }}>
                             Hủy
                           </Button>
-                          <Button onClick={handleAddCustomItem}>
+                          <Button onClick={handleAddItemFromList}>
                             Thêm khoản mục
                           </Button>
                         </div>
