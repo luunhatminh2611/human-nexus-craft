@@ -20,6 +20,13 @@ export interface Employee {
     allowances?: { [key: string]: number };
     currency: string;
   };
+  customSalaryItems?: Array<{
+    id: string;
+    name: string;
+    type: 'EARNING' | 'DEDUCTION';
+    method: 'FIXED' | 'PERCENT_BASE';
+    value: number;
+  }>;
   medicalRecordId?: string;
   documents?: { id: string; name: string; url?: string }[];
   address?: string;

@@ -9,6 +9,7 @@ import AdminEmployees from "./pages/admin/Employees";
 import AdminOrgChart from "./pages/admin/OrgChart";
 import AdminTraining from "./pages/admin/Training";
 import AdminSalary from "./pages/admin/Salary";
+import AdminEmployeeSalary from "./pages/admin/EmployeeSalary";
 import AdminProfile from "./pages/admin/Profile";
 import ManagerDashboard from "./pages/manager/Dashboard";
 import ManagerEmployees from "./pages/manager/Employees";
@@ -104,6 +105,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AdminSalary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/employee-salary"
+            element={
+              <ProtectedRoute>
+                <AdminEmployeeSalary />
               </ProtectedRoute>
             }
           />
