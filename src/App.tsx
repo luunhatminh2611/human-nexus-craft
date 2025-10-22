@@ -15,6 +15,8 @@ import ManagerEmployees from "./pages/manager/Employees";
 import ManagerOrgChart from "./pages/manager/OrgChart";
 import ManagerTraining from "./pages/manager/Training";
 import ManagerProfile from "./pages/manager/Profile";
+import ManagerSafetyDistribution from "./pages/manager/DistributionItems";
+import ManagerSafetyDetail from "./pages/manager/ItemsDetail";
 import TrainingDetail from "./pages/TrainingDetail";
 import EmployeeProfile from "./pages/employee/Profile";
 import EmployeePayroll from "./pages/employee/Payroll";
@@ -22,6 +24,9 @@ import EmployeeLearning from "./pages/employee/Learning";
 import EmployeePerformance from "./pages/employee/Performance";
 import NotFound from "./pages/NotFound";
 import { useAuthStore } from "./store/authStore";
+import SafetyItems from "./pages/admin/SafetyItem";
+import EmployeeSafetyList from "./pages/employee/EmployeeSafetyList";
+import AdminSafetyDashboard from "./pages/admin/AdminSafetyDashboard";
 
 const queryClient = new QueryClient();
 
@@ -118,6 +123,23 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/safety-items"
+            element={
+              <ProtectedRoute>
+                <SafetyItems />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/safety-dashboard"
+            element={
+              <ProtectedRoute>
+                <AdminSafetyDashboard />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Manager Routes */}
           <Route
@@ -168,6 +190,22 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/manager/safety-items"
+            element={
+              <ProtectedRoute>
+                <ManagerSafetyDistribution />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/safety/:employeeId"
+            element={
+              <ProtectedRoute>
+                <ManagerSafetyDetail />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Shared Training Detail */}
           <Route
@@ -209,6 +247,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <EmployeePerformance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/safety"
+            element={
+              <ProtectedRoute>
+                <EmployeeSafetyList />
               </ProtectedRoute>
             }
           />

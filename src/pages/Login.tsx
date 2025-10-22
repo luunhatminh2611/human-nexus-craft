@@ -36,7 +36,15 @@ export default function Login() {
 
   const handleRoleSelect = (role: UserRole, empId?: string) => {
     setRole(role, empId);
-    navigate('/dashboard');
+    if (role === 'Employee' && empId) {
+      // Load mock data for the selected employee
+      const employeeData = mockData.employees.find(emp => emp.id === empId);
+      if (employeeData) {
+      }
+      navigate('/employee/profile');
+    } else {
+      navigate(`/${role}/dashboard`);
+    }
   };
 
   return (

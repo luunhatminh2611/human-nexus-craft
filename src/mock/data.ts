@@ -180,6 +180,40 @@ export interface Position {
   gradeId: string;
 }
 
+export interface SafetyItem {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  replacementCycleDays: number;
+  defaultExpireDays: number;
+}
+export interface IssuedSafetyItem {
+  id: string;
+  safetyItemId: string;
+  employeeId: string;
+  issuedBy: string;
+  issueDate: string;
+  expireDate: string;
+  status: 'In Use' | 'Expiring Soon' | 'Expired' | 'Replaced' | 'DamagedEarly';
+  replacedById?: string;
+  replacedFromId?: string;
+  note?: string;
+  replacedDate?: string;
+}
+
+export interface SafetyReplacementRequest {
+  id: string;
+  employeeId: string;
+  safetyItemId: string;
+  requestDate: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  processedBy?: string;
+  processedDate?: string;
+  note?: string;
+}
+
 const mockData = {
   employees: [
     {
@@ -1026,6 +1060,133 @@ const mockData = {
       date: '2024-05-15',
     },
   ] as TrainingFeedback[],
+
+  safetyItems: [
+    {
+      id: 's001',
+      name: 'Mũ bảo hộ',
+      category: 'Đầu',
+      description: 'Mũ bảo hộ lao động tiêu chuẩn Việt Nam',
+      replacementCycleDays: 365,
+      defaultExpireDays: 365,
+    },
+    {
+      id: 's002',
+      name: 'Găng tay chống cắt',
+      category: 'Tay',
+      description: 'Găng tay sợi chống cắt cấp độ 3',
+      replacementCycleDays: 180,
+      defaultExpireDays: 180,
+    },
+    {
+      id: 's003',
+      name: 'Kính bảo hộ',
+      category: 'Mắt',
+      description: 'Kính bảo hộ chống tia UV',
+      replacementCycleDays: 365,
+      defaultExpireDays: 365,
+    },
+  ] as SafetyItem[],
+
+  issuedSafetyItems: [
+    {
+      id: 'issue001',
+      safetyItemId: 's001', // Mũ bảo hộ
+      employeeId: 'emp005',
+      issuedBy: 'emp002', // Quản lý Kỹ thuật
+      issueDate: '2024-03-01',
+      expireDate: '2025-03-01',
+      status: 'In Use',
+      note: 'Phát lần đầu khi vào làm',
+    },
+    {
+      id: 'issue002',
+      safetyItemId: 's002', // Găng tay chống cắt
+      employeeId: 'emp005',
+      issuedBy: 'emp002',
+      issueDate: '2024-08-01',
+      expireDate: '2024-11-01',
+      status: 'Expiring Soon',
+      note: 'Còn 10 ngày sẽ hết hạn',
+    },
+    {
+      id: 'issue003',
+      safetyItemId: 's003', // Kính bảo hộ
+      employeeId: 'emp006',
+      issuedBy: 'emp003',
+      issueDate: '2023-10-01',
+      expireDate: '2024-10-01',
+      status: 'Expired',
+      note: 'Đã hết hạn, chờ đổi mới',
+    },
+    {
+      id: 'issue004',
+      safetyItemId: 's002', // Găng tay chống cắt (đổi mới)
+      employeeId: 'emp006',
+      issuedBy: 'emp003',
+      issueDate: '2024-10-15',
+      expireDate: '2025-04-15',
+      status: 'Replaced',
+      replacedFromId: 'issue003',
+      note: 'Đổi mới sau khi vật tư cũ hết hạn',
+      replacedDate: '2024-10-15',
+    },
+    {
+      id: 'issue005',
+      safetyItemId: 's001',
+      employeeId: 'emp004',
+      issuedBy: 'emp002',
+      issueDate: '2024-04-01',
+      expireDate: '2025-04-01',
+      status: 'DamagedEarly',
+      note: 'Nhân viên báo mũ nứt, đổi mới sớm ngày 2024-09-20',
+      replacedDate: '2024-09-20',
+    },
+    {
+      id: 'issue006',
+      safetyItemId: 's001',
+      employeeId: 'emp004',
+      issuedBy: 'emp002',
+      issueDate: '2024-09-20',
+      expireDate: '2025-09-20',
+      status: 'In Use',
+      replacedFromId: 'issue005',
+      note: 'Đổi mới do hỏng sớm',
+    },
+  ] as IssuedSafetyItem[],
+
+  safetyReplacementRequests: [
+    {
+      id: 'req001',
+      employeeId: 'emp004',
+      safetyItemId: 's001',
+      requestDate: '2024-09-18',
+      reason: 'Mũ bị nứt, không an toàn',
+      status: 'Approved',
+      processedBy: 'emp002',
+      processedDate: '2024-09-20',
+      note: 'Đã cấp mũ mới, đổi sớm 6 tháng',
+    },
+    {
+      id: 'req002',
+      employeeId: 'emp006',
+      safetyItemId: 's003',
+      requestDate: '2024-09-25',
+      reason: 'Trầy xước nặng, nhìn mờ',
+      status: 'Pending',
+    },
+  ] as SafetyReplacementRequest[],
+
+  safetyStatistics: {
+    totalIssued: 6,
+    totalActive: 3,
+    totalExpired: 1,
+    totalReplaced: 1,
+    totalDamagedEarly: 1,
+    replacementsBeforeExpire: 1,
+    replacementsOnTime: 1,
+    pendingRequests: 1,
+  }
 };
 
 export default mockData;
