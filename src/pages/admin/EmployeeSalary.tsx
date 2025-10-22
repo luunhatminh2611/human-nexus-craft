@@ -45,7 +45,8 @@ export default function EmployeeSalary() {
   const [selectedEmployee, setSelectedEmployee] = useState(mockData.employees[0].id);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isItemListOpen, setIsItemListOpen] = useState(false);
-  
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   // Selected item from list
   const [selectedItemId, setSelectedItemId] = useState<string>('');
 
@@ -70,11 +71,11 @@ export default function EmployeeSalary() {
   // Get default structure items for employee's grade
   const getDefaultStructureItems = () => {
     if (!currentEmployee) return [];
-    
+
     const structures = mockData.salaryStructures.filter(s =>
       s.items.some(item => item.applicableGrades.includes(currentEmployee.grade))
     );
-    
+
     const allItems = structures.flatMap(s => s.items);
     return allItems.filter(item => item.applicableGrades.includes(currentEmployee.grade));
   };
@@ -107,7 +108,7 @@ export default function EmployeeSalary() {
       title: 'Thành công',
       description: `Đã thêm khoản mục "${selectedItem.name}" cho ${currentEmployee?.firstName} ${currentEmployee?.lastName}`,
     });
-    
+
     setIsDialogOpen(false);
     setSelectedItemId('');
   };
@@ -130,7 +131,7 @@ export default function EmployeeSalary() {
 
     // Calculate default structure items
     const structureItems = getDefaultStructureItems();
-    
+
     structureItems.forEach(item => {
       let amount = 0;
       if (item.method === 'FIXED') {
@@ -138,7 +139,7 @@ export default function EmployeeSalary() {
       } else if (item.method === 'PERCENT_BASE') {
         amount = (baseSalary * item.value) / 100;
       }
-      
+
       if (item.type === 'EARNING') {
         totalEarnings += amount;
       } else {
@@ -154,7 +155,7 @@ export default function EmployeeSalary() {
       } else if (item.method === 'PERCENT_BASE') {
         amount = (baseSalary * item.value) / 100;
       }
-      
+
       if (item.type === 'EARNING') {
         totalEarnings += amount;
       } else {
@@ -328,7 +329,7 @@ export default function EmployeeSalary() {
                           Chọn khoản mục từ danh sách để thêm cho {currentEmployee.firstName} {currentEmployee.lastName}
                         </DialogDescription>
                       </DialogHeader>
-                      
+
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <Label htmlFor="item-select">Chọn khoản mục</Label>
@@ -432,13 +433,27 @@ export default function EmployeeSalary() {
                         {getDefaultStructureItems().map((item) => (
                           <TableRow key={item.id}>
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                {item.type === 'EARNING' ? (
-                                  <Plus className="h-4 w-4 text-success" />
-                                ) : (
-                                  <Minus className="h-4 w-4 text-destructive" />
-                                )}
-                                <span className="text-sm">{item.name}</span>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  {item.type === 'EARNING' ? (
+                                    <Plus className="h-4 w-4 text-success" />
+                                  ) : (
+                                    <Minus className="h-4 w-4 text-destructive" />
+                                  )}
+                                  <span className="text-sm">{item.name}</span>
+                                </div>
+
+                                {/* Icon xóa nằm bên phải của cùng dòng */}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setItemToDelete(item);
+                                    setIsConfirmDeleteOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -512,6 +527,32 @@ export default function EmployeeSalary() {
                   )}
                 </div>
               </CardContent>
+              <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Xác nhận xóa khoản mục</DialogTitle>
+                    <DialogDescription>
+                      Bạn có chắc chắn muốn bỏ khoản mục{' '}
+                      <span className="font-semibold text-destructive">{itemToDelete?.name}</span> khỏi cơ cấu lương không?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsConfirmDeleteOpen(false)}>
+                      Hủy
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        handleRemoveCustomItem(itemToDelete?.id);
+                        setIsConfirmDeleteOpen(false);
+                        setItemToDelete(null);
+                      }}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </Card>
           </div>
         )}
