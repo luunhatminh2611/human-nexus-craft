@@ -34,6 +34,7 @@ import EmployeeCareerPath from "./pages/employee/CareerPath";
 import AdminMedicalRecords from "./pages/admin/AdminMedicalRecord";
 import WorkScheduleManagement from "./pages/admin/WorkSchedule";
 import LeaveRequestPage from "./pages/admin/LeaveRequest";
+import Reports from "./pages/admin/Reports";
 
 const queryClient = new QueryClient();
 
@@ -197,6 +198,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <LeaveRequestPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedRoute>
+                <Reports />
               </ProtectedRoute>
             }
           />

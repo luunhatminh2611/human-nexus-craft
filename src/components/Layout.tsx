@@ -27,7 +27,8 @@ import {
   TrendingUp,
   HeartPulse,
   BriefcaseBusiness,
-  Mailbox
+  Mailbox,
+  FileBarChart
 } from 'lucide-react';
 import clsx from 'clsx';
 import logo from '@/assets/download.jpg';
@@ -79,6 +80,7 @@ export function Layout({ children }: LayoutProps) {
       { label: 'HSYT cần duyệt', icon: HeartPulse, path: '/admin/medical-records' },
       { label: 'Lịch công tác', icon: BriefcaseBusiness, path: '/admin/work-schedule' },
       { label: 'Đơn xin nghỉ phép', icon: Mailbox, path: '/admin/leave-requests' },
+      { label: 'Báo cáo', icon: FileBarChart, path: '/admin/reports' },
     ];
   };
 
