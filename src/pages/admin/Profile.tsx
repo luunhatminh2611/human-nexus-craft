@@ -161,7 +161,7 @@ function ProfileContent() {
           <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="info">Thông tin</TabsTrigger>
             <TabsTrigger value="work">Công việc</TabsTrigger>
-            <TabsTrigger value="training">Đào tạo & Bậc</TabsTrigger>
+            <TabsTrigger value="training">Đào tạo</TabsTrigger>
             <TabsTrigger value="salary">Lương</TabsTrigger>
             <TabsTrigger value="medical">Y tế</TabsTrigger>
             <TabsTrigger value="schedule">Lịch công tác</TabsTrigger>
@@ -283,30 +283,11 @@ function ProfileContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Award className="h-5 w-5 text-primary" />
-                  Lộ trình đào tạo & Bậc làm việc
+                  Lộ trình đào tạo
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Current Grade */}
-                <div>
-                  <h3 className="font-semibold mb-2">Bậc hiện tại</h3>
-                  <div className="p-4 bg-primary/5 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg font-bold">{grade?.name}</span>
-                      <Badge variant="default">{employee.grade}</Badge>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-semibold">Kỹ năng yêu cầu:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {grade?.requiredSkills.map((skill) => (
-                          <Badge key={skill} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+
 
                 {/* Training Progress */}
                 <div>
