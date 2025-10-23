@@ -4,73 +4,118 @@ import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import mockData from '@/mock/data';
 import { useAuthStore } from '@/store/authStore';
-import { BookOpen, Star, Calendar, Award, MessageSquare } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { BookOpen, Award, Eye, PlayCircle, FileCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function EmployeeLearning() {
   const { employeeId } = useAuthStore();
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [selectedTraining, setSelectedTraining] = useState<string | null>(null);
-  const [rating, setRating] = useState(5);
-  const [comments, setComments] = useState('');
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
 
-  const employee = mockData.employees.find((e) => e.id === employeeId);
   const myEnrollments = mockData.trainingEnrollments.filter((e) => e.employeeId === employeeId);
-  const completedTrainings = mockData.trainings.filter((t) =>
-    employee?.trainingsCompleted.includes(t.id)
-  );
-  const availableTrainings = mockData.trainings.filter(
-    (t) => !myEnrollments.find((e) => e.trainingId === t.id)
-  );
+  const completedCount = myEnrollments.filter(e => e.status === 'Completed').length;
+  const inProgressCount = myEnrollments.filter(e => e.status === 'In Progress').length;
+  const assignedCount = myEnrollments.filter(e => e.status === 'Assigned').length;
 
-  const handleEnroll = (trainingId: string) => {
-    toast({
-      title: 'Đăng ký thành công',
-      description: 'Bạn đã đăng ký khóa học thành công',
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive', label: string }> = {
+      Assigned: { variant: 'outline', label: 'Đã giao' },
+      'In Progress': { variant: 'secondary', label: 'Đang học' },
+      Completed: { variant: 'default', label: 'Hoàn thành' },
+      Failed: { variant: 'destructive', label: 'Trượt' },
+    };
+    const config = statusConfig[status] || { variant: 'outline', label: status };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const handleStartLearning = (enrollmentId: string) => {
+    // Update enrollment status to In Progress
+    const enrollment = mockData.trainingEnrollments.find(e => e.id === enrollmentId);
+    if (enrollment) {
+      enrollment.status = 'In Progress';
+      enrollment.progress = 10;
+      toast.success('Đã bắt đầu học khóa học');
+    }
+  };
+
+  const handleTakeTest = (enrollmentId: string) => {
+    setSelectedEnrollment(enrollmentId);
+    setAnswers({});
+    setTestDialogOpen(true);
+  };
+
+  const handleSubmitTest = () => {
+    const enrollment = mockData.trainingEnrollments.find(e => e.id === selectedEnrollment);
+    if (!enrollment) return;
+
+    const training = mockData.trainings.find(t => t.id === enrollment.trainingId);
+    if (!training?.questions) return;
+
+    // Calculate score
+    let correctCount = 0;
+    training.questions.forEach((q) => {
+      if (answers[q.id] === q.correctAnswer) {
+        correctCount++;
+      }
     });
+
+    const score = Math.round((correctCount / training.questions.length) * 10);
+    enrollment.testScore = score;
+    enrollment.testAttempts = (enrollment.testAttempts || 0) + 1;
+
+    if (score >= 8) {
+      enrollment.status = 'Completed';
+      enrollment.progress = 100;
+      enrollment.completionDate = new Date().toISOString();
+      toast.success(`Chúc mừng! Bạn đã hoàn thành khóa học với điểm ${score}/10`);
+    } else {
+      enrollment.status = 'Failed';
+      toast.error(`Bạn chưa đạt (${score}/10). Bạn có thể kiểm tra lại.`);
+    }
+
+    setTestDialogOpen(false);
+    setSelectedEnrollment(null);
+    setAnswers({});
   };
 
-  const handleSubmitFeedback = () => {
-    toast({
-      title: 'Đánh giá thành công',
-      description: 'Cảm ơn bạn đã đánh giá khóa học',
-    });
-    setFeedbackOpen(false);
-    setSelectedTraining(null);
-    setComments('');
-    setRating(5);
-  };
-
-  const getEnrollmentStatus = (enrollment: any) => {
-    if (enrollment.completedDate) return 'completed';
-    if (enrollment.progress >= 100) return 'completed';
-    return 'in-progress';
-  };
+  const currentTest = selectedEnrollment 
+    ? mockData.trainingEnrollments.find(e => e.id === selectedEnrollment)
+    : null;
+  const currentTraining = currentTest
+    ? mockData.trainings.find(t => t.id === currentTest.trainingId)
+    : null;
 
   return (
     <Layout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Đào tạo & Phát triển</h1>
-          <p className="text-muted-foreground">Quản lý các khóa học và chứng chỉ của bạn</p>
+          <p className="text-muted-foreground">Quản lý các khóa học được giao</p>
         </div>
 
         {/* Stats */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -79,7 +124,35 @@ export default function EmployeeLearning() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myEnrollments.length}</p>
-                  <p className="text-sm text-muted-foreground">Khóa học đang theo học</p>
+                  <p className="text-sm text-muted-foreground">Tổng khóa học</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-warning/10">
+                  <PlayCircle className="h-6 w-6 text-warning" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{assignedCount}</p>
+                  <p className="text-sm text-muted-foreground">Đã giao</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-secondary/10">
+                  <FileCheck className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{inProgressCount}</p>
+                  <p className="text-sm text-muted-foreground">Đang học</p>
                 </div>
               </div>
             </CardContent>
@@ -92,22 +165,8 @@ export default function EmployeeLearning() {
                   <Award className="h-6 w-6 text-success" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{completedTrainings.length}</p>
-                  <p className="text-sm text-muted-foreground">Đã hoàn thành</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-full bg-accent">
-                  <Star className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{availableTrainings.length}</p>
-                  <p className="text-sm text-muted-foreground">Khóa học khả dụng</p>
+                  <p className="text-2xl font-bold">{completedCount}</p>
+                  <p className="text-sm text-muted-foreground">Hoàn thành</p>
                 </div>
               </div>
             </CardContent>
@@ -121,178 +180,128 @@ export default function EmployeeLearning() {
           </CardHeader>
           <CardContent>
             {myEnrollments.length > 0 ? (
-              <div className="space-y-4">
-                {myEnrollments.map((enrollment) => {
-                  const training = mockData.trainings.find((t) => t.id === enrollment.trainingId);
-                  if (!training) return null;
-                  const status = getEnrollmentStatus(enrollment);
-                  const isCompleted = status === 'completed';
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Khóa học</TableHead>
+                    <TableHead>Thời lượng</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Điểm</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {myEnrollments.map((enrollment) => {
+                    const training = mockData.trainings.find((t) => t.id === enrollment.trainingId);
+                    if (!training) return null;
 
-                  return (
-                    <div key={enrollment.id} className="p-4 border rounded-lg space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{training.title}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {training.description}
-                          </p>
-                          <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {training.durationDays} ngày
+                    return (
+                      <TableRow key={enrollment.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                              <BookOpen className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{training.title}</p>
+                              <p className="text-sm text-muted-foreground">{training.description}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{training.durationDays} ngày</TableCell>
+                        <TableCell>{getStatusBadge(enrollment.status)}</TableCell>
+                        <TableCell>
+                          {enrollment.testScore ? (
+                            <span className={enrollment.testScore >= 8 ? 'text-success font-semibold' : 'text-destructive font-semibold'}>
+                              {enrollment.testScore}/10
                             </span>
-                            {enrollment.enrolledDate && (
-                              <span>
-                                Đăng ký: {new Date(enrollment.enrolledDate).toLocaleDateString('vi-VN')}
-                              </span>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate(`/training/${training.id}`)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {enrollment.status === 'Assigned' && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleStartLearning(enrollment.id)}
+                              >
+                                <PlayCircle className="h-4 w-4 mr-2" />
+                                Bắt đầu học
+                              </Button>
+                            )}
+                            {(enrollment.status === 'In Progress' || enrollment.status === 'Failed') && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleTakeTest(enrollment.id)}
+                              >
+                                <FileCheck className="h-4 w-4 mr-2" />
+                                {enrollment.status === 'Failed' ? 'Kiểm tra lại' : 'Làm kiểm tra'}
+                              </Button>
                             )}
                           </div>
-                        </div>
-                        <Badge variant={isCompleted ? 'default' : 'secondary'}>
-                          {isCompleted ? 'Hoàn thành' : 'Đang học'}
-                        </Badge>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Tiến độ</span>
-                          <span className="font-medium">{enrollment.progress}%</span>
-                        </div>
-                        <Progress value={enrollment.progress} />
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/training/${training.id}`)}
-                        >
-                          Chi tiết
-                        </Button>
-                        {isCompleted && (
-                          <Dialog open={feedbackOpen && selectedTraining === training.id}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedTraining(training.id);
-                                  setFeedbackOpen(true);
-                                }}
-                              >
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Đánh giá
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Đánh giá khóa học</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label>Đánh giá chung</Label>
-                                  <div className="flex gap-2 mt-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                      <button
-                                        key={star}
-                                        onClick={() => setRating(star)}
-                                        className="focus:outline-none"
-                                      >
-                                        <Star
-                                          className={`h-6 w-6 ${
-                                            star <= rating
-                                              ? 'fill-yellow-400 text-yellow-400'
-                                              : 'text-gray-300'
-                                          }`}
-                                        />
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div>
-                                  <Label>Nhận xét</Label>
-                                  <Textarea
-                                    value={comments}
-                                    onChange={(e) => setComments(e.target.value)}
-                                    placeholder="Chia sẻ trải nghiệm của bạn về khóa học..."
-                                    rows={4}
-                                  />
-                                </div>
-                                <div className="flex gap-2 justify-end">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                      setFeedbackOpen(false);
-                                      setSelectedTraining(null);
-                                    }}
-                                  >
-                                    Hủy
-                                  </Button>
-                                  <Button onClick={handleSubmitFeedback}>Gửi đánh giá</Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                Bạn chưa đăng ký khóa học nào
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Available Trainings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Khóa học khả dụng</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {availableTrainings.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-4">
-                {availableTrainings.map((training) => (
-                  <div key={training.id} className="p-4 border rounded-lg space-y-3">
-                    <div>
-                      <h3 className="font-semibold">{training.title}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {training.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {training.durationDays} ngày
-                      </span>
-                      {training.instructor && <span>GV: {training.instructor}</span>}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/training/${training.id}`)}
-                      >
-                        Chi tiết
-                      </Button>
-                      <Button size="sm" onClick={() => handleEnroll(training.id)}>
-                        Đăng ký
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                Không có khóa học khả dụng
+                Bạn chưa có khóa học nào được giao
               </p>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Test Dialog */}
+      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Kiểm tra: {currentTraining?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+            {currentTraining?.questions?.map((question, index) => (
+              <div key={question.id} className="space-y-3">
+                <p className="font-semibold">
+                  Câu {index + 1}: {question.question}
+                </p>
+                <RadioGroup
+                  value={answers[question.id]?.toString()}
+                  onValueChange={(value) => setAnswers({ ...answers, [question.id]: parseInt(value) })}
+                >
+                  {question.options.map((option, optIndex) => (
+                    <div key={optIndex} className="flex items-center space-x-2">
+                      <RadioGroupItem value={optIndex.toString()} id={`${question.id}-${optIndex}`} />
+                      <Label htmlFor={`${question.id}-${optIndex}`} className="cursor-pointer">
+                        {option}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={handleSubmitTest}
+              disabled={Object.keys(answers).length !== (currentTraining?.questions?.length || 0)}
+            >
+              Nộp bài
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

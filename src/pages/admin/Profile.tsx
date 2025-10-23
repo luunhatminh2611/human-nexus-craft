@@ -321,49 +321,65 @@ function ProfileContent() {
                     className="mb-4" 
                   />
 
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold">
-                      Danh sách khóa học
-                    </p>
-                    {mockData.trainingEnrollments
-                      .filter(e => e.employeeId === employee.id)
-                      .map((enrollment) => {
-                        const training = mockData.trainings.find(t => t.id === enrollment.trainingId);
-                        const getEnrollmentStatusBadge = (status: string) => {
-                          const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive', label: string }> = {
-                            Assigned: { variant: 'outline', label: 'Đã giao' },
-                            'In Progress': { variant: 'secondary', label: 'Đang học' },
-                            Completed: { variant: 'default', label: 'Hoàn thành' },
-                            Failed: { variant: 'destructive', label: 'Trượt' },
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Khóa học</TableHead>
+                        <TableHead>Thời lượng</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead>Điểm</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mockData.trainingEnrollments
+                        .filter(e => e.employeeId === employee.id)
+                        .map((enrollment) => {
+                          const training = mockData.trainings.find(t => t.id === enrollment.trainingId);
+                          const getEnrollmentStatusBadge = (status: string) => {
+                            const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive', label: string }> = {
+                              Assigned: { variant: 'outline', label: 'Đã giao' },
+                              'In Progress': { variant: 'secondary', label: 'Đang học' },
+                              Completed: { variant: 'default', label: 'Hoàn thành' },
+                              Failed: { variant: 'destructive', label: 'Trượt' },
+                            };
+                            const config = statusConfig[status] || { variant: 'outline', label: status };
+                            return <Badge variant={config.variant}>{config.label}</Badge>;
                           };
-                          const config = statusConfig[status] || { variant: 'outline', label: status };
-                          return <Badge variant={config.variant}>{config.label}</Badge>;
-                        };
-                        
-                        return (
-                          <div key={enrollment.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                            <div className={`p-2 rounded-full ${
-                              enrollment.status === 'Completed' ? 'bg-success/10' : 
-                              enrollment.status === 'In Progress' ? 'bg-warning/10' :
-                              enrollment.status === 'Failed' ? 'bg-destructive/10' :
-                              'bg-muted'
-                            }`}>
-                              <GraduationCap className={`h-4 w-4 ${
-                                enrollment.status === 'Completed' ? 'text-success' :
-                                enrollment.status === 'In Progress' ? 'text-warning' :
-                                enrollment.status === 'Failed' ? 'text-destructive' :
-                                'text-muted-foreground'
-                              }`} />
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">{training?.title}</p>
-                              <p className="text-xs text-muted-foreground">{training?.durationDays} ngày</p>
-                            </div>
-                            {getEnrollmentStatusBadge(enrollment.status)}
-                          </div>
-                        );
-                      })}
-                  </div>
+                          
+                          return (
+                            <TableRow key={enrollment.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className={`p-2 rounded-full ${
+                                    enrollment.status === 'Completed' ? 'bg-success/10' : 
+                                    enrollment.status === 'In Progress' ? 'bg-warning/10' :
+                                    enrollment.status === 'Failed' ? 'bg-destructive/10' :
+                                    'bg-muted'
+                                  }`}>
+                                    <GraduationCap className={`h-4 w-4 ${
+                                      enrollment.status === 'Completed' ? 'text-success' :
+                                      enrollment.status === 'In Progress' ? 'text-warning' :
+                                      enrollment.status === 'Failed' ? 'text-destructive' :
+                                      'text-muted-foreground'
+                                    }`} />
+                                  </div>
+                                  <p className="font-medium">{training?.title}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>{training?.durationDays} ngày</TableCell>
+                              <TableCell>{getEnrollmentStatusBadge(enrollment.status)}</TableCell>
+                              <TableCell>
+                                {enrollment.testScore ? (
+                                  <span className={enrollment.testScore >= 8 ? 'text-success font-semibold' : 'text-destructive font-semibold'}>
+                                    {enrollment.testScore}/10
+                                  </span>
+                                ) : '-'}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
                 </div>
 
                 {/* Next Grade Requirements */}

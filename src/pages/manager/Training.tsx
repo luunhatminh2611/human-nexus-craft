@@ -1,14 +1,37 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import mockData from '@/mock/data';
-import { BookOpen, Clock, Award, Calendar, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
+import { BookOpen, Award, Eye, PlayCircle, FileCheck } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function ManagerTraining() {
+  const { employeeId } = useAuthStore();
   const navigate = useNavigate();
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'outline'> = {

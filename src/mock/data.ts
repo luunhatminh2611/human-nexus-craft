@@ -544,6 +544,20 @@ const mockData = {
       instructor: 'TS. Nguyễn Văn A',
       location: 'Phòng hội nghị A',
       maxParticipants: 30,
+      questions: [
+        {
+          id: 'q1',
+          question: 'Khi xảy ra hỏa hoạn, bạn nên làm gì đầu tiên?',
+          options: ['Gọi cứu hỏa', 'Tìm đường thoát hiểm', 'Cố gắng dập lửa', 'Báo cho quản lý'],
+          correctAnswer: 0
+        },
+        {
+          id: 'q2',
+          question: 'Thiết bị bảo hộ cá nhân nào là bắt buộc tại công trường?',
+          options: ['Mũ bảo hiểm', 'Giày bảo hộ', 'Găng tay', 'Tất cả đáp án trên'],
+          correctAnswer: 3
+        }
+      ]
     },
     {
       id: 'tr002',
@@ -557,6 +571,20 @@ const mockData = {
       instructor: 'ThS. Trần Thị B',
       location: 'Phòng đào tạo B',
       maxParticipants: 25,
+      questions: [
+        {
+          id: 'q1',
+          question: 'Giai đoạn nào quan trọng nhất trong quy trình bán hàng?',
+          options: ['Tiếp cận khách hàng', 'Tìm hiểu nhu cầu', 'Thuyết trình sản phẩm', 'Chốt đơn'],
+          correctAnswer: 1
+        },
+        {
+          id: 'q2',
+          question: 'Khi khách hàng phản đối, bạn nên?',
+          options: ['Tranh cãi', 'Lắng nghe và thấu hiểu', 'Bỏ qua', 'Giảm giá ngay'],
+          correctAnswer: 1
+        }
+      ]
     },
     {
       id: 'tr003',
@@ -599,20 +627,22 @@ const mockData = {
   ] as Training[],
 
   trainingEnrollments: [
-    { id: 'enr001', trainingId: 'tr001', employeeId: 'emp001', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100 },
-    { id: 'enr002', trainingId: 'tr001', employeeId: 'emp002', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100 },
-    { id: 'enr003', trainingId: 'tr001', employeeId: 'emp004', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100 },
-    { id: 'enr004', trainingId: 'tr001', employeeId: 'emp005', enrolledDate: '2024-03-01', completionDate: '2024-03-03', status: 'Completed' as const, progress: 100 },
-    { id: 'enr005', trainingId: 'tr001', employeeId: 'emp008', enrolledDate: '2024-05-01', completionDate: '2024-05-03', status: 'Completed' as const, progress: 100 },
-    { id: 'enr006', trainingId: 'tr001', employeeId: 'emp010', enrolledDate: '2024-01-10', completionDate: '2024-01-12', status: 'Completed' as const, progress: 100 },
-    { id: 'enr007', trainingId: 'tr002', employeeId: 'emp003', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 60 },
-    { id: 'enr008', trainingId: 'tr002', employeeId: 'emp006', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 55 },
-    { id: 'enr009', trainingId: 'tr002', employeeId: 'emp009', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 65 },
-    { id: 'enr010', trainingId: 'tr004', employeeId: 'emp002', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 45 },
-    { id: 'enr011', trainingId: 'tr004', employeeId: 'emp004', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 50 },
-    { id: 'enr012', trainingId: 'tr004', employeeId: 'emp010', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 40 },
-    { id: 'enr013', trainingId: 'tr005', employeeId: 'emp006', enrolledDate: '2024-06-01', completionDate: '2024-06-04', status: 'Completed' as const, progress: 100 },
-    { id: 'enr014', trainingId: 'tr005', employeeId: 'emp009', enrolledDate: '2024-06-01', completionDate: '2024-06-04', status: 'Completed' as const, progress: 100 },
+    { id: 'enr001', trainingId: 'tr001', employeeId: 'emp001', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100, testScore: 10, testAttempts: 1 },
+    { id: 'enr002', trainingId: 'tr001', employeeId: 'emp002', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100, testScore: 9, testAttempts: 1 },
+    { id: 'enr003', trainingId: 'tr001', employeeId: 'emp004', enrolledDate: '2024-01-15', completionDate: '2024-01-17', status: 'Completed' as const, progress: 100, testScore: 8, testAttempts: 1 },
+    { id: 'enr004', trainingId: 'tr001', employeeId: 'emp005', enrolledDate: '2024-03-01', completionDate: '2024-03-03', status: 'Completed' as const, progress: 100, testScore: 10, testAttempts: 1 },
+    { id: 'enr005', trainingId: 'tr001', employeeId: 'emp008', enrolledDate: '2024-05-01', completionDate: '2024-05-03', status: 'Completed' as const, progress: 100, testScore: 9, testAttempts: 1 },
+    { id: 'enr006', trainingId: 'tr001', employeeId: 'emp010', enrolledDate: '2024-01-10', completionDate: '2024-01-12', status: 'Completed' as const, progress: 100, testScore: 8, testAttempts: 1 },
+    { id: 'enr007', trainingId: 'tr002', employeeId: 'emp003', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 60, testAttempts: 0 },
+    { id: 'enr008', trainingId: 'tr002', employeeId: 'emp006', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 55, testAttempts: 0 },
+    { id: 'enr009', trainingId: 'tr002', employeeId: 'emp009', enrolledDate: '2024-09-01', status: 'In Progress' as const, progress: 65, testAttempts: 0 },
+    { id: 'enr010', trainingId: 'tr004', employeeId: 'emp002', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 45, testAttempts: 0 },
+    { id: 'enr011', trainingId: 'tr004', employeeId: 'emp004', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 50, testAttempts: 0 },
+    { id: 'enr012', trainingId: 'tr004', employeeId: 'emp010', enrolledDate: '2024-10-01', status: 'In Progress' as const, progress: 40, testAttempts: 0 },
+    { id: 'enr013', trainingId: 'tr005', employeeId: 'emp006', enrolledDate: '2024-06-01', completionDate: '2024-06-04', status: 'Completed' as const, progress: 100, testScore: 10, testAttempts: 1 },
+    { id: 'enr014', trainingId: 'tr005', employeeId: 'emp009', enrolledDate: '2024-06-01', completionDate: '2024-06-04', status: 'Completed' as const, progress: 100, testScore: 9, testAttempts: 1 },
+    { id: 'enr015', trainingId: 'tr003', employeeId: 'emp002', enrolledDate: '2024-11-01', status: 'Assigned' as const, progress: 0, testAttempts: 0 },
+    { id: 'enr016', trainingId: 'tr004', employeeId: 'emp005', enrolledDate: '2024-10-15', status: 'Assigned' as const, progress: 0, testAttempts: 0 },
   ] as TrainingEnrollment[],
 
   salaryStructures: [
