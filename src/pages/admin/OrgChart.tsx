@@ -16,6 +16,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Users, User } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
 
 export default function OrgChart() {
   // Build hierarchical structure
@@ -96,13 +97,20 @@ export default function OrgChart() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(orgStructure.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(orgStructure.edges);
-
+  const navigate = useNavigate();
+  
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Sơ đồ tổ chức</h1>
-          <p className="text-muted-foreground">Cơ cấu phòng ban và nhân sự</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Sơ đồ tổ chức</h1>
+            <p className="text-muted-foreground">Cơ cấu phòng ban và nhân sự</p>
+          </div>
+          <Button variant="outline" onClick={() => navigate("/admin/departments")}>
+            <Users className="h-4 w-4 mr-2 text-primary" />
+            Xem danh sách phòng ban
+          </Button>
         </div>
 
         <Card className="h-[600px]">

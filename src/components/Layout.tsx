@@ -22,7 +22,12 @@ import {
   Menu,
   PanelLeftClose,
   Box,
-  BoxIcon
+  BoxIcon,
+  Briefcase,
+  TrendingUp,
+  HeartPulse,
+  BriefcaseBusiness,
+  Mailbox
 } from 'lucide-react';
 import clsx from 'clsx';
 import logo from '@/assets/download.jpg';
@@ -45,10 +50,11 @@ export function Layout({ children }: LayoutProps) {
     if (role === 'Employee') {
       return [
         { label: 'Hồ sơ', icon: User, path: '/employee/profile' },
-        { label: 'Lương & Phúc lợi', icon: DollarSign, path: '/employee/payroll' },
+        // { label: 'Lương & Phúc lợi', icon: DollarSign, path: '/employee/payroll' },
         { label: 'Đào tạo', icon: BookOpen, path: '/employee/learning' },
-        { label: 'Đánh giá', icon: FileText, path: '/employee/performance' },
+        // { label: 'Đánh giá', icon: FileText, path: '/employee/performance' },
         { label: 'BHLĐ được cấp', icon: BoxIcon, path: '/employee/safety' },
+        { label: 'Lộ trình thăng tiến', icon: TrendingUp, path: '/employee/career-path' },
       ];
     } else if (role === 'Manager') {
       return [
@@ -58,7 +64,7 @@ export function Layout({ children }: LayoutProps) {
         { label: 'Đào tạo', icon: BookOpen, path: '/manager/training' },
         { label: 'Hồ sơ', icon: User, path: '/manager/profile' },
         { label: 'Phân phát BHLĐ', icon: BoxIcon, path: '/manager/safety-items' },
-
+        { label: 'Lộ trình thăng tiến', icon: TrendingUp, path: '/employee/career-path' },
       ];
     }
     return [
@@ -66,9 +72,13 @@ export function Layout({ children }: LayoutProps) {
       { label: 'Nhân viên', icon: Users, path: '/admin/employees' },
       { label: 'Sơ đồ tổ chức', icon: Network, path: '/admin/org-chart' },
       { label: 'Đào tạo', icon: BookOpen, path: '/admin/training' },
-      { label: 'Lương', icon: DollarSign, path: '/admin/salary' },
+      { label: 'Lương', icon: DollarSign, path: '/admin/employee-salary' },
       { label: 'Hồ sơ', icon: User, path: '/admin/profile' },
       { label: 'Quản lý BHLĐ', icon: BoxIcon, path: '/admin/safety-dashboard' },
+      { label: 'Danh mục hệ thống', icon: Briefcase, path: '/admin/catalog' },
+      { label: 'HSYT cần duyệt', icon: HeartPulse, path: '/admin/medical-records' },
+      { label: 'Lịch công tác', icon: BriefcaseBusiness, path: '/admin/work-schedule' },
+      { label: 'Đơn xin nghỉ phép', icon: Mailbox, path: '/admin/leave-requests' },
     ];
   };
 

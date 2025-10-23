@@ -34,6 +34,14 @@ export default function ManagerSafetyDetail() {
   const { employeeId } = useParams<{ employeeId: string }>();
   const employee = mockData.employees.find((e) => e.id === employeeId);
 
+  // Giả lập số lượng vật tư còn lại trong phòng ban (tách ra từ mockData)
+  const initialDepartmentStock = mockData.safetyItems.map((item) => ({
+    id: item.id,
+    name: item.name,
+    quantity: Math.floor(Math.random() * 10) + 5, // ví dụ 5–15 vật tư còn lại
+  }));
+
+  const [departmentStock, setDepartmentStock] = useState(initialDepartmentStock);
   const [issuedItems, setIssuedItems] = useState<IssuedSafetyItem[]>(
     mockData.issuedSafetyItems.filter((i) => i.employeeId === employeeId)
   );
@@ -85,6 +93,13 @@ export default function ManagerSafetyDetail() {
       return;
     }
 
+    // Trừ số lượng trong kho phòng
+    setDepartmentStock((prev) =>
+      prev.map((s) =>
+        s.id === selectedItem ? { ...s, quantity: Math.max(s.quantity - 1, 0) } : s
+      )
+    );
+
     const expireDate = new Date(
       new Date(issueDate).getTime() +
         safetyItem.defaultExpireDays * 24 * 60 * 60 * 1000
@@ -114,18 +129,28 @@ export default function ManagerSafetyDetail() {
     const item = issuedItems.find((i) => i.id === itemId);
     if (!item) return;
 
-    // Nếu là đổi sớm → mở modal xác nhận
     if (["In Use", "DamagedEarly"].includes(item.status)) {
       setPendingReplaceId(itemId);
       setConfirmEarlyModal(true);
     } else {
-      // Còn lại (đúng hạn / sắp hết hạn / đã hết hạn) → đổi luôn
       processReplace(itemId, false);
     }
   };
 
-  // Xử lý đổi
+  // Xử lý đổi vật tư
   const processReplace = (itemId: string, early: boolean) => {
+    const oldItem = issuedItems.find((i) => i.id === itemId);
+    if (oldItem) {
+      // Khi đổi → trừ 1 vật tư cùng loại trong kho phòng
+      setDepartmentStock((prev) =>
+        prev.map((s) =>
+          s.id === oldItem.safetyItemId
+            ? { ...s, quantity: Math.max(s.quantity - 1, 0) }
+            : s
+        )
+      );
+    }
+
     setIssuedItems((prev) =>
       prev.map((i) =>
         i.id === itemId
@@ -138,11 +163,13 @@ export default function ManagerSafetyDetail() {
           : i
       )
     );
+
     alert(
       early
         ? "Vật tư được đánh dấu là đổi sớm. Giờ bạn có thể cấp vật tư mới."
         : "Đã đánh dấu vật tư cũ, giờ bạn có thể cấp vật tư mới."
     );
+
     setConfirmEarlyModal(false);
     setPendingReplaceId(null);
   };
@@ -185,9 +212,9 @@ export default function ManagerSafetyDetail() {
                       <SelectValue placeholder="Chọn vật tư..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockData.safetyItems.map((item) => (
+                      {departmentStock.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
-                          {item.name}
+                          {item.name} (Còn lại: {item.quantity})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -215,6 +242,7 @@ export default function ManagerSafetyDetail() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tên vật tư</TableHead>
+                <TableHead>Số lượng còn trong phòng</TableHead>
                 <TableHead>Ngày cấp</TableHead>
                 <TableHead>Hạn sử dụng</TableHead>
                 <TableHead>Trạng thái</TableHead>
@@ -222,30 +250,36 @@ export default function ManagerSafetyDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {issuedItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{getItemName(item.safetyItemId)}</TableCell>
-                  <TableCell>{item.issueDate}</TableCell>
-                  <TableCell>{item.expireDate}</TableCell>
-                  <TableCell>{getStatusBadge(item.status)}</TableCell>
-                  <TableCell className="text-right">
-                    {["In Use", "Expiring Soon", "Expired", "DamagedEarly"].includes(item.status) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleReplace(item.id)}
-                      >
-                        Đổi vật tư
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {issuedItems.map((item) => {
+                const stock = departmentStock.find(
+                  (s) => s.id === item.safetyItemId
+                )?.quantity;
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell>{getItemName(item.safetyItemId)}</TableCell>
+                    <TableCell>{stock ?? 0}</TableCell>
+                    <TableCell>{item.issueDate}</TableCell>
+                    <TableCell>{item.expireDate}</TableCell>
+                    <TableCell>{getStatusBadge(item.status)}</TableCell>
+                    <TableCell className="text-right">
+                      {["In Use", "Expiring Soon", "Expired", "DamagedEarly"].includes(item.status) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReplace(item.id)}
+                        >
+                          Đổi vật tư
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
 
               {issuedItems.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="text-center text-muted-foreground py-6"
                   >
                     Nhân viên này chưa được cấp vật tư nào.

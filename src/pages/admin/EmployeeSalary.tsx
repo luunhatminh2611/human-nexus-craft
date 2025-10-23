@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,40 +26,35 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
 import mockData from '@/mock/data';
-import { Plus, Minus, Trash2, DollarSign, ArrowLeft, List } from 'lucide-react';
+import { Plus, Minus, Trash2, DollarSign, List, Grip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
-export default function EmployeeSalary() {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [selectedEmployee, setSelectedEmployee] = useState(mockData.employees[0].id);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isItemListOpen, setIsItemListOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  // Selected item from list
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
+interface SalaryItem {
+  id: string;
+  name: string;
+  type: 'EARNING' | 'DEDUCTION';
+  method: 'FIXED' | 'PERCENT_BASE' | 'FORMULA';
+  value: number;
+}
 
-  const currentEmployee = mockData.employees.find((e) => e.id === selectedEmployee);
+interface GradeSalaryStructure {
+  gradeId: string;
+  items: SalaryItem[];
+}
 
-  // Get all available salary items from structures
-  const getAllAvailableItems = () => {
-    const allItems = mockData.salaryStructures.flatMap(s => s.items);
-    // Remove duplicates by id
-    return allItems.filter((item, index, self) =>
-      index === self.findIndex((t) => t.id === item.id)
-    );
-  };
+// Draggable Salary Item Component
+function DraggableSalaryItem({ item }: { item: SalaryItem }) {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'SALARY_ITEM',
+    item: item,
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -68,91 +63,268 @@ export default function EmployeeSalary() {
     }).format(amount);
   };
 
-  // Get default structure items for employee's grade
-  const getDefaultStructureItems = () => {
-    if (!currentEmployee) return [];
+  return (
+    <div
+      ref={drag}
+      className={`p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-move ${
+        isDragging ? 'opacity-50' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2 flex-1">
+          <Grip className="h-4 w-4 text-muted-foreground mt-0.5" />
+          {item.type === 'EARNING' ? (
+            <Plus className="h-4 w-4 text-success mt-0.5" />
+          ) : (
+            <Minus className="h-4 w-4 text-destructive mt-0.5" />
+          )}
+          <div className="flex-1">
+            <p className="font-medium text-sm">{item.name}</p>
+            <div className="flex gap-2 mt-1">
+              <Badge variant={item.type === 'EARNING' ? 'default' : 'destructive'} className="text-xs">
+                {item.type === 'EARNING' ? 'Thu nhập' : 'Khấu trừ'}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {item.method === 'FIXED'
+                ? formatCurrency(item.value)
+                : `${item.value}%`}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-    const structures = mockData.salaryStructures.filter(s =>
-      s.items.some(item => item.applicableGrades.includes(currentEmployee.grade))
+// Drop Zone for Salary Structure
+function SalaryStructureDropZone({
+  items,
+  onDrop,
+  onRemove,
+}: {
+  items: SalaryItem[];
+  onDrop: (item: SalaryItem) => void;
+  onRemove: (itemId: string) => void;
+}) {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'SALARY_ITEM',
+    drop: (item: SalaryItem) => onDrop(item),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
+
+  return (
+    <div
+      ref={drop}
+      className={`min-h-[400px] border-2 border-dashed rounded-lg p-4 transition-colors ${
+        isOver ? 'border-primary bg-primary/5' : 'border-muted'
+      }`}
+    >
+      {items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+          <List className="h-12 w-12 mb-2" />
+          <p className="text-sm">Kéo thả khoản mục vào đây</p>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Khoản mục</TableHead>
+              <TableHead>Phương thức</TableHead>
+              <TableHead className="text-right">Giá trị</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    {item.type === 'EARNING' ? (
+                      <Plus className="h-4 w-4 text-success" />
+                    ) : (
+                      <Minus className="h-4 w-4 text-destructive" />
+                    )}
+                    <span className="font-medium">{item.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">
+                    {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  {item.method === 'FIXED'
+                    ? formatCurrency(item.value)
+                    : `${item.value}%`}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => onRemove(item.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+
+function EmployeeSalaryContent() {
+  const { toast } = useToast();
+  const [selectedGrade, setSelectedGrade] = useState<string>('');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemType, setNewItemType] = useState<'EARNING' | 'DEDUCTION'>('EARNING');
+  const [newItemMethod, setNewItemMethod] = useState<'FIXED' | 'PERCENT_BASE' | 'FORMULA'>('FIXED');
+  const [newItemValue, setNewItemValue] = useState('');
+
+  // Initialize with existing structures from mock data
+  const [gradeStructures, setGradeStructures] = useState<GradeSalaryStructure[]>(() => {
+    const allGrades = mockData.grades;
+    return allGrades.map((grade) => {
+      const existingStructure = mockData.salaryStructures.find(
+        (s) => s.name.includes(grade.id)
+      );
+      return {
+        gradeId: grade.id,
+        items: existingStructure?.items.filter(i => i.applicableGrades.includes(grade.id)) || [],
+      };
+    });
+  });
+
+  const [availableItems, setAvailableItems] = useState<SalaryItem[]>(() => {
+    const allItems = mockData.salaryStructures.flatMap((s) => s.items);
+    const uniqueItems = allItems.filter(
+      (item, index, self) => index === self.findIndex((t) => t.id === item.id)
     );
+    return uniqueItems;
+  });
 
-    const allItems = structures.flatMap(s => s.items);
-    return allItems.filter(item => item.applicableGrades.includes(currentEmployee.grade));
-  };
+  const currentGrade = mockData.grades.find((g) => g.id === selectedGrade);
+  const currentStructure = gradeStructures.find((s) => s.gradeId === selectedGrade);
 
-  const handleAddItemFromList = () => {
-    if (!selectedItemId) {
+  const handleCreateItem = useCallback(() => {
+    if (!newItemName.trim() || !newItemValue) {
       toast({
         title: 'Lỗi',
-        description: 'Vui lòng chọn khoản mục',
+        description: 'Vui lòng điền đầy đủ thông tin',
         variant: 'destructive',
       });
       return;
     }
 
-    const selectedItem = getAllAvailableItems().find(item => item.id === selectedItemId);
-    if (!selectedItem) return;
+    const newItem: SalaryItem = {
+      id: `item${Date.now()}`,
+      name: newItemName.trim(),
+      type: newItemType,
+      method: newItemMethod,
+      value: parseFloat(newItemValue),
+    };
 
-    // Check if item already exists in custom items
-    if (currentEmployee?.customSalaryItems?.some(item => item.id === selectedItemId)) {
+    setAvailableItems((prev) => [...prev, newItem]);
+    setNewItemName('');
+    setNewItemValue('');
+    setIsCreateDialogOpen(false);
+
+    toast({
+      title: 'Thành công',
+      description: 'Đã tạo khoản mục mới',
+    });
+  }, [newItemName, newItemType, newItemMethod, newItemValue, toast]);
+
+  const handleDropItem = useCallback(
+    (item: SalaryItem) => {
+      if (!selectedGrade) {
+        toast({
+          title: 'Lỗi',
+          description: 'Vui lòng chọn bậc trước',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setGradeStructures((prev) =>
+        prev.map((structure) => {
+          if (structure.gradeId === selectedGrade) {
+            // Check if item already exists
+            if (structure.items.some((i) => i.id === item.id)) {
+              toast({
+                title: 'Thông báo',
+                description: 'Khoản mục này đã tồn tại trong cơ cấu',
+              });
+              return structure;
+            }
+            return {
+              ...structure,
+              items: [...structure.items, item],
+            };
+          }
+          return structure;
+        })
+      );
+
       toast({
-        title: 'Lỗi',
-        description: 'Khoản mục này đã tồn tại',
-        variant: 'destructive',
+        title: 'Thành công',
+        description: `Đã thêm "${item.name}" vào cơ cấu lương ${selectedGrade}`,
       });
-      return;
-    }
+    },
+    [selectedGrade, toast]
+  );
 
-    // In real app, this would save to database
-    toast({
-      title: 'Thành công',
-      description: `Đã thêm khoản mục "${selectedItem.name}" cho ${currentEmployee?.firstName} ${currentEmployee?.lastName}`,
-    });
+  const handleRemoveItem = useCallback(
+    (itemId: string) => {
+      setGradeStructures((prev) =>
+        prev.map((structure) => {
+          if (structure.gradeId === selectedGrade) {
+            return {
+              ...structure,
+              items: structure.items.filter((i) => i.id !== itemId),
+            };
+          }
+          return structure;
+        })
+      );
 
-    setIsDialogOpen(false);
-    setSelectedItemId('');
-  };
+      toast({
+        title: 'Thành công',
+        description: 'Đã xóa khoản mục khỏi cơ cấu lương',
+      });
+    },
+    [selectedGrade, toast]
+  );
 
-  const handleRemoveCustomItem = (itemId: string) => {
-    // In real app, this would remove from database
-    toast({
-      title: 'Thành công',
-      description: 'Đã xóa khoản mục tùy chỉnh',
-    });
-  };
+  const calculateSummary = () => {
+    if (!currentStructure) return null;
 
-  // Calculate total salary
-  const calculateTotalSalary = () => {
-    if (!currentEmployee) return null;
-
-    const baseSalary = currentEmployee.salary.base;
-    let totalEarnings = baseSalary;
+    const baseSalary = 0;
+    let totalEarnings = 0;
     let totalDeductions = 0;
 
-    // Calculate default structure items
-    const structureItems = getDefaultStructureItems();
-
-    structureItems.forEach(item => {
+    currentStructure.items.forEach((item) => {
       let amount = 0;
       if (item.method === 'FIXED') {
         amount = item.value;
-      } else if (item.method === 'PERCENT_BASE') {
-        amount = (baseSalary * item.value) / 100;
-      }
-
-      if (item.type === 'EARNING') {
-        totalEarnings += amount;
       } else {
-        totalDeductions += amount;
-      }
-    });
-
-    // Calculate custom items
-    (currentEmployee.customSalaryItems || []).forEach(item => {
-      let amount = 0;
-      if (item.method === 'FIXED') {
-        amount = item.value;
-      } else if (item.method === 'PERCENT_BASE') {
         amount = (baseSalary * item.value) / 100;
       }
 
@@ -171,100 +343,103 @@ export default function EmployeeSalary() {
     };
   };
 
-  const salaryInfo = calculateTotalSalary();
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
+
+  const summary = calculateSummary();
 
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin/salary')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold">Quản lý lương nhân viên</h1>
-              <p className="text-muted-foreground">Tùy chỉnh lương riêng cho từng nhân viên</p>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold">Cơ cấu lương theo bậc</h1>
+            <p className="text-muted-foreground">
+              Tạo cấu trúc lương mặc định cho từng bậc
+            </p>
           </div>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Tạo khoản mục mới
+          </Button>
         </div>
 
+        {/* Grade Selection */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Chọn nhân viên</CardTitle>
-              <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
-                <SelectTrigger className="w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockData.employees
-                    .filter((e) => e.status !== 'Resigned')
-                    .map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.firstName} {emp.lastName} ({emp.grade})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <CardTitle>Chọn bậc</CardTitle>
           </CardHeader>
+          <CardContent>
+            <Select value={selectedGrade} onValueChange={setSelectedGrade}>
+              <SelectTrigger>
+                <SelectValue placeholder="Chọn bậc để cấu hình lương..." />
+              </SelectTrigger>
+              <SelectContent>
+                {mockData.grades.map((grade) => (
+                  <SelectItem key={grade.id} value={grade.id}>
+                    {grade.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
         </Card>
 
-        {currentEmployee && (
+        {selectedGrade && (
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Employee Info & Salary Summary */}
+            {/* Salary Summary */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
-                  Thông tin lương
+                  Tổng quan
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2 pb-4 border-b">
-                  <h3 className="font-semibold text-lg">
-                    {currentEmployee.firstName} {currentEmployee.lastName}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{currentEmployee.position}</p>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="outline">{currentEmployee.grade}</Badge>
-                    <Badge variant="outline">{currentEmployee.departmentId}</Badge>
-                  </div>
+                  <h3 className="font-semibold text-lg">{currentGrade?.name}</h3>
                 </div>
 
-                {salaryInfo && (
+                {summary && (
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Lương cơ bản</span>
-                        <span className="font-medium">{formatCurrency(salaryInfo.baseSalary)}</span>
+                        <span className="text-muted-foreground">Lương cơ bản (min)</span>
+                        <span className="font-medium">{formatCurrency(summary.baseSalary)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Tổng thu nhập</span>
                         <span className="font-semibold text-success">
-                          {formatCurrency(salaryInfo.totalEarnings)}
+                          {formatCurrency(summary.totalEarnings)}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Tổng khấu trừ</span>
                         <span className="font-semibold text-destructive">
-                          {formatCurrency(salaryInfo.totalDeductions)}
+                          {formatCurrency(summary.totalDeductions)}
                         </span>
                       </div>
                     </div>
 
                     <div className="pt-4 border-t">
                       <div className="flex justify-between text-lg font-bold">
-                        <span>Thực lĩnh</span>
-                        <span className="text-primary">{formatCurrency(salaryInfo.netSalary)}</span>
+                        <span>Thực lĩnh (ước tính)</span>
+                        <span className="text-primary">{formatCurrency(summary.netSalary)}</span>
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        * Dựa trên lương cơ bản tối thiểu
+                      </p>
                     </div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Available Salary Items List */}
+            {/* Available Salary Items */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -274,289 +449,118 @@ export default function EmployeeSalary() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                  {getAllAvailableItems().map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 border rounded-lg hover:bg-accent/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2 flex-1">
-                          {item.type === 'EARNING' ? (
-                            <Plus className="h-4 w-4 text-success mt-0.5" />
-                          ) : (
-                            <Minus className="h-4 w-4 text-destructive mt-0.5" />
-                          )}
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{item.name}</p>
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant={item.type === 'EARNING' ? 'default' : 'destructive'} className="text-xs">
-                                {item.type === 'EARNING' ? 'Thu nhập' : 'Khấu trừ'}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {item.method === 'FIXED'
-                                ? formatCurrency(item.value)
-                                : `${item.value}%`}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  {availableItems.map((item) => (
+                    <DraggableSalaryItem key={item.id} item={item} />
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Salary Structure */}
+            {/* Salary Structure Drop Zone */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Cơ cấu lương</CardTitle>
-                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Thêm khoản mục
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Thêm khoản mục lương</DialogTitle>
-                        <DialogDescription>
-                          Chọn khoản mục từ danh sách để thêm cho {currentEmployee.firstName} {currentEmployee.lastName}
-                        </DialogDescription>
-                      </DialogHeader>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="item-select">Chọn khoản mục</Label>
-                          <Select value={selectedItemId} onValueChange={setSelectedItemId}>
-                            <SelectTrigger id="item-select">
-                              <SelectValue placeholder="Chọn khoản mục từ danh sách..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {getAllAvailableItems().map((item) => (
-                                <SelectItem key={item.id} value={item.id}>
-                                  <div className="flex items-center gap-2">
-                                    {item.type === 'EARNING' ? (
-                                      <Plus className="h-3 w-3 text-success" />
-                                    ) : (
-                                      <Minus className="h-3 w-3 text-destructive" />
-                                    )}
-                                    <span>{item.name}</span>
-                                    <span className="text-muted-foreground text-xs">
-                                      ({item.method === 'FIXED' ? formatCurrency(item.value) : `${item.value}%`})
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {selectedItemId && (
-                          <div className="p-4 border rounded-lg bg-muted/50">
-                            {(() => {
-                              const item = getAllAvailableItems().find(i => i.id === selectedItemId);
-                              if (!item) return null;
-                              return (
-                                <div className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    {item.type === 'EARNING' ? (
-                                      <Plus className="h-4 w-4 text-success" />
-                                    ) : (
-                                      <Minus className="h-4 w-4 text-destructive" />
-                                    )}
-                                    <h4 className="font-semibold">{item.name}</h4>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2 text-sm">
-                                    <div>
-                                      <span className="text-muted-foreground">Loại:</span>{' '}
-                                      <Badge variant={item.type === 'EARNING' ? 'default' : 'destructive'} className="text-xs">
-                                        {item.type === 'EARNING' ? 'Thu nhập' : 'Khấu trừ'}
-                                      </Badge>
-                                    </div>
-                                    <div>
-                                      <span className="text-muted-foreground">Phương thức:</span>{' '}
-                                      <Badge variant="outline" className="text-xs">
-                                        {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
-                                      </Badge>
-                                    </div>
-                                    <div className="col-span-2">
-                                      <span className="text-muted-foreground">Giá trị:</span>{' '}
-                                      <span className="font-medium">
-                                        {item.method === 'FIXED' ? formatCurrency(item.value) : `${item.value}%`}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
-
-                        <div className="flex justify-end gap-2 pt-4">
-                          <Button variant="outline" onClick={() => {
-                            setIsDialogOpen(false);
-                            setSelectedItemId('');
-                          }}>
-                            Hủy
-                          </Button>
-                          <Button onClick={handleAddItemFromList}>
-                            Thêm khoản mục
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                <CardTitle>Cơ cấu lương {selectedGrade}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {/* Default Structure Items */}
-                  <div>
-                    <h4 className="font-semibold text-sm text-muted-foreground mb-3">
-                      Cơ cấu lương mặc định (Cấp {currentEmployee.grade})
-                    </h4>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Khoản mục</TableHead>
-                          <TableHead>Phương thức</TableHead>
-                          <TableHead className="text-right">Giá trị</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {getDefaultStructureItems().map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                  {item.type === 'EARNING' ? (
-                                    <Plus className="h-4 w-4 text-success" />
-                                  ) : (
-                                    <Minus className="h-4 w-4 text-destructive" />
-                                  )}
-                                  <span className="text-sm">{item.name}</span>
-                                </div>
-
-                                {/* Icon xóa nằm bên phải của cùng dòng */}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setItemToDelete(item);
-                                    setIsConfirmDeleteOpen(true);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs">
-                                {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right text-sm">
-                              {item.method === 'FIXED'
-                                ? formatCurrency(item.value)
-                                : `${item.value}%`}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  {/* Custom Salary Items */}
-                  {currentEmployee.customSalaryItems && currentEmployee.customSalaryItems.length > 0 && (
-                    <div className="pt-4 border-t">
-                      <h4 className="font-semibold text-sm text-muted-foreground mb-3">
-                        Khoản mục tùy chỉnh
-                      </h4>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Khoản mục</TableHead>
-                            <TableHead>Phương thức</TableHead>
-                            <TableHead className="text-right">Giá trị</TableHead>
-                            <TableHead className="text-right">Thao tác</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {currentEmployee.customSalaryItems.map((item) => (
-                            <TableRow key={item.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {item.type === 'EARNING' ? (
-                                    <Plus className="h-4 w-4 text-success" />
-                                  ) : (
-                                    <Minus className="h-4 w-4 text-destructive" />
-                                  )}
-                                  <span className="text-sm font-medium">{item.name}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary" className="text-xs">
-                                  {item.method === 'FIXED' ? 'Cố định' : '% Lương cơ bản'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right text-sm font-medium">
-                                {item.method === 'FIXED'
-                                  ? formatCurrency(item.value)
-                                  : `${item.value}%`}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveCustomItem(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
-                </div>
+                {currentStructure && (
+                  <SalaryStructureDropZone
+                    items={currentStructure.items}
+                    onDrop={handleDropItem}
+                    onRemove={handleRemoveItem}
+                  />
+                )}
               </CardContent>
-              <Dialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Xác nhận xóa khoản mục</DialogTitle>
-                    <DialogDescription>
-                      Bạn có chắc chắn muốn bỏ khoản mục{' '}
-                      <span className="font-semibold text-destructive">{itemToDelete?.name}</span> khỏi cơ cấu lương không?
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setIsConfirmDeleteOpen(false)}>
-                      Hủy
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        handleRemoveCustomItem(itemToDelete?.id);
-                        setIsConfirmDeleteOpen(false);
-                        setItemToDelete(null);
-                      }}
-                    >
-                      Xóa
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
             </Card>
           </div>
         )}
+
+        {/* Create Item Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tạo khoản mục mới</DialogTitle>
+              <DialogDescription>
+                Tạo khoản mục lương mới để thêm vào cơ cấu
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="item-name">Tên khoản mục</Label>
+                <Input
+                  id="item-name"
+                  placeholder="VD: Phụ cấp ăn trưa"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="item-type">Loại</Label>
+                  <Select value={newItemType} onValueChange={(v: any) => setNewItemType(v)}>
+                    <SelectTrigger id="item-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EARNING">Thu nhập</SelectItem>
+                      <SelectItem value="DEDUCTION">Khấu trừ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="item-method">Phương thức</Label>
+                  <Select value={newItemMethod} onValueChange={(v: any) => setNewItemMethod(v)}>
+                    <SelectTrigger id="item-method">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FIXED">Cố định</SelectItem>
+                      <SelectItem value="PERCENT_BASE">% Lương cơ bản</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="item-value">
+                  Giá trị {newItemMethod === 'FIXED' ? '(VNĐ)' : '(%)'}
+                </Label>
+                <Input
+                  id="item-value"
+                  type="number"
+                  placeholder={newItemMethod === 'FIXED' ? '1000000' : '10'}
+                  value={newItemValue}
+                  onChange={(e) => setNewItemValue(e.target.value)}
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateDialogOpen(false);
+                    setNewItemName('');
+                    setNewItemValue('');
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button onClick={handleCreateItem}>Tạo khoản mục</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
+  );
+}
+
+export default function EmployeeSalary() {
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <EmployeeSalaryContent />
+    </DndProvider>
   );
 }

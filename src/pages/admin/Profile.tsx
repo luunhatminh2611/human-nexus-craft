@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import mockData from '@/mock/data';
 import { useAuthStore } from '@/store/authStore';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { SalaryTabWithDragDrop } from '@/components/SalaryTabWithDragDrop';
 import {
   Mail,
   Phone,
@@ -20,16 +23,29 @@ import {
   Heart,
   Download,
   Award,
+  Clock,
+  Map,
+  User,
 } from 'lucide-react';
+import {
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/ui/table";
+import { AddFamilyForm } from './component/FamilyAddForm';
+import { FamilyList } from './component/FamilyList';
 
-export default function Profile() {
+function ProfileContent() {
   const { id } = useParams();
   const { employeeId, role } = useAuthStore();
-  
+
   // Use URL param or current user's ID
   const currentEmpId = id || employeeId;
   const employee = mockData.employees.find((e) => e.id === currentEmpId);
-  
+
   if (!employee) {
     return (
       <Layout>
@@ -52,6 +68,18 @@ export default function Profile() {
   );
   const requiredTrainings = grade?.requiredTrainings || [];
   const trainingProgress = (employee.trainingsCompleted.length / requiredTrainings.length) * 100;
+
+  const workSchedules = mockData.workSchedules.filter(
+    (s) => s.employeeId === employee.id
+  );
+
+  const formatDate = (dateStr: string) =>
+    new Date(dateStr).toLocaleDateString('vi-VN', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -85,17 +113,17 @@ export default function Profile() {
                       employee.status === 'Active'
                         ? 'default'
                         : employee.status === 'On Leave'
-                        ? 'secondary'
-                        : 'destructive'
+                          ? 'secondary'
+                          : 'destructive'
                     }
                   >
                     {employee.status === 'Active'
                       ? 'Đang làm việc'
                       : employee.status === 'On Leave'
-                      ? 'Nghỉ phép'
-                      : employee.status === 'Probation'
-                      ? 'Thử việc'
-                      : 'Đã nghỉ'}
+                        ? 'Nghỉ phép'
+                        : employee.status === 'Probation'
+                          ? 'Thử việc'
+                          : 'Đã nghỉ'}
                   </Badge>
                 </div>
 
@@ -130,12 +158,15 @@ export default function Profile() {
 
         {/* Tabs */}
         <Tabs defaultValue="info" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="info">Thông tin</TabsTrigger>
             <TabsTrigger value="work">Công việc</TabsTrigger>
             <TabsTrigger value="training">Đào tạo & Bậc</TabsTrigger>
             <TabsTrigger value="salary">Lương</TabsTrigger>
             <TabsTrigger value="medical">Y tế</TabsTrigger>
+            <TabsTrigger value="schedule">Lịch công tác</TabsTrigger>
+            <TabsTrigger value="leaves">Đơn nghỉ phép</TabsTrigger>
+            <TabsTrigger value="family">Thân nhân</TabsTrigger>
           </TabsList>
 
           {/* Basic Info */}
@@ -264,10 +295,6 @@ export default function Profile() {
                       <span className="text-lg font-bold">{grade?.name}</span>
                       <Badge variant="default">{employee.grade}</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Mức lương: {formatCurrency(grade?.minSalary || 0)} -{' '}
-                      {formatCurrency(grade?.maxSalary || 0)}
-                    </p>
                     <div className="space-y-1">
                       <p className="text-xs font-semibold">Kỹ năng yêu cầu:</p>
                       <div className="flex flex-wrap gap-1">
@@ -285,28 +312,57 @@ export default function Profile() {
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-semibold">Tiến độ đào tạo</h3>
-                    <span className="text-sm font-semibold">{Math.round(trainingProgress)}%</span>
+                    <span className="text-sm font-semibold">
+                      {mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length}/{mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length} khóa học
+                    </span>
                   </div>
-                  <Progress value={trainingProgress} className="mb-4" />
+                  <Progress 
+                    value={(mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length / Math.max(mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length, 1)) * 100} 
+                    className="mb-4" 
+                  />
 
                   <div className="space-y-3">
                     <p className="text-sm font-semibold">
-                      Đào tạo đã hoàn thành ({completedTrainings.length})
+                      Danh sách khóa học
                     </p>
-                    {completedTrainings.map((training) => (
-                      <div key={training.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                        <div className="p-2 rounded-full bg-success/10">
-                          <GraduationCap className="h-4 w-4 text-success" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{training.title}</p>
-                          <p className="text-xs text-muted-foreground">{training.durationDays} ngày</p>
-                        </div>
-                        <Badge variant="default" className="bg-success">
-                          Hoàn thành
-                        </Badge>
-                      </div>
-                    ))}
+                    {mockData.trainingEnrollments
+                      .filter(e => e.employeeId === employee.id)
+                      .map((enrollment) => {
+                        const training = mockData.trainings.find(t => t.id === enrollment.trainingId);
+                        const getEnrollmentStatusBadge = (status: string) => {
+                          const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive', label: string }> = {
+                            Assigned: { variant: 'outline', label: 'Đã giao' },
+                            'In Progress': { variant: 'secondary', label: 'Đang học' },
+                            Completed: { variant: 'default', label: 'Hoàn thành' },
+                            Failed: { variant: 'destructive', label: 'Trượt' },
+                          };
+                          const config = statusConfig[status] || { variant: 'outline', label: status };
+                          return <Badge variant={config.variant}>{config.label}</Badge>;
+                        };
+                        
+                        return (
+                          <div key={enrollment.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                            <div className={`p-2 rounded-full ${
+                              enrollment.status === 'Completed' ? 'bg-success/10' : 
+                              enrollment.status === 'In Progress' ? 'bg-warning/10' :
+                              enrollment.status === 'Failed' ? 'bg-destructive/10' :
+                              'bg-muted'
+                            }`}>
+                              <GraduationCap className={`h-4 w-4 ${
+                                enrollment.status === 'Completed' ? 'text-success' :
+                                enrollment.status === 'In Progress' ? 'text-warning' :
+                                enrollment.status === 'Failed' ? 'text-destructive' :
+                                'text-muted-foreground'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{training?.title}</p>
+                              <p className="text-xs text-muted-foreground">{training?.durationDays} ngày</p>
+                            </div>
+                            {getEnrollmentStatusBadge(enrollment.status)}
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
 
@@ -332,48 +388,7 @@ export default function Profile() {
 
           {/* Salary */}
           <TabsContent value="salary" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông tin lương</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Lương cơ bản</p>
-                  <p className="text-2xl font-bold text-primary">
-                    {formatCurrency(employee.salary.base)}
-                  </p>
-                </div>
-
-                {employee.salary.allowances && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-semibold mb-3">Phụ cấp</p>
-                    <div className="space-y-2">
-                      {Object.entries(employee.salary.allowances).map(([key, value]) => (
-                        <div key={key} className="flex justify-between">
-                          <span className="text-sm capitalize">{key}</span>
-                          <span className="font-medium">{formatCurrency(value)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Tổng thu nhập</span>
-                    <span className="text-xl font-bold text-success">
-                      {formatCurrency(
-                        employee.salary.base +
-                          Object.values(employee.salary.allowances || {}).reduce(
-                            (a, b) => a + b,
-                            0
-                          )
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <SalaryTabWithDragDrop employee={employee} />
           </TabsContent>
 
           {/* Medical */}
@@ -382,128 +397,186 @@ export default function Profile() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Heart className="h-5 w-5 text-destructive" />
-                  Hồ sơ y tế (EHR)
+                  Hồ sơ y tế
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {medicalRecord ? (
-                  <>
-                    {/* Allergies */}
-                    <div>
-                      <h3 className="font-semibold mb-2">Dị ứng</h3>
-                      {medicalRecord.allergies.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {medicalRecord.allergies.map((allergy, idx) => (
-                            <Badge key={idx} variant="destructive">
-                              {allergy}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Không có</p>
-                      )}
+                {medicalRecord && medicalRecord.status === 'Approved' ? (
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <span className="font-medium text-sm">{medicalRecord.fileUrl}</span>
+                      <Badge variant="outline">Đã duyệt</Badge>
                     </div>
-
-                    {/* Conditions */}
-                    <div className="border-t pt-4">
-                      <h3 className="font-semibold mb-2">Tình trạng sức khỏe</h3>
-                      {medicalRecord.conditions.length > 0 ? (
-                        <div className="space-y-2">
-                          {medicalRecord.conditions.map((condition, idx) => (
-                            <div key={idx} className="p-3 border rounded-lg">
-                              <p className="font-medium">{condition.display}</p>
-                              {condition.note && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {condition.note}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Không có</p>
-                      )}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(medicalRecord.fileUrl, '_blank')}
+                      >
+                        Xem
+                      </Button>
+                      <a href={medicalRecord.fileUrl} download>
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </a>
                     </div>
-
-                    {/* Immunizations */}
-                    <div className="border-t pt-4">
-                      <h3 className="font-semibold mb-2">Tiêm chủng</h3>
-                      {medicalRecord.immunizations.length > 0 ? (
-                        <div className="space-y-2">
-                          {medicalRecord.immunizations.map((imm, idx) => (
-                            <div key={idx} className="flex justify-between p-3 border rounded-lg">
-                              <div>
-                                <p className="font-medium">{imm.vaccine}</p>
-                                <p className="text-sm text-muted-foreground">{imm.provider}</p>
-                              </div>
-                              <p className="text-sm">
-                                {new Date(imm.date).toLocaleDateString('vi-VN')}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Không có dữ liệu</p>
-                      )}
-                    </div>
-
-                    {/* Observations */}
-                    {medicalRecord.observations.length > 0 && (
-                      <div className="border-t pt-4">
-                        <h3 className="font-semibold mb-2">Chỉ số sức khỏe</h3>
-                        <div className="grid md:grid-cols-2 gap-3">
-                          {medicalRecord.observations.map((obs, idx) => (
-                            <div key={idx} className="p-3 border rounded-lg">
-                              <p className="text-sm text-muted-foreground">{obs.type}</p>
-                              <p className="text-lg font-bold">
-                                {obs.value} {obs.unit}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {new Date(obs.date).toLocaleDateString('vi-VN')}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Visits */}
-                    {medicalRecord.visits.length > 0 && (
-                      <div className="border-t pt-4">
-                        <h3 className="font-semibold mb-2">Lịch sử khám</h3>
-                        <div className="space-y-2">
-                          {medicalRecord.visits.map((visit, idx) => (
-                            <div key={idx} className="p-4 border rounded-lg">
-                              <div className="flex justify-between mb-2">
-                                <span className="font-medium">{visit.reason}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {new Date(visit.date).toLocaleDateString('vi-VN')}
-                                </span>
-                              </div>
-                              {visit.diagnosis && (
-                                <p className="text-sm">
-                                  <span className="font-medium">Chẩn đoán:</span> {visit.diagnosis}
-                                </p>
-                              )}
-                              {visit.notes && (
-                                <p className="text-sm text-muted-foreground mt-1">{visit.notes}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
+                  </div>
                 ) : (
                   <p className="text-center text-muted-foreground py-8">
-                    Chưa có hồ sơ y tế
+                    Chưa có hồ sơ y tế được chấp thuận
                   </p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  Lịch công tác của nhân viên
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {workSchedules.length > 0 ? (
+                  <div className="space-y-2">
+                    {workSchedules.map((s) => (
+                      <div
+                        key={s.id}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-blue-50 transition"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-full">
+                            <Clock className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {(s.dayOfWeek)} — {s.startTime}
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Map className="h-3 w-3" />
+                              {s.shift || 'Không rõ địa điểm'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-muted-foreground py-6">
+                    Nhân viên này chưa có lịch công tác nào.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="leaves" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-amber-600" />
+                  Đơn xin nghỉ phép
+                </CardTitle>
+              </CardHeader>
+
+              <CardContent>
+                {mockData.leaveRequests.filter((l) => l.employeeId === employee.id).length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tên đơn</TableHead>
+                        <TableHead>Lý do</TableHead>
+                        <TableHead>Ngày nộp</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead className="text-right">Tải xuống</TableHead>
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                      {mockData.leaveRequests
+                        .filter((l) => l.employeeId === employee.id)
+                        .map((leave) => (
+                          <TableRow key={leave.id}>
+                            <TableCell>{leave.fileName || "Đơn nghỉ phép.pdf"}</TableCell>
+                            <TableCell className="max-w-[250px] truncate">
+                              {leave.reason || "Không ghi rõ"}
+                            </TableCell>
+                            <TableCell>
+                              {new Date(leave.uploadDate).toLocaleDateString("vi-VN")}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  leave.status === "Approved"
+                                    ? "default"
+                                    : leave.status === "Pending"
+                                      ? "secondary"
+                                      : "destructive"
+                                }
+                              >
+                                {leave.status === "Approved"
+                                  ? "Đã duyệt"
+                                  : leave.status === "Pending"
+                                    ? "Chờ duyệt"
+                                    : "Từ chối"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {leave.fileName ? (
+                                <a href={leave.fileName} download>
+                                  <Button variant="ghost" size="sm">
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Không có file</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    Nhân viên này chưa có đơn nghỉ phép nào.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="family" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-blue-600" />
+                  Thông tin thân nhân
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Form thêm thân nhân */}
+                <AddFamilyForm employeeId={employee.id} />
+
+                {/* Danh sách thân nhân */}
+                <FamilyList employeeId={employee.id} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
         </Tabs>
       </div>
     </Layout>
   );
 }
+
+export default function Profile() {
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <ProfileContent />
+    </DndProvider>
+  );
+}
+

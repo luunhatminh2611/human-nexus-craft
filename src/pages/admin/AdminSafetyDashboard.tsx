@@ -11,17 +11,13 @@ import {
     Tooltip,
     Legend,
     ResponsiveContainer,
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
 } from "recharts";
 import type { Employee, IssuedSafetyItem } from "@/mock/data";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface ManagerGroupStats {
-    manager: Employee;
+interface DepartmentStats {
+    departmentName: string;
     total: number;
     inUse: number;
     expired: number;
@@ -30,34 +26,37 @@ interface ManagerGroupStats {
 }
 
 export default function AdminSafetyDashboard() {
-    const [filterManager, setFilterManager] = useState("all");
+    const [filterDept, setFilterDept] = useState("all");
     const COLORS = ["#10b981", "#3b82f6", "#f97316", "#ef4444"];
     const navigate = useNavigate();
 
-    // --- Chuẩn hóa dữ liệu ---
     const issuedItems = mockData.issuedSafetyItems;
     const employees = mockData.employees;
-    const managers = mockData.employees.filter((e) =>
-        employees.some((emp) => emp.managerId === e.id)
-    );
+    const departments = mockData.departments;
 
-    // --- Lọc theo người quản lý ---
-    const filtered = useMemo(() => {
-        if (filterManager === "all") return issuedItems;
-        return issuedItems.filter((i) => i.issuedBy === filterManager);
-    }, [filterManager]);
+    // --- Lọc theo phòng ban ---
+    const filteredEmployees = useMemo(() => {
+        if (filterDept === "all") return employees;
+        return employees.filter((e) => e.departmentId === filterDept);
+    }, [filterDept, employees]);
 
-    // --- Gom nhóm theo người phát ---
-    const groupedByManager = useMemo<ManagerGroupStats[]>(() => {
-        const groups: Record<string, ManagerGroupStats> = {};
+    const filteredIssuedItems = useMemo(() => {
+        const allowedIds = filteredEmployees.map((e) => e.id);
+        return issuedItems.filter((i) => allowedIds.includes(i.employeeId));
+    }, [filteredEmployees, issuedItems]);
 
-        filtered.forEach((i: IssuedSafetyItem) => {
-            const manager = employees.find((e) => e.id === i.issuedBy);
-            if (!manager) return;
+    // --- Gom nhóm theo phòng ban ---
+    const groupedByDept = useMemo<DepartmentStats[]>(() => {
+        const groups: Record<string, DepartmentStats> = {};
 
-            if (!groups[manager.id]) {
-                groups[manager.id] = {
-                    manager,
+        filteredIssuedItems.forEach((i: IssuedSafetyItem) => {
+            const emp = employees.find((e) => e.id === i.employeeId);
+            const dept = departments.find((d) => d.id === emp?.departmentId);
+            if (!dept) return;
+
+            if (!groups[dept.id]) {
+                groups[dept.id] = {
+                    departmentName: dept.name,
                     total: 0,
                     inUse: 0,
                     expired: 0,
@@ -66,49 +65,41 @@ export default function AdminSafetyDashboard() {
                 };
             }
 
-            groups[manager.id].total++;
+            groups[dept.id].total++;
 
             switch (i.status) {
                 case "In Use":
-                    groups[manager.id].inUse++;
+                    groups[dept.id].inUse++;
                     break;
                 case "Expired":
-                    groups[manager.id].expired++;
+                    groups[dept.id].expired++;
                     break;
                 case "Replaced":
-                    groups[manager.id].replaced++;
+                    groups[dept.id].replaced++;
                     break;
                 case "DamagedEarly":
-                    groups[manager.id].damaged++;
+                    groups[dept.id].damaged++;
                     break;
             }
         });
 
-        // Bổ sung số liệu thu về = Replaced + DamagedEarly (nếu có replacedFromId trỏ tới)
-        Object.values(groups).forEach((g) => {
-            g.replaced += filtered.filter(
-                (x) => x.replacedFromId && x.issuedBy === g.manager.id
-            ).length;
-        });
-
         return Object.values(groups);
-    }, [filtered, employees]);
+    }, [filteredIssuedItems, employees, departments]);
 
     // --- Biểu đồ tổng hợp ---
     const totalStats = useMemo(() => {
         let inUse = 0, expired = 0, damaged = 0, collected = 0;
 
-        filtered.forEach((i) => {
+        filteredIssuedItems.forEach((i) => {
             if (i.status === "In Use") inUse++;
             else if (i.status === "Expired") expired++;
             else if (i.status === "DamagedEarly") damaged++;
 
-            // Nếu vật tư này là vật tư mới có replacedFromId => nghĩa là đã thu về 1 cái cũ
             if (i.replacedFromId) collected++;
         });
 
         return { inUse, expired, damaged, collected };
-    }, [filtered]);
+    }, [filteredIssuedItems]);
 
     const pieData = [
         { name: "Đang sử dụng", value: totalStats.inUse },
@@ -117,12 +108,13 @@ export default function AdminSafetyDashboard() {
         { name: "Hỏng sớm", value: totalStats.damaged },
     ];
 
-    // --- Bảng đổi mới ---
+    // --- Bảng chi tiết đổi mới ---
     const replacedList = issuedItems.filter((i) => {
         if (!i.replacedFromId) return false;
         const oldItem = issuedItems.find((x) => x.id === i.replacedFromId);
         return oldItem && oldItem.safetyItemId === i.safetyItemId;
-    })
+    });
+
     return (
         <Layout>
             <div className="space-y-6">
@@ -136,24 +128,25 @@ export default function AdminSafetyDashboard() {
                             className="flex-1"
                             onClick={() => navigate("/admin/safety-items")}
                         >
-                            Danh mục BHLĐ
+                            Kho BHLĐ
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
+
                 <h1 className="text-3xl font-bold">Thống kê cấp phát đồ bảo hộ</h1>
 
-                {/* Bộ lọc */}
+                {/* Bộ lọc phòng ban */}
                 <div className="flex gap-4 items-center">
-                    <label className="text-sm text-muted-foreground">Lọc theo quản lý:</label>
-                    <Select value={filterManager} onValueChange={setFilterManager}>
+                    <label className="text-sm text-muted-foreground">Lọc theo phòng ban:</label>
+                    <Select value={filterDept} onValueChange={setFilterDept}>
                         <SelectTrigger className="w-[250px]">
-                            <SelectValue placeholder="Chọn người quản lý" />
+                            <SelectValue placeholder="Chọn phòng ban" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tất cả</SelectItem>
-                            {managers.map((m) => (
-                                <SelectItem key={m.id} value={m.id}>
-                                    {m.firstName} {m.lastName}
+                            {departments.map((d) => (
+                                <SelectItem key={d.id} value={d.id}>
+                                    {d.name}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -178,24 +171,26 @@ export default function AdminSafetyDashboard() {
                     </div>
                 </Card>
 
-                {/* Bảng tổng hợp theo quản lý */}
+                {/* Bảng tổng hợp theo phòng ban */}
                 <Card>
-                    <h2 className="text-lg font-semibold p-4">Người được phát</h2>
+                    <h2 className="text-lg font-semibold p-4">Tổng hợp theo phòng ban</h2>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Nhân viên</TableHead>
+                                <TableHead>Phòng ban</TableHead>
                                 <TableHead>Tổng phát</TableHead>
+                                <TableHead>Đang sử dụng</TableHead>
                                 <TableHead>Hết hạn</TableHead>
-                                <TableHead>Đã thu về</TableHead>
+                                <TableHead>Thu về</TableHead>
                                 <TableHead>Hỏng sớm</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {groupedByManager.map((g) => (
-                                <TableRow key={g.manager.id}>
-                                    <TableCell>{g.manager.firstName} {g.manager.lastName}</TableCell>
+                            {groupedByDept.map((g) => (
+                                <TableRow key={g.departmentName}>
+                                    <TableCell>{g.departmentName}</TableCell>
                                     <TableCell>{g.total}</TableCell>
+                                    <TableCell>{g.inUse}</TableCell>
                                     <TableCell>{g.expired}</TableCell>
                                     <TableCell>{g.replaced}</TableCell>
                                     <TableCell>{g.damaged}</TableCell>
@@ -222,7 +217,7 @@ export default function AdminSafetyDashboard() {
                             {replacedList.map((r) => {
                                 const manager = employees.find((e) => e.id === r.issuedBy);
                                 const emp = employees.find((e) => e.id === r.employeeId);
-                                const oldItem = mockData.issuedSafetyItems.find((i) => i.id === r.replacedFromId);
+                                const oldItem = issuedItems.find((i) => i.id === r.replacedFromId);
                                 const itemOld = mockData.safetyItems.find((s) => s.id === oldItem?.safetyItemId);
                                 const itemNew = mockData.safetyItems.find((s) => s.id === r.safetyItemId);
                                 return (

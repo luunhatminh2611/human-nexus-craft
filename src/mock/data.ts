@@ -1,5 +1,7 @@
 // Mock data for HR Management System
 
+import { emit } from "process";
+
 export interface Employee {
   id: string;
   avatar?: string;
@@ -31,6 +33,28 @@ export interface Employee {
   documents?: { id: string; name: string; url?: string }[];
   address?: string;
   dateOfBirth?: string;
+  familyMembers?: FamilyMember[];
+}
+
+export interface FamilyMember {
+  id: string;
+  fullName: string;
+  employeeId: string;
+  relation:
+  | 'Father'
+  | 'Mother'
+  | 'Spouse'
+  | 'Son'
+  | 'Daughter'
+  | 'Brother'
+  | 'Sister'
+  | 'Other';
+  dateOfBirth?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  occupation?: string;
+  isEmergencyContact?: boolean;
 }
 
 export interface Department {
@@ -38,6 +62,13 @@ export interface Department {
   name: string;
   parentId?: string;
   managerId?: string;
+}
+
+export interface TrainingQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
 }
 
 export interface Training {
@@ -52,6 +83,7 @@ export interface Training {
   instructor?: string;
   location?: string;
   maxParticipants?: number;
+  questions?: TrainingQuestion[];
 }
 
 export interface TrainingEnrollment {
@@ -60,8 +92,10 @@ export interface TrainingEnrollment {
   employeeId: string;
   enrolledDate: string;
   completionDate?: string;
-  status: 'Enrolled' | 'In Progress' | 'Completed' | 'Cancelled';
+  status: 'Assigned' | 'In Progress' | 'Completed' | 'Failed';
   progress: number;
+  testScore?: number;
+  testAttempts?: number;
 }
 
 export interface SalaryStructure {
@@ -80,32 +114,8 @@ export interface SalaryStructure {
 export interface MedicalRecord {
   id: string;
   patientId: string;
-  allergies: string[];
-  conditions: { code: string; display: string; note?: string }[];
-  immunizations: Array<{
-    vaccine: string;
-    date: string;
-    provider: string;
-  }>;
-  observations: Array<{
-    type: string;
-    value: string;
-    date: string;
-    unit?: string;
-  }>;
-  visits: Array<{
-    date: string;
-    reason: string;
-    diagnosis?: string;
-    notes?: string;
-    resultFile?: string;
-  }>;
-  insurance?: Array<{
-    type: string;
-    number: string;
-    expiryDate: string;
-    nextCheckupDate?: string;
-  }>;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  fileUrl: string;
 }
 
 export interface PayrollHistory {
@@ -171,13 +181,22 @@ export interface TrainingFeedback {
   date: string;
 }
 
-export interface Grade {
+export interface JobTitle {
   id: string;
   name: string;
-  minSalary: number;
-  maxSalary: number;
+  description: string;
+  departmentId?: string;
+}
+
+export interface Grade {
+  id: string;
+  jobTitleId: string;
+  name: string;
+  description: string;
+  competencies: string[];
   requiredSkills: string[];
   requiredTrainings: string[];
+  order: number;
 }
 
 export interface Position {
@@ -194,6 +213,7 @@ export interface SafetyItem {
   description?: string;
   replacementCycleDays: number;
   defaultExpireDays: number;
+  quantityInStock: number;
 }
 export interface IssuedSafetyItem {
   id: string;
@@ -219,6 +239,23 @@ export interface SafetyReplacementRequest {
   processedBy?: string;
   processedDate?: string;
   note?: string;
+}
+
+export interface WorkSchedule {
+  id: string;
+  employeeId: string;
+  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
+  shift: string;
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+}
+export interface LeaveRequest {
+  id: string,
+  employeeId: string,
+  fileName: string,
+  uploadDate: string,
+  reason: string,
+  status: 'Pending' | 'Approved' | 'Rejected';
 }
 
 const mockData = {
@@ -481,6 +518,18 @@ const mockData = {
     { id: 'dept002', name: 'Kỹ thuật', parentId: 'dept001', managerId: 'emp002' },
     { id: 'dept003', name: 'Kinh doanh', parentId: 'dept001', managerId: 'emp003' },
     { id: 'dept004', name: 'Vận hành', parentId: 'dept001', managerId: 'emp001' },
+    {
+      id: "5",
+      name: "Phát triển Sản phẩm",
+      parentId: "dept002",
+      managerId: null
+    },
+    {
+      id: "6",
+      name: "DevOps",
+      parentId: "dept002",
+      managerId: null
+    }
   ] as Department[],
 
   trainings: [
@@ -711,225 +760,64 @@ const mockData = {
     {
       id: 'med001',
       patientId: 'emp001',
-      allergies: ['Penicillin'],
-      conditions: [
-        { code: 'E11', display: 'Tiểu đường type 2', note: 'Kiểm soát tốt bằng thuốc' },
-      ],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-01-15', provider: 'Bệnh viện ABC' },
-        { vaccine: 'Cúm mùa', date: '2024-09-01', provider: 'Phòng khám XYZ' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '120/80', date: '2024-10-15', unit: 'mmHg' },
-        { type: 'Đường huyết', value: '95', date: '2024-10-15', unit: 'mg/dL' },
-      ],
-      visits: [
-        {
-          date: '2024-10-15',
-          reason: 'Khám định kỳ',
-          diagnosis: 'Sức khỏe tốt',
-          notes: 'Tiếp tục duy trì chế độ ăn uống và tập luyện',
-        },
-      ],
+      status: 'Approved',
+      fileUrl: '/files/med001.pdf',
     },
     {
       id: 'med002',
       patientId: 'emp002',
-      allergies: [],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-02-10', provider: 'Bệnh viện DEF' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '118/75', date: '2024-09-20', unit: 'mmHg' },
-      ],
-      visits: [
-        {
-          date: '2024-09-20',
-          reason: 'Khám sức khỏe',
-          diagnosis: 'Khỏe mạnh',
-          notes: 'Không có vấn đề gì',
-        },
-      ],
+      status: 'Approved',
+      fileUrl: '/files/med002.pdf',
     },
     {
       id: 'med003',
       patientId: 'emp003',
-      allergies: ['Phấn hoa'],
-      conditions: [
-        { code: 'J30.1', display: 'Viêm mũi dị ứng', note: 'Theo mùa' },
-      ],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-03-05', provider: 'Phòng khám GHI' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '125/82', date: '2024-08-10', unit: 'mmHg' },
-      ],
-      visits: [
-        {
-          date: '2024-08-10',
-          reason: 'Khám viêm mũi',
-          diagnosis: 'Viêm mũi dị ứng theo mùa',
-          notes: 'Kê đơn thuốc kháng histamine',
-        },
-      ],
+      status: 'Approved',
+      fileUrl: '/files/med003.pdf',
     },
     {
       id: 'med004',
       patientId: 'emp004',
-      allergies: [],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-01-20', provider: 'Bệnh viện JKL' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '115/70', date: '2024-07-15', unit: 'mmHg' },
-      ],
-      visits: [],
+      status: 'Approved',
+      fileUrl: '/files/med004.pdf',
     },
     {
       id: 'med005',
       patientId: 'emp005',
-      allergies: [],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-04-01', provider: 'Phòng khám MNO' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '122/78', date: '2024-06-20', unit: 'mmHg' },
-      ],
-      visits: [
-        {
-          date: '2024-06-20',
-          reason: 'Khám tuyển dụng',
-          diagnosis: 'Đủ sức khỏe để làm việc',
-          notes: 'Đạt yêu cầu',
-        },
-      ],
+      status: 'Approved',
+      fileUrl: '/files/med005.pdf',
     },
     {
       id: 'med006',
       patientId: 'emp006',
-      allergies: [],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-05-10', provider: 'Bệnh viện PQR' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '110/68', date: '2024-05-12', unit: 'mmHg' },
-      ],
-      visits: [],
+      status: 'Approved',
+      fileUrl: '/files/med006.pdf',
     },
     {
       id: 'med007',
       patientId: 'emp007',
-      allergies: [],
-      conditions: [
-        { code: 'M54.5', display: 'Đau lưng dưới', note: 'Do làm việc nặng' },
-      ],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-02-28', provider: 'Phòng khám STU' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '128/85', date: '2024-04-18', unit: 'mmHg' },
-      ],
-      visits: [
-        {
-          date: '2024-04-18',
-          reason: 'Đau lưng',
-          diagnosis: 'Đau lưng nghề nghiệp',
-          notes: 'Khuyên nghỉ ngơi 1 tuần, vật lý trị liệu',
-          resultFile: 'medical-result-007.pdf',
-        },
-      ],
-      insurance: [
-        {
-          type: 'Bảo hiểm y tế',
-          number: 'BHYT-007-2024',
-          expiryDate: '2025-12-31',
-          nextCheckupDate: '2025-06-15',
-        },
-        {
-          type: 'Bảo hiểm xã hội',
-          number: 'BHXH-007-2024',
-          expiryDate: '2025-12-31',
-        },
-      ],
+      status: 'Approved',
+      fileUrl: '/files/med007.pdf',
     },
     {
       id: 'med008',
       patientId: 'emp008',
-      allergies: [],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-06-15', provider: 'Bệnh viện VWX' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '112/72', date: '2024-03-25', unit: 'mmHg' },
-      ],
-      visits: [],
+      status: 'Approved',
+      fileUrl: '/files/med008.pdf',
     },
     {
       id: 'med009',
       patientId: 'emp009',
-      allergies: ['Hải sản'],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-01-10', provider: 'Phòng khám YZ' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '120/76', date: '2024-02-14', unit: 'mmHg' },
-      ],
-      visits: [
-        {
-          date: '2024-02-14',
-          reason: 'Khám định kỳ',
-          diagnosis: 'Khỏe mạnh',
-          notes: 'Tránh hải sản',
-        },
-      ],
+      status: 'Approved',
+      fileUrl: '/files/med009.pdf',
     },
     {
       id: 'med010',
       patientId: 'emp010',
-      allergies: [],
-      conditions: [],
-      immunizations: [
-        { vaccine: 'COVID-19', date: '2023-07-20', provider: 'Bệnh viện ABC' },
-      ],
-      observations: [
-        { type: 'Huyết áp', value: '118/74', date: '2024-01-10', unit: 'mmHg' },
-      ],
-      visits: [],
+      status: 'Approved',
+      fileUrl: '/files/med010.pdf',
     },
   ] as MedicalRecord[],
-
-  grades: [
-    {
-      id: 'G1',
-      name: 'Cấp 1 - Nhân viên',
-      minSalary: 12000000,
-      maxSalary: 20000000,
-      requiredSkills: ['Kỹ năng cơ bản', 'Làm việc nhóm'],
-      requiredTrainings: ['tr001'],
-    },
-    {
-      id: 'G2',
-      name: 'Cấp 2 - Chuyên viên/Quản lý',
-      minSalary: 25000000,
-      maxSalary: 40000000,
-      requiredSkills: ['Chuyên môn cao', 'Quản lý dự án', 'Lãnh đạo'],
-      requiredTrainings: ['tr001', 'tr003'],
-    },
-    {
-      id: 'G3',
-      name: 'Cấp 3 - Điều hành',
-      minSalary: 45000000,
-      maxSalary: 80000000,
-      requiredSkills: ['Tư duy chiến lược', 'Quản lý cấp cao', 'Ra quyết định'],
-      requiredTrainings: ['tr001', 'tr003'],
-    },
-  ] as Grade[],
 
   positions: [
     { id: 'pos001', title: 'Giám đốc điều hành', departmentId: 'dept001', gradeId: 'G3' },
@@ -1076,6 +964,7 @@ const mockData = {
       description: 'Mũ bảo hộ lao động tiêu chuẩn Việt Nam',
       replacementCycleDays: 365,
       defaultExpireDays: 365,
+      quantityInStock: 50,
     },
     {
       id: 's002',
@@ -1084,6 +973,7 @@ const mockData = {
       description: 'Găng tay sợi chống cắt cấp độ 3',
       replacementCycleDays: 180,
       defaultExpireDays: 180,
+      quantityInStock: 100,
     },
     {
       id: 's003',
@@ -1092,6 +982,7 @@ const mockData = {
       description: 'Kính bảo hộ chống tia UV',
       replacementCycleDays: 365,
       defaultExpireDays: 365,
+      quantityInStock: 75,
     },
   ] as SafetyItem[],
 
@@ -1193,7 +1084,275 @@ const mockData = {
     replacementsBeforeExpire: 1,
     replacementsOnTime: 1,
     pendingRequests: 1,
-  }
+  },
+
+  jobTitles: [
+    {
+      id: 'jt001',
+      name: 'Kỹ sư phần mềm',
+      description: 'Phát triển và bảo trì các ứng dụng phần mềm',
+      departmentId: 'dept002',
+    },
+    {
+      id: 'jt002',
+      name: 'Nhân viên kinh doanh',
+      description: 'Phát triển khách hàng và tư vấn sản phẩm',
+      departmentId: 'dept003',
+    },
+    {
+      id: 'jt003',
+      name: 'Giám đốc',
+      description: 'Điều hành và quản lý toàn bộ công ty',
+      departmentId: 'dept001',
+    },
+    {
+      id: 'jt004',
+      name: 'Trưởng phòng',
+      description: 'Quản lý và điều hành bộ phận',
+      departmentId: 'dept001',
+    },
+    {
+      id: 'jt005',
+      name: 'Nhân viên nhân sự',
+      description: 'Quản lý hồ sơ nhân viên và tuyển dụng',
+      departmentId: 'dept001',
+    },
+    {
+      id: 'jt006',
+      name: 'Nhân viên vận hành',
+      description: 'Thực hiện các công việc vận hành hàng ngày',
+      departmentId: 'dept004',
+    },
+  ] as JobTitle[],
+
+  grades: [
+    // Kỹ sư phần mềm
+    {
+      id: 'g_jt001_1',
+      jobTitleId: 'jt001',
+      name: 'G1 - Junior',
+      description: 'Kỹ sư mới vào nghề, làm việc dưới sự hướng dẫn',
+      competencies: [
+        'Hiểu biết cơ bản về ngôn ngữ lập trình',
+        'Làm việc nhóm tốt',
+        'Ham học hỏi'
+      ],
+      requiredSkills: ['JavaScript/TypeScript cơ bản', 'Git', 'HTML/CSS'],
+      requiredTrainings: ['tr001', 'tr004'],
+      order: 1,
+    },
+    {
+      id: 'g_jt001_2',
+      jobTitleId: 'jt001',
+      name: 'G2 - Senior',
+      description: 'Kỹ sư có kinh nghiệm, làm việc độc lập',
+      competencies: [
+        'Thiết kế hệ thống',
+        'Code review',
+        'Mentor junior',
+        'Giải quyết vấn đề phức tạp'
+      ],
+      requiredSkills: ['React/Vue nâng cao', 'API Design', 'Database', 'Testing'],
+      requiredTrainings: ['tr001', 'tr004'],
+      order: 2,
+    },
+    {
+      id: 'g_jt001_3',
+      jobTitleId: 'jt001',
+      name: 'G3 - Lead/Principal',
+      description: 'Kỹ sư dẫn dắt kỹ thuật, định hướng kiến trúc',
+      competencies: [
+        'Kiến trúc hệ thống lớn',
+        'Quản lý kỹ thuật',
+        'Đào tạo team',
+        'Technical decision making'
+      ],
+      requiredSkills: ['System Design', 'Cloud Architecture', 'Team Leadership', 'DevOps'],
+      requiredTrainings: ['tr001', 'tr003', 'tr004'],
+      order: 3,
+    },
+    // Nhân viên kinh doanh
+    {
+      id: 'g_jt002_1',
+      jobTitleId: 'jt002',
+      name: 'G1 - Junior Sales',
+      description: 'Nhân viên kinh doanh mới, học hỏi kỹ năng bán hàng',
+      competencies: [
+        'Giao tiếp tốt',
+        'Chăm chỉ',
+        'Tinh thần học hỏi'
+      ],
+      requiredSkills: ['Kỹ năng giao tiếp', 'Hiểu biết sản phẩm'],
+      requiredTrainings: ['tr002', 'tr005'],
+      order: 1,
+    },
+    {
+      id: 'g_jt002_2',
+      jobTitleId: 'jt002',
+      name: 'G2 - Senior Sales',
+      description: 'Nhân viên kinh doanh có kinh nghiệm, đạt chỉ tiêu tốt',
+      competencies: [
+        'Đàm phán thành thạo',
+        'Quản lý khách hàng',
+        'Phát triển thị trường mới'
+      ],
+      requiredSkills: ['Negotiation', 'Customer Management', 'Market Analysis'],
+      requiredTrainings: ['tr002', 'tr005'],
+      order: 2,
+    },
+    {
+      id: 'g_jt002_3',
+      jobTitleId: 'jt002',
+      name: 'G3 - Sales Manager',
+      description: 'Quản lý nhóm kinh doanh, đạt doanh số cao',
+      competencies: [
+        'Quản lý team',
+        'Chiến lược kinh doanh',
+        'Phát triển khách hàng lớn'
+      ],
+      requiredSkills: ['Team Management', 'Strategic Planning', 'KPI Management'],
+      requiredTrainings: ['tr002', 'tr003', 'tr005'],
+      order: 3,
+    },
+    // Trưởng phòng
+    {
+      id: 'g_jt004_1',
+      jobTitleId: 'jt004',
+      name: 'G2 - Trưởng phòng',
+      description: 'Quản lý một bộ phận',
+      competencies: [
+        'Lãnh đạo nhóm',
+        'Quản lý dự án',
+        'Ra quyết định'
+      ],
+      requiredSkills: ['Leadership', 'Project Management', 'Communication'],
+      requiredTrainings: ['tr003'],
+      order: 2,
+    },
+    {
+      id: 'g_jt004_2',
+      jobTitleId: 'jt004',
+      name: 'G3 - Giám đốc bộ phận',
+      description: 'Quản lý nhiều phòng ban, định hướng chiến lược',
+      competencies: [
+        'Lãnh đạo cấp cao',
+        'Chiến lược tổ chức',
+        'Quản trị toàn diện'
+      ],
+      requiredSkills: ['Strategic Leadership', 'Business Planning', 'Change Management'],
+      requiredTrainings: ['tr003'],
+      order: 3,
+    },
+    // Giám đốc
+    {
+      id: 'g_jt003_1',
+      jobTitleId: 'jt003',
+      name: 'G3 - Giám đốc điều hành',
+      description: 'Điều hành toàn bộ công ty',
+      competencies: [
+        'Tầm nhìn chiến lược',
+        'Quản trị doanh nghiệp',
+        'Lãnh đạo cấp cao'
+      ],
+      requiredSkills: ['Executive Leadership', 'Corporate Strategy', 'Stakeholder Management'],
+      requiredTrainings: ['tr003'],
+      order: 3,
+    },
+    // Nhân viên nhân sự
+    {
+      id: 'g_jt005_1',
+      jobTitleId: 'jt005',
+      name: 'G1 - Nhân viên nhân sự',
+      description: 'Xử lý công việc hành chính nhân sự',
+      competencies: [
+        'Quản lý hồ sơ',
+        'Giao tiếp nội bộ',
+        'Tổ chức sự kiện'
+      ],
+      requiredSkills: ['Office Skills', 'Communication', 'Data Entry'],
+      requiredTrainings: ['tr001'],
+      order: 1,
+    },
+    {
+      id: 'g_jt005_2',
+      jobTitleId: 'jt005',
+      name: 'G2 - Chuyên viên nhân sự',
+      description: 'Tuyển dụng và phát triển nhân sự',
+      competencies: [
+        'Tuyển dụng',
+        'Đào tạo',
+        'Đánh giá nhân viên'
+      ],
+      requiredSkills: ['Recruitment', 'Training', 'Performance Management'],
+      requiredTrainings: ['tr001', 'tr003'],
+      order: 2,
+    },
+    // Nhân viên vận hành
+    {
+      id: 'g_jt006_1',
+      jobTitleId: 'jt006',
+      name: 'G1 - Nhân viên vận hành',
+      description: 'Thực hiện công việc vận hành cơ bản',
+      competencies: [
+        'Thực hiện quy trình',
+        'An toàn lao động',
+        'Làm việc nhóm'
+      ],
+      requiredSkills: ['Basic Operations', 'Safety Compliance'],
+      requiredTrainings: ['tr001'],
+      order: 1,
+    },
+  ] as Grade[],
+
+  workSchedules: [
+    { id: 'ws001', employeeId: 'emp001', dayOfWeek: 'Monday', shift: 'Hà Nội', startTime: '08:00', endTime: '12:00' },
+    { id: 'ws002', employeeId: 'emp002', dayOfWeek: 'Monday', shift: 'Hải Phòng', startTime: '13:00', endTime: '17:00' },
+    { id: 'ws003', employeeId: 'emp003', dayOfWeek: 'Tuesday', shift: 'Tp.HCM', startTime: '08:30', endTime: '12:00' },
+    { id: 'ws004', employeeId: 'emp004', dayOfWeek: 'Wednesday', shift: 'Cảng bến phà', startTime: '13:00', endTime: '17:30' },
+    { id: 'ws005', employeeId: 'emp005', dayOfWeek: 'Friday', shift: 'Nhà thờ', startTime: '09:00', endTime: '12:00' },
+  ] as WorkSchedule[],
+
+  leaveRequests: [
+    {
+      id: "l001",
+      employeeId: "emp001",
+      fileName: "DonXinNghiPhep_Tet.pdf",
+      uploadDate: "2025-01-20",
+      reason: "Nghỉ Tết Nguyên Đán",
+      status: "Approved"
+    },
+    {
+      id: "l001",
+      employeeId: "emp002",
+      fileName: "DonXinNghiPhep_CuoiTuan.pdf",
+      uploadDate: "2025-04-10",
+      reason: "Việc cá nhân",
+      status: "Rejected"
+    },
+  ] as LeaveRequest[],
+
+  familyMembers: [
+    {
+      id: 'fam1',
+      employeeId: 'emp001',
+      fullName: 'Nguyễn Văn A',
+      relation: 'Father',
+      phone: '0912345678',
+      dateOfBirth: '1960-04-12',
+      address: 'Hà Nội',
+      occupation: 'Giáo viên nghỉ hưu',
+    },
+    {
+      id: 'fam2',
+      employeeId: 'emp001',
+      fullName: 'Trần Thị B',
+      relation: 'Mother',
+      phone: '0987654321',
+      dateOfBirth: '1965-09-30',
+      address: 'Hà Nội',
+      occupation: 'Nội trợ',
+    },
+  ] as FamilyMember[],
 };
 
 export default mockData;

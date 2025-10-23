@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import {
   Table,
@@ -20,7 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Eye } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Search, Eye, Plus } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import mockData from '@/mock/data';
 
@@ -31,15 +39,41 @@ export default function Employees() {
   const [filterDept, setFilterDept] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
+  // State cho dialog thêm nhân viên
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [employees, setEmployees] = useState(mockData.employees);
+  const [departments, setDepartments] = useState(mockData.departments);
+
+  // Form state
+  const emptyForm = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    departmentId: '',
+    position: '',
+    grade: 'Junior',
+    isManager: false,
+    startDate: new Date().toISOString().split('T')[0],
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  // Kiểm tra phòng ban đã có trưởng phòng chưa
+  const canBeManager = useMemo(() => {
+    if (!form.departmentId) return false;
+    const dept = departments.find(d => d.id === form.departmentId);
+    return !dept?.managerId; // Trả về true nếu chưa có managerId
+  }, [form.departmentId, departments]);
+
   // Filter based on role
   const baseEmployees = useMemo(() => {
     if (role === 'Admin') {
-      return mockData.employees;
+      return employees;
     } else if (role === 'Manager') {
-      return mockData.employees.filter(e => e.managerId === employeeId || e.id === employeeId);
+      return employees.filter(e => e.managerId === employeeId || e.id === employeeId);
     }
     return [];
-  }, [role, employeeId]);
+  }, [role, employeeId, employees]);
 
   const filteredEmployees = baseEmployees.filter((emp) => {
     const matchesSearch =
@@ -54,6 +88,68 @@ export default function Employees() {
     return matchesSearch && matchesDept && matchesStatus;
   });
 
+  const handleAddEmployee = () => {
+    const { firstName, lastName, email, phone, departmentId, position, grade, isManager, startDate } = form;
+
+    // Validation
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !departmentId || !position.trim()) {
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
+
+    // Kiểm tra email trùng
+    if (employees.some(e => e.email.toLowerCase() === email.toLowerCase())) {
+      alert('Email đã tồn tại');
+      return;
+    }
+
+    const newEmpId = `emp${Date.now()}`;
+
+    const newEmployee = {
+      id: newEmpId,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      phone: phone.trim() || '',
+      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`,
+      departmentId,
+      position: position.trim(),
+      grade,
+      status: 'Probation' as const,
+      startDate,
+      managerId: null,
+      salary: {
+        base: 0,
+        allowances: {
+          housing: 0,
+          transport: 0,
+        },
+        currency: 'VND',
+      },
+      performance: [],
+      leaves: [],
+      contractType: 'Full-time' as const,
+      trainingsCompleted: [],
+    };
+
+    // Thêm nhân viên mới
+    setEmployees(prev => [...prev, newEmployee]);
+
+    // Nếu là trưởng phòng, cập nhật department
+    if (isManager && canBeManager) {
+      setDepartments(prev =>
+        prev.map(d =>
+          d.id === departmentId ? { ...d, managerId: newEmpId } : d
+        )
+      );
+    }
+
+    // Reset form
+    setForm(emptyForm);
+    setIsAddDialogOpen(false);
+    alert(`Đã thêm nhân viên ${firstName} ${lastName} thành công!`);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
       Active: 'default',
@@ -66,16 +162,16 @@ export default function Employees() {
         {status === 'Active'
           ? 'Đang làm'
           : status === 'On Leave'
-          ? 'Nghỉ phép'
-          : status === 'Resigned'
-          ? 'Đã nghỉ'
-          : 'Thử việc'}
+            ? 'Nghỉ phép'
+            : status === 'Resigned'
+              ? 'Đã nghỉ'
+              : 'Thử việc'}
       </Badge>
     );
   };
 
   const getDeptName = (deptId: string) => {
-    return mockData.departments.find((d) => d.id === deptId)?.name || deptId;
+    return departments.find((d) => d.id === deptId)?.name || deptId;
   };
 
   return (
@@ -90,7 +186,12 @@ export default function Employees() {
               {role === 'Manager' ? 'Danh sách thành viên trong team' : 'Quản lý thông tin nhân viên'}
             </p>
           </div>
-          {role === 'Admin' && <Button>Thêm nhân viên</Button>}
+          {role === 'Admin' && (
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm nhân viên
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -111,7 +212,7 @@ export default function Employees() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả phòng ban</SelectItem>
-                {mockData.departments.map((dept) => (
+                {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -192,6 +293,182 @@ export default function Employees() {
         <div className="text-sm text-muted-foreground">
           Hiển thị {filteredEmployees.length} / {baseEmployees.length} nhân viên
         </div>
+
+        {/* Dialog thêm nhân viên */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Thêm nhân viên mới</DialogTitle>
+              <DialogDescription>
+                Điền đầy đủ thông tin để thêm nhân viên vào hệ thống
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Họ <span className="text-red-500">*</span></Label>
+                  <Input
+                    placeholder="Nguyễn Văn"
+                    value={form.firstName}
+                    onChange={(e) => setForm(s => ({ ...s, firstName: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Tên <span className="text-red-500">*</span></Label>
+                  <Input
+                    placeholder="A"
+                    value={form.lastName}
+                    onChange={(e) => setForm(s => ({ ...s, lastName: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Email <span className="text-red-500">*</span></Label>
+                  <Input
+                    type="email"
+                    placeholder="example@company.com"
+                    value={form.email}
+                    onChange={(e) => setForm(s => ({ ...s, email: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Số điện thoại</Label>
+                  <Input
+                    placeholder="0123456789"
+                    value={form.phone}
+                    onChange={(e) => setForm(s => ({ ...s, phone: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {/* Phòng ban */}
+              <div>
+                <Label>Phòng ban <span className="text-red-500">*</span></Label>
+                <Select
+                  value={form.departmentId}
+                  onValueChange={(v) => {
+                    setForm(s => ({
+                      ...s,
+                      departmentId: v,
+                      position: '',
+                      grade: '',
+                      isManager: false,
+                    }));
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn phòng ban" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name} {dept.managerId ? '(Đã có trưởng phòng)' : '(Chưa có trưởng phòng)'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Chức danh và bậc */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Chức danh <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={form.position}
+                    onValueChange={(v) => {
+                      setForm(s => ({ ...s, position: v, grade: '' }));
+                    }}
+                    disabled={!form.departmentId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn chức danh" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockData.jobTitles
+                        .filter(j => j.departmentId === form.departmentId)
+                        .map(j => (
+                          <SelectItem key={j.id} value={j.id}>
+                            {j.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Bậc <span className="text-red-500">*</span></Label>
+                  <Select
+                    value={form.grade}
+                    onValueChange={(v) => setForm(s => ({ ...s, grade: v }))}
+                    disabled={!form.position}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn bậc" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockData.grades
+                        .filter(g => g.jobTitleId === form.position)
+                        .map(g => (
+                          <SelectItem key={g.id} value={g.name}>
+                            {g.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label>Ngày bắt đầu</Label>
+                <Input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm(s => ({ ...s, startDate: e.target.value }))}
+                />
+              </div>
+
+              {/* Checkbox trưởng phòng */}
+              {canBeManager && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <input
+                    type="checkbox"
+                    id="isManager"
+                    checked={form.isManager}
+                    onChange={(e) => setForm(s => ({ ...s, isManager: e.target.checked }))}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="isManager" className="cursor-pointer">
+                    Đặt làm trưởng phòng {departments.find(d => d.id === form.departmentId)?.name}
+                  </Label>
+                </div>
+              )}
+
+              {form.departmentId && !canBeManager && (
+                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                  ℹ️ Phòng ban này đã có trưởng phòng. Nhân viên mới sẽ được thêm với vai trò nhân viên.
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddDialogOpen(false);
+                    setForm(emptyForm);
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button onClick={handleAddEmployee}>
+                  Thêm nhân viên
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );

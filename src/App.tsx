@@ -28,6 +28,12 @@ import { useAuthStore } from "./store/authStore";
 import SafetyItems from "./pages/admin/SafetyItem";
 import EmployeeSafetyList from "./pages/employee/EmployeeSafetyList";
 import AdminSafetyDashboard from "./pages/admin/AdminSafetyDashboard";
+import DepartmentList from "./pages/admin/DepartmentList";
+import AdminCatalog from "./pages/admin/Catalog";
+import EmployeeCareerPath from "./pages/employee/CareerPath";
+import AdminMedicalRecords from "./pages/admin/AdminMedicalRecord";
+import WorkScheduleManagement from "./pages/admin/WorkSchedule";
+import LeaveRequestPage from "./pages/admin/LeaveRequest";
 
 const queryClient = new QueryClient();
 
@@ -150,6 +156,51 @@ const App = () => (
             }
           />
 
+          <Route
+            path="/admin/departments"
+            element={
+              <ProtectedRoute>
+                <DepartmentList />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/catalog"
+            element={
+              <ProtectedRoute>
+                <AdminCatalog />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/medical-records"
+            element={
+              <ProtectedRoute>
+                <AdminMedicalRecords />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/work-schedule"
+            element={
+              <ProtectedRoute>
+                <WorkScheduleManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/leave-requests"
+            element={
+              <ProtectedRoute>
+                <LeaveRequestPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Manager Routes */}
           <Route
             path="/manager/dashboard"
@@ -264,6 +315,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <EmployeeSafetyList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/employee/career-path"
+            element={
+              <ProtectedRoute>
+                <EmployeeCareerPath />
               </ProtectedRoute>
             }
           />
