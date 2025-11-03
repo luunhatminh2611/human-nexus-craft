@@ -425,6 +425,111 @@ export default function EmployeeProfile() {
 
                     {/* Documents */}
                     <TabsContent value="documents" className="space-y-4">
+                        {/* Medical Info from Admin */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Award className="h-5 w-5 text-destructive" />
+                                    Thông tin y tế
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {(() => {
+                                    const medicalRecord = mockData.medicalRecords.find(
+                                        (m) => m.patientId === employee.id
+                                    );
+                                    
+                                    if (medicalRecord && (medicalRecord.bloodType || medicalRecord.height || medicalRecord.weight || medicalRecord.allergies || medicalRecord.chronicDiseases)) {
+                                        return (
+                                            <div className="space-y-4">
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    {medicalRecord.bloodType && (
+                                                        <div>
+                                                            <p className="text-sm text-muted-foreground">Nhóm máu</p>
+                                                            <p className="font-medium">{medicalRecord.bloodType}</p>
+                                                        </div>
+                                                    )}
+                                                    {medicalRecord.lastCheckupDate && (
+                                                        <div>
+                                                            <p className="text-sm text-muted-foreground">Ngày khám gần nhất</p>
+                                                            <p className="font-medium">
+                                                                {new Date(medicalRecord.lastCheckupDate).toLocaleDateString('vi-VN')}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    {medicalRecord.height && (
+                                                        <div>
+                                                            <p className="text-sm text-muted-foreground">Chiều cao</p>
+                                                            <p className="font-medium">{medicalRecord.height} cm</p>
+                                                        </div>
+                                                    )}
+                                                    {medicalRecord.weight && (
+                                                        <div>
+                                                            <p className="text-sm text-muted-foreground">Cân nặng</p>
+                                                            <p className="font-medium">{medicalRecord.weight} kg</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {medicalRecord.allergies && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Dị ứng</p>
+                                                        <p className="font-medium">{medicalRecord.allergies}</p>
+                                                    </div>
+                                                )}
+
+                                                {medicalRecord.chronicDiseases && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Bệnh mãn tính</p>
+                                                        <p className="font-medium">{medicalRecord.chronicDiseases}</p>
+                                                    </div>
+                                                )}
+
+                                                {medicalRecord.medications && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Thuốc đang dùng</p>
+                                                        <p className="font-medium">{medicalRecord.medications}</p>
+                                                    </div>
+                                                )}
+
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    {medicalRecord.emergencyContact && (
+                                                        <div>
+                                                            <p className="text-sm text-muted-foreground">Người liên hệ khẩn cấp</p>
+                                                            <p className="font-medium">{medicalRecord.emergencyContact}</p>
+                                                        </div>
+                                                    )}
+                                                    {medicalRecord.emergencyContactPhone && (
+                                                        <div>
+                                                            <p className="text-sm text-muted-foreground">Số điện thoại khẩn cấp</p>
+                                                            <p className="font-medium">{medicalRecord.emergencyContactPhone}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {medicalRecord.notes && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Ghi chú</p>
+                                                        <p className="font-medium">{medicalRecord.notes}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+                                    
+                                    return (
+                                        <p className="text-center text-muted-foreground py-4">
+                                            Chưa có thông tin y tế được cập nhật bởi quản trị viên
+                                        </p>
+                                    );
+                                })()}
+                            </CardContent>
+                        </Card>
+
+                        {/* Upload Medical Files */}
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">

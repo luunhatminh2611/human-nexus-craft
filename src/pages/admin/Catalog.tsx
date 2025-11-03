@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -20,447 +20,292 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Briefcase, TrendingUp } from 'lucide-react';
-import mockData, { JobTitle, Grade } from '@/mock/data';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import mockData, { JobTitle } from '@/mock/data';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Catalog() {
   const { toast } = useToast();
+
+  // --- MOCK DATA ---
   const [jobTitles, setJobTitles] = useState<JobTitle[]>(mockData.jobTitles);
-  const [grades, setGrades] = useState<Grade[]>(mockData.grades);
-  
-  // Job Title Dialog States
-  const [jobTitleDialog, setJobTitleDialog] = useState(false);
-  const [editingJobTitle, setEditingJobTitle] = useState<JobTitle | null>(null);
-  const [jobTitleForm, setJobTitleForm] = useState({ name: '', description: '', departmentId: '' });
-  
-  // Grade Dialog States
-  const [gradeDialog, setGradeDialog] = useState(false);
-  const [editingGrade, setEditingGrade] = useState<Grade | null>(null);
-  const [gradeForm, setGradeForm] = useState({
-    jobTitleId: '',
-    name: '',
-    description: '',
-    competencies: '',
-    requiredSkills: '',
-    requiredTrainings: '',
-    order: '',
-  });
+  const [majors, setMajors] = useState([
+    { id: 'm1', name: 'Công nghệ thông tin', description: 'Ngành về lập trình và hệ thống' },
+    { id: 'm2', name: 'Kinh tế', description: 'Ngành về tài chính và quản trị' },
+  ]);
+  const [degrees, setDegrees] = useState([
+    { id: 'd1', name: 'Tiến sĩ', description: 'Trình độ học vấn cao nhất' },
+    { id: 'd2', name: 'Thạc sĩ', description: 'Trình độ sau đại học' },
+    { id: 'd3', name: 'Đại học', description: 'Trình độ phổ biến cho nhân viên' },
+    { id: 'd4', name: 'Cao đẳng', description: 'Trình độ trung cấp cao hơn trung học' },
+  ]);
 
-  // === Job Title Functions ===
-  const openAddJobTitle = () => {
-    setEditingJobTitle(null);
-    setJobTitleForm({ name: '', description: '', departmentId: '' });
-    setJobTitleDialog(true);
+  // --- COMMON STATE ---
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ name: '', description: '', departmentId: '' });
+  const [activeTab, setActiveTab] = useState('jobTitles');
+
+  // --- HANDLERS ---
+  const openAdd = () => {
+    setEditing(null);
+    setForm({ name: '', description: '', departmentId: '' });
+    setDialogOpen(true);
   };
 
-  const openEditJobTitle = (jt: JobTitle) => {
-    setEditingJobTitle(jt);
-    setJobTitleForm({
-      name: jt.name,
-      description: jt.description,
-      departmentId: jt.departmentId || '',
+  const openEdit = (item) => {
+    setEditing(item);
+    setForm({
+      name: item.name,
+      description: item.description || '',
+      departmentId: item.departmentId || '',
     });
-    setJobTitleDialog(true);
+    setDialogOpen(true);
   };
 
-  const saveJobTitle = () => {
-    if (!jobTitleForm.name.trim()) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên chức danh', variant: 'destructive' });
+  const handleSave = () => {
+    if (!form.name.trim()) {
+      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên', variant: 'destructive' });
       return;
     }
 
-    if (editingJobTitle) {
-      setJobTitles(prev => prev.map(jt => 
-        jt.id === editingJobTitle.id 
-          ? { ...jt, ...jobTitleForm }
-          : jt
-      ));
-      toast({ title: 'Thành công', description: 'Đã cập nhật chức danh' });
+    let setData, dataName;
+    if (activeTab === 'jobTitles') {
+      setData = setJobTitles;
+      dataName = 'Chức danh';
+    } else if (activeTab === 'majors') {
+      setData = setMajors;
+      dataName = 'Ngành nghề';
     } else {
-      const newJobTitle: JobTitle = {
-        id: `jt${Date.now()}`,
-        ...jobTitleForm,
-      };
-      setJobTitles(prev => [...prev, newJobTitle]);
-      toast({ title: 'Thành công', description: 'Đã thêm chức danh mới' });
+      setData = setDegrees;
+      dataName = 'Bậc học';
     }
-    setJobTitleDialog(false);
-  };
 
-  const deleteJobTitle = (id: string) => {
-    const hasGrades = grades.some(g => g.jobTitleId === id);
-    if (hasGrades) {
-      toast({ 
-        title: 'Không thể xóa', 
-        description: 'Chức danh này có các bậc liên quan. Vui lòng xóa các bậc trước.',
-        variant: 'destructive'
-      });
-      return;
-    }
-    setJobTitles(prev => prev.filter(jt => jt.id !== id));
-    toast({ title: 'Đã xóa', description: 'Xóa chức danh thành công' });
-  };
-
-  // === Grade Functions ===
-  const openAddGrade = () => {
-    setEditingGrade(null);
-    setGradeForm({
-      jobTitleId: '',
-      name: '',
-      description: '',
-      competencies: '',
-      requiredSkills: '',
-      requiredTrainings: '',
-      order: '',
+    setData((prev) => {
+      if (editing) {
+        return prev.map((p) => (p.id === editing.id ? { ...p, ...form } : p));
+      }
+      return [...prev, { id: `${Date.now()}`, ...form }];
     });
-    setGradeDialog(true);
-  };
 
-  const openEditGrade = (g: Grade) => {
-    setEditingGrade(g);
-    setGradeForm({
-      jobTitleId: g.jobTitleId,
-      name: g.name,
-      description: g.description,
-      competencies: g.competencies.join(', '),
-      requiredSkills: g.requiredSkills.join(', '),
-      requiredTrainings: g.requiredTrainings.join(', '),
-      order: g.order.toString(),
+    toast({
+      title: 'Thành công',
+      description: `${editing ? 'Cập nhật' : 'Thêm mới'} ${dataName} thành công`,
     });
-    setGradeDialog(true);
+    setDialogOpen(false);
   };
 
-  const saveGrade = () => {
-    if (!gradeForm.jobTitleId || !gradeForm.name.trim()) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập đầy đủ thông tin', variant: 'destructive' });
-      return;
-    }
-
-    const gradeData = {
-      jobTitleId: gradeForm.jobTitleId,
-      name: gradeForm.name,
-      description: gradeForm.description,
-      competencies: gradeForm.competencies.split(',').map(c => c.trim()).filter(Boolean),
-      requiredSkills: gradeForm.requiredSkills.split(',').map(s => s.trim()).filter(Boolean),
-      requiredTrainings: gradeForm.requiredTrainings.split(',').map(t => t.trim()).filter(Boolean),
-      order: parseInt(gradeForm.order) || 1,
-    };
-
-    if (editingGrade) {
-      setGrades(prev => prev.map(g => 
-        g.id === editingGrade.id 
-          ? { ...g, ...gradeData }
-          : g
-      ));
-      toast({ title: 'Thành công', description: 'Đã cập nhật bậc' });
+  const handleDelete = (id) => {
+    if (activeTab === 'jobTitles') {
+      setJobTitles((prev) => prev.filter((p) => p.id !== id));
+    } else if (activeTab === 'majors') {
+      setMajors((prev) => prev.filter((p) => p.id !== id));
     } else {
-      const newGrade: Grade = {
-        id: `g${Date.now()}`,
-        ...gradeData,
-      };
-      setGrades(prev => [...prev, newGrade]);
-      toast({ title: 'Thành công', description: 'Đã thêm bậc mới' });
+      setDegrees((prev) => prev.filter((p) => p.id !== id));
     }
-    setGradeDialog(false);
+    toast({ title: 'Đã xóa', description: 'Xóa thành công' });
   };
 
-  const deleteGrade = (id: string) => {
-    setGrades(prev => prev.filter(g => g.id !== id));
-    toast({ title: 'Đã xóa', description: 'Xóa bậc thành công' });
-  };
+  const currentData =
+    activeTab === 'jobTitles' ? jobTitles : activeTab === 'majors' ? majors : degrees;
 
   return (
     <Layout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Danh mục hệ thống</h1>
-          <p className="text-muted-foreground">Quản lý chức danh và bậc trong công ty</p>
+          <h1 className="text-3xl font-bold">Danh mục đào tạo & chức danh</h1>
+          <p className="text-muted-foreground">Quản lý các danh mục trong hệ thống</p>
         </div>
 
-        <Tabs defaultValue="job-titles" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="job-titles" className="gap-2">
-              <Briefcase className="h-4 w-4" />
-              Chức danh
-            </TabsTrigger>
-            <TabsTrigger value="grades" className="gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Bậc
-            </TabsTrigger>
-          </TabsList>
+        <Card>
+          <CardHeader>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="jobTitles">Chức danh</TabsTrigger>
+                <TabsTrigger value="majors">Ngành nghề</TabsTrigger>
+                <TabsTrigger value="degrees">Bậc học</TabsTrigger>
+              </TabsList>
 
-          {/* Job Titles Tab */}
-          <TabsContent value="job-titles" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={openAddJobTitle}>
-                <Plus className="h-4 w-4 mr-2" />
-                Thêm chức danh
-              </Button>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {jobTitles.map(jt => {
-                const dept = mockData.departments.find(d => d.id === jt.departmentId);
-                const gradeCount = grades.filter(g => g.jobTitleId === jt.id).length;
-                
-                return (
-                  <Card key={jt.id}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{jt.name}</CardTitle>
-                          {dept && (
-                            <Badge variant="outline" className="mt-2">
-                              {dept.name}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex gap-1">
-                          <Button size="icon" variant="ghost" onClick={() => openEditJobTitle(jt)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteJobTitle(jt.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-2">{jt.description}</p>
-                      <Badge variant="secondary">{gradeCount} bậc</Badge>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          {/* Grades Tab */}
-          <TabsContent value="grades" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={openAddGrade}>
-                <Plus className="h-4 w-4 mr-2" />
-                Thêm bậc
-              </Button>
-            </div>
-
-            {jobTitles.map(jt => {
-              const jobGrades = grades
-                .filter(g => g.jobTitleId === jt.id)
-                .sort((a, b) => a.order - b.order);
-              
-              if (jobGrades.length === 0) return null;
-
-              return (
-                <div key={jt.id} className="space-y-3">
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Briefcase className="h-5 w-5" />
-                    {jt.name}
-                  </h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {jobGrades.map(g => (
-                      <Card key={g.id}>
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-base">{g.name}</CardTitle>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button size="icon" variant="ghost" onClick={() => openEditGrade(g)}>
+              <TabsContent value="jobTitles">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex justify-end">
+                    <Button onClick={openAdd}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Thêm chức danh
+                    </Button>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tên chức danh</TableHead>
+                        <TableHead>Mô tả</TableHead>
+                        <TableHead>Phòng ban</TableHead>
+                        <TableHead className="w-[120px] text-right">Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {jobTitles.map((jt) => {
+                        const dept = mockData.departments.find((d) => d.id === jt.departmentId);
+                        return (
+                          <TableRow key={jt.id}>
+                            <TableCell className="font-medium">{jt.name}</TableCell>
+                            <TableCell>{jt.description}</TableCell>
+                            <TableCell>{dept ? dept.name : '-'}</TableCell>
+                            <TableCell className="text-right space-x-2">
+                              <Button variant="ghost" size="icon" onClick={() => openEdit(jt)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button size="icon" variant="ghost" onClick={() => deleteGrade(g.id)}>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(jt.id)}
+                              >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <p className="text-sm text-muted-foreground">{g.description}</p>
-                          
-                          <div>
-                            <p className="text-xs font-semibold mb-1">Năng lực:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {g.competencies.slice(0, 2).map((c, i) => (
-                                <Badge key={i} variant="outline" className="text-xs">
-                                  {c}
-                                </Badge>
-                              ))}
-                              {g.competencies.length > 2 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  +{g.competencies.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </TabsContent>
 
-                          <div>
-                            <p className="text-xs font-semibold mb-1">Kỹ năng:</p>
-                            <div className="flex flex-wrap gap-1">
-                              {g.requiredSkills.slice(0, 2).map((s, i) => (
-                                <Badge key={i} variant="secondary" className="text-xs">
-                                  {s}
-                                </Badge>
-                              ))}
-                              {g.requiredSkills.length > 2 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{g.requiredSkills.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+              <TabsContent value="majors">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex justify-end">
+                    <Button onClick={openAdd}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Thêm ngành nghề
+                    </Button>
                   </div>
-                </div>
-              );
-            })}
-          </TabsContent>
-        </Tabs>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tên ngành nghề</TableHead>
+                        <TableHead>Mô tả</TableHead>
+                        <TableHead className="text-right">Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {majors.map((m) => (
+                        <TableRow key={m.id}>
+                          <TableCell className="font-medium">{m.name}</TableCell>
+                          <TableCell>{m.description}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(m)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </TabsContent>
 
-        {/* Job Title Dialog */}
-        <Dialog open={jobTitleDialog} onOpenChange={setJobTitleDialog}>
+              <TabsContent value="degrees">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex justify-end">
+                    <Button onClick={openAdd}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Thêm bậc học
+                    </Button>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tên bậc học</TableHead>
+                        <TableHead>Mô tả</TableHead>
+                        <TableHead className="text-right">Thao tác</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {degrees.map((d) => (
+                        <TableRow key={d.id}>
+                          <TableCell className="font-medium">{d.name}</TableCell>
+                          <TableCell>{d.description}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(d.id)}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </TabsContent>
+            </Tabs>
+          </CardHeader>
+        </Card>
+
+        {/* DIALOG */}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingJobTitle ? 'Chỉnh sửa' : 'Thêm'} chức danh</DialogTitle>
-              <DialogDescription>
-                Nhập thông tin chức danh trong công ty
-              </DialogDescription>
+              <DialogTitle>
+                {editing ? 'Chỉnh sửa' : 'Thêm mới'}{' '}
+                {activeTab === 'jobTitles'
+                  ? 'chức danh'
+                  : activeTab === 'majors'
+                  ? 'ngành nghề'
+                  : 'bậc học'}
+              </DialogTitle>
+              <DialogDescription>Điền thông tin chi tiết bên dưới</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>Tên chức danh *</Label>
-                <Input
-                  value={jobTitleForm.name}
-                  onChange={e => setJobTitleForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="VD: Kỹ sư phần mềm"
-                />
-              </div>
-              <div>
-                <Label>Mô tả</Label>
-                <Textarea
-                  value={jobTitleForm.description}
-                  onChange={e => setJobTitleForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Mô tả về chức danh này"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label>Phòng ban</Label>
-                <Select
-                  value={jobTitleForm.departmentId}
-                  onValueChange={v => setJobTitleForm(f => ({ ...f, departmentId: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn phòng ban" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockData.departments.map(d => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setJobTitleDialog(false)}>
-                  Hủy
-                </Button>
-                <Button onClick={saveJobTitle}>Lưu</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Grade Dialog */}
-        <Dialog open={gradeDialog} onOpenChange={setGradeDialog}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingGrade ? 'Chỉnh sửa' : 'Thêm'} bậc</DialogTitle>
-              <DialogDescription>
-                Nhập thông tin bậc trong chức danh
-              </DialogDescription>
-            </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Chức danh *</Label>
-                <Select
-                  value={gradeForm.jobTitleId}
-                  onValueChange={v => setGradeForm(f => ({ ...f, jobTitleId: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn chức danh" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {jobTitles.map(jt => (
-                      <SelectItem key={jt.id} value={jt.id}>
-                        {jt.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Tên bậc *</Label>
+                <Label>Tên *</Label>
                 <Input
-                  value={gradeForm.name}
-                  onChange={e => setGradeForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="VD: G1 - Junior"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  placeholder="Nhập tên"
                 />
               </div>
               <div>
                 <Label>Mô tả</Label>
                 <Textarea
-                  value={gradeForm.description}
-                  onChange={e => setGradeForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Mô tả về bậc này"
-                  rows={2}
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Nhập mô tả"
                 />
               </div>
-              <div>
-                <Label>Năng lực (phân cách bởi dấu phẩy)</Label>
-                <Textarea
-                  value={gradeForm.competencies}
-                  onChange={e => setGradeForm(f => ({ ...f, competencies: e.target.value }))}
-                  placeholder="VD: Hiểu biết cơ bản, Làm việc nhóm, Ham học hỏi"
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label>Kỹ năng yêu cầu (phân cách bởi dấu phẩy)</Label>
-                <Textarea
-                  value={gradeForm.requiredSkills}
-                  onChange={e => setGradeForm(f => ({ ...f, requiredSkills: e.target.value }))}
-                  placeholder="VD: JavaScript, React, Git"
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label>Mã các khóa đào tạo yêu cầu (phân cách bởi dấu phẩy)</Label>
-                <Input
-                  value={gradeForm.requiredTrainings}
-                  onChange={e => setGradeForm(f => ({ ...f, requiredTrainings: e.target.value }))}
-                  placeholder="VD: tr001, tr004"
-                />
-              </div>
-              <div>
-                <Label>Thứ tự hiển thị</Label>
-                <Input
-                  type="number"
-                  value={gradeForm.order}
-                  onChange={e => setGradeForm(f => ({ ...f, order: e.target.value }))}
-                  placeholder="1"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setGradeDialog(false)}>
+
+              {activeTab === 'jobTitles' && (
+                <div>
+                  <Label>Phòng ban</Label>
+                  <Select
+                    value={form.departmentId}
+                    onValueChange={(v) => setForm((f) => ({ ...f, departmentId: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn phòng ban" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mockData.departments.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Hủy
                 </Button>
-                <Button onClick={saveGrade}>Lưu</Button>
+                <Button onClick={handleSave}>Lưu</Button>
               </div>
             </div>
           </DialogContent>

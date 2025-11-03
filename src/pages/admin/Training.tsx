@@ -31,12 +31,30 @@ import { X } from 'lucide-react';
 export default function Training() {
   const navigate = useNavigate();
   const { role } = useAuthStore();
+
+  // Lọc khóa học chờ duyệt cho admin
+  const pendingTrainings = mockData.trainings.filter(t => t.approvalStatus === 'Pending');
+  const approvedTrainings = mockData.trainings.filter(t => t.approvalStatus === 'Approved');
   
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedTrainingId, setSelectedTrainingId] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const handleApprove = (trainingId: string) => {
+    const training = mockData.trainings.find(t => t.id === trainingId);
+    if (training) {
+      training.approvalStatus = 'Approved';
+      training.approvedBy = 'emp001'; // Admin ID
+      training.approvedDate = new Date().toISOString().split('T')[0];
+      toast.success('Đã duyệt khóa học');
+    }
+  };
+
+  const handleReject = (trainingId: string) => {
+    const training = mockData.trainings.find(t => t.id === trainingId);
+    if (training) {
+      training.approvalStatus = 'Rejected';
+      training.approvedBy = 'emp001';
+      training.approvedDate = new Date().toISOString().split('T')[0];
+      toast.success('Đã từ chối khóa học');
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -49,59 +67,24 @@ export default function Training() {
         {status === 'Completed'
           ? 'Hoàn thành'
           : status === 'Ongoing'
-          ? 'Đang diễn ra'
-          : 'Sắp tới'}
+            ? 'Đang diễn ra'
+            : 'Sắp tới'}
       </Badge>
     );
   };
 
-  const handleAssignTraining = (trainingId: string) => {
-    setSelectedTrainingId(trainingId);
-    setSelectedEmployees([]);
-    setSearchQuery('');
-    setAssignDialogOpen(true);
+  const getCourseTypeName = (type: string) => {
+    return type === 'year' ? 'Năm' : type === 'quarter' ? 'Quý' : 'Tháng';
   };
-
-  const handleSelectEmployee = (employeeId: string) => {
-    if (!selectedEmployees.includes(employeeId)) {
-      setSelectedEmployees([...selectedEmployees, employeeId]);
-      setSearchQuery('');
-    }
-  };
-
-  const handleRemoveEmployee = (employeeId: string) => {
-    setSelectedEmployees(selectedEmployees.filter(id => id !== employeeId));
-  };
-
-  const handleConfirmAssign = () => {
-    if (selectedEmployees.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một nhân viên');
-      return;
-    }
-    toast.success(`Đã giao khóa học cho ${selectedEmployees.length} nhân viên`);
-    setAssignDialogOpen(false);
-    setSelectedEmployees([]);
-  };
-
-  const filteredEmployees = mockData.employees.filter(emp => {
-    const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
-    return fullName.includes(searchQuery.toLowerCase()) || emp.email.toLowerCase().includes(searchQuery.toLowerCase());
-  });
 
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Quản lý đào tạo</h1>
-            <p className="text-muted-foreground">Chương trình đào tạo và phát triển</p>
+            <h1 className="text-3xl font-bold">Duyệt đào tạo</h1>
+            <p className="text-muted-foreground">Duyệt khóa học do Trưởng phòng tạo</p>
           </div>
-          {role === 'Admin' && (
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Tạo khóa học mới
-            </Button>
-          )}
         </div>
 
         {/* Training Stats */}
@@ -109,11 +92,21 @@ export default function Training() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Tổng khóa học
+                Chờ duyệt
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{mockData.trainings.length}</div>
+              <div className="text-2xl font-bold text-warning">{pendingTrainings.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Đã duyệt
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">{approvedTrainings.length}</div>
             </CardContent>
           </Card>
           <Card>
@@ -123,7 +116,7 @@ export default function Training() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-warning">
+              <div className="text-2xl font-bold text-primary">
                 {mockData.trainings.filter((t) => t.status === 'Ongoing').length}
               </div>
             </CardContent>
@@ -135,47 +128,108 @@ export default function Training() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-success">
+              <div className="text-2xl font-bold">
                 {mockData.trainings.filter((t) => t.status === 'Completed').length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Sắp tới
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {mockData.trainings.filter((t) => t.status === 'Upcoming').length}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Training Table */}
+        {/* Pending Trainings */}
+        {pendingTrainings.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Khóa học chờ duyệt</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Khóa học</TableHead>
+                    <TableHead>Loại</TableHead>
+                    <TableHead>Phòng ban</TableHead>
+                    <TableHead>Người tạo</TableHead>
+                    <TableHead>Thời lượng</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingTrainings.map((training) => {
+                    const creator = mockData.employees.find(e => e.id === training.createdBy);
+                    const department = mockData.departments.find(d => d.id === training.departmentId);
+                    return (
+                      <TableRow key={training.id}>
+                        <TableCell>
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-warning/10">
+                              <BookOpen className="h-4 w-4 text-warning" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{training.title}</p>
+                              <p className="text-sm text-muted-foreground line-clamp-1">
+                                {training.description}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{getCourseTypeName(training.courseType)}</Badge>
+                        </TableCell>
+                        <TableCell>{department?.name}</TableCell>
+                        <TableCell>{creator?.firstName} {creator?.lastName}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            <span>{training.durationDays} ngày</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleApprove(training.id)}
+                            >
+                              Duyệt
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleReject(training.id)}
+                            >
+                              Từ chối
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Approved Trainings */}
         <Card>
           <CardHeader>
-            <CardTitle>Danh sách khóa học</CardTitle>
+            <CardTitle>Danh sách khóa học đã duyệt</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Khóa học</TableHead>
+                  <TableHead>Loại</TableHead>
+                  <TableHead>Phòng ban</TableHead>
                   <TableHead>Thời lượng</TableHead>
-                  <TableHead>Học viên</TableHead>
                   <TableHead>Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockData.trainings.map((training) => {
-                  const enrollments = mockData.trainingEnrollments.filter(
-                    (e) => e.trainingId === training.id
-                  );
-                  
+                {approvedTrainings.map((training) => {
+                  const department = mockData.departments.find(d => d.id === training.departmentId);
                   return (
                     <TableRow key={training.id}>
                       <TableCell>
@@ -192,13 +246,14 @@ export default function Training() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        <Badge variant="outline">{getCourseTypeName(training.courseType)}</Badge>
+                      </TableCell>
+                      <TableCell>{department?.name}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Clock className="h-4 w-4" />
                           <span>{training.durationDays} ngày</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">{enrollments.length}</span> học viên
                       </TableCell>
                       <TableCell>{getStatusBadge(training.status)}</TableCell>
                       <TableCell>
@@ -210,23 +265,6 @@ export default function Training() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {role === 'Admin' && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleAssignTraining(training.id)}
-                              >
-                                <UserPlus className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </>
-                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -237,121 +275,6 @@ export default function Training() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Create Training Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Tạo khóa học mới</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Tên khóa học</Label>
-              <Input id="title" placeholder="Nhập tên khóa học" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Mô tả</Label>
-              <Textarea id="description" placeholder="Nhập mô tả khóa học" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="duration">Thời lượng (ngày)</Label>
-                <Input id="duration" type="number" placeholder="5" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="instructor">Giảng viên</Label>
-                <Input id="instructor" placeholder="Tên giảng viên" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={() => {
-              toast.success('Đã tạo khóa học mới');
-              setCreateDialogOpen(false);
-            }}>
-              Tạo khóa học
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign Training Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Giao khóa học cho nhân viên</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Selected Employees Tags */}
-            {selectedEmployees.length > 0 && (
-              <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
-                {selectedEmployees.map(empId => {
-                  const emp = mockData.employees.find(e => e.id === empId);
-                  return (
-                    <Badge key={empId} variant="secondary" className="pl-3 pr-1 py-1">
-                      {emp?.firstName} {emp?.lastName}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 ml-1 hover:bg-transparent"
-                        onClick={() => handleRemoveEmployee(empId)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Search Input */}
-            <div className="grid gap-2">
-              <Label htmlFor="search">Tìm kiếm nhân viên</Label>
-              <Input
-                id="search"
-                placeholder="Nhập tên hoặc email nhân viên..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Search Results */}
-            {searchQuery && (
-              <div className="border rounded-lg max-h-60 overflow-y-auto">
-                {filteredEmployees.length > 0 ? (
-                  filteredEmployees.map(emp => (
-                    <div
-                      key={emp.id}
-                      className={`p-3 hover:bg-muted cursor-pointer border-b last:border-b-0 ${
-                        selectedEmployees.includes(emp.id) ? 'bg-muted' : ''
-                      }`}
-                      onClick={() => handleSelectEmployee(emp.id)}
-                    >
-                      <p className="font-medium">{emp.firstName} {emp.lastName}</p>
-                      <p className="text-sm text-muted-foreground">{emp.email}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground py-4">
-                    Không tìm thấy nhân viên
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={handleConfirmAssign}>
-              Giao cho {selectedEmployees.length} nhân viên
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Layout>
   );
 }

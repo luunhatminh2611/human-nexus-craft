@@ -12,18 +12,32 @@ export default function Login() {
 
   const roles: { value: UserRole; label: string; icon: typeof Shield; description: string; empId?: string }[] = [
     {
-      value: 'Admin',
-      label: 'Quản trị viên',
+      value: 'Director',
+      label: 'Giám đốc',
       icon: Shield,
       description: 'Toàn quyền quản lý hệ thống',
       empId: 'emp001',
     },
     {
-      value: 'Manager',
-      label: 'Quản lý',
+      value: 'ViceDirector',
+      label: 'Phó giám đốc',
       icon: UserCog,
-      description: 'Quản lý team và phòng ban',
+      description: 'Hỗ trợ giám đốc quản lý',
       empId: 'emp002',
+    },
+    {
+      value: 'DepartmentHead',
+      label: 'Trưởng phòng',
+      icon: UserCog,
+      description: 'Quản lý phòng ban',
+      empId: 'emp003',
+    },
+    {
+      value: 'DeputyHead',
+      label: 'Phó phòng',
+      icon: UserCog,
+      description: 'Hỗ trợ quản lý phòng ban',
+      empId: 'emp004',
     },
     {
       value: 'Employee',
@@ -37,13 +51,12 @@ export default function Login() {
   const handleRoleSelect = (role: UserRole, empId?: string) => {
     setRole(role, empId);
     if (role === 'Employee' && empId) {
-      // Load mock data for the selected employee
-      const employeeData = mockData.employees.find(emp => emp.id === empId);
-      if (employeeData) {
-      }
       navigate('/employee/profile');
+    } else if (role === 'Director') {
+      navigate('/admin/dashboard');
     } else {
-      navigate(`/${role}/dashboard`);
+      // ViceDirector, DepartmentHead, DeputyHead go to manager routes
+      navigate('/manager/dashboard');
     }
   };
 

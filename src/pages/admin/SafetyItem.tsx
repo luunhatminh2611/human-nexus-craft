@@ -11,11 +11,30 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Search, Plus, Edit, Trash2, X, PackagePlus, Share2 } from "lucide-react";
+import {
+    Search,
+    Plus,
+    Edit,
+    Trash2,
+    X,
+    PackagePlus,
+    Share2,
+    ChevronDown,
+    ChevronUp,
+} from "lucide-react";
 import mockData from "@/mock/data";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-import { Select, SelectTrigger, SelectContent, SelectValue, SelectItem } from "@/components/ui/select";
+import {
+    Select,
+    SelectTrigger,
+    SelectContent,
+    SelectValue,
+    SelectItem,
+} from "@/components/ui/select";
+
+/* ---------- Các modal giữ nguyên ---------- */
+// (Bạn không cần chỉnh gì trong các modal SafetyItemModal, AddQuantityModal, DistributeModal)
 
 function SafetyItemModal({ isOpen, onClose, onSave, editingItem }) {
     const [formData, setFormData] = useState(
@@ -33,7 +52,11 @@ function SafetyItemModal({ isOpen, onClose, onSave, editingItem }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!formData.name || !formData.replacementCycleDays || !formData.defaultExpireDays) {
+        if (
+            !formData.name ||
+            !formData.replacementCycleDays ||
+            !formData.defaultExpireDays
+        ) {
             alert("Vui lòng nhập đầy đủ thông tin.");
             return;
         }
@@ -68,23 +91,33 @@ function SafetyItemModal({ isOpen, onClose, onSave, editingItem }) {
 
                     <div className="flex gap-4">
                         <div className="flex-1">
-                            <label className="text-sm font-medium">Chu kỳ thay mới (ngày)</label>
+                            <label className="text-sm font-medium">
+                                Chu kỳ thay mới (ngày)
+                            </label>
                             <Input
                                 type="number"
                                 value={formData.replacementCycleDays}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, replacementCycleDays: e.target.value })
+                                    setFormData({
+                                        ...formData,
+                                        replacementCycleDays: e.target.value,
+                                    })
                                 }
                                 placeholder="VD: 180"
                             />
                         </div>
                         <div className="flex-1">
-                            <label className="text-sm font-medium">Hạn sử dụng mặc định (ngày)</label>
+                            <label className="text-sm font-medium">
+                                Hạn sử dụng mặc định (ngày)
+                            </label>
                             <Input
                                 type="number"
                                 value={formData.defaultExpireDays}
                                 onChange={(e) =>
-                                    setFormData({ ...formData, defaultExpireDays: e.target.value })
+                                    setFormData({
+                                        ...formData,
+                                        defaultExpireDays: e.target.value,
+                                    })
                                 }
                                 placeholder="VD: 365"
                             />
@@ -118,7 +151,9 @@ function SafetyItemModal({ isOpen, onClose, onSave, editingItem }) {
                         <Button type="button" variant="outline" onClick={onClose}>
                             Hủy
                         </Button>
-                        <Button type="submit">{editingItem ? "Lưu thay đổi" : "Thêm mới"}</Button>
+                        <Button type="submit">
+                            {editingItem ? "Lưu thay đổi" : "Thêm mới"}
+                        </Button>
                     </div>
                 </form>
             </div>
@@ -126,7 +161,6 @@ function SafetyItemModal({ isOpen, onClose, onSave, editingItem }) {
     );
 }
 
-// Modal nhập kho
 function AddQuantityModal({ isOpen, onClose, onConfirm }) {
     const [amount, setAmount] = useState(0);
     if (!isOpen) return null;
@@ -147,15 +181,23 @@ function AddQuantityModal({ isOpen, onClose, onConfirm }) {
                     onChange={(e) => setAmount(Number(e.target.value))}
                 />
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={onClose}>Hủy</Button>
-                    <Button onClick={() => { onConfirm(amount); onClose(); }}>Xác nhận</Button>
+                    <Button variant="outline" onClick={onClose}>
+                        Hủy
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            onConfirm(amount);
+                            onClose();
+                        }}
+                    >
+                        Xác nhận
+                    </Button>
                 </div>
             </div>
         </div>
     );
 }
 
-// Modal phân phát vật tư
 function DistributeModal({ isOpen, onClose, onConfirm, departments }) {
     const [deptId, setDeptId] = useState("");
     const [quantity, setQuantity] = useState(0);
@@ -178,7 +220,9 @@ function DistributeModal({ isOpen, onClose, onConfirm, departments }) {
                     </SelectTrigger>
                     <SelectContent>
                         {departments.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            <SelectItem key={d.id} value={d.id}>
+                                {d.name}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -192,7 +236,9 @@ function DistributeModal({ isOpen, onClose, onConfirm, departments }) {
                 />
 
                 <div className="flex justify-end gap-2 pt-4">
-                    <Button variant="outline" onClick={onClose}>Hủy</Button>
+                    <Button variant="outline" onClick={onClose}>
+                        Hủy
+                    </Button>
                     <Button
                         onClick={() => {
                             onConfirm({ deptId, quantity });
@@ -208,13 +254,16 @@ function DistributeModal({ isOpen, onClose, onConfirm, departments }) {
     );
 }
 
+/* ---------- COMPONENT CHÍNH ---------- */
+
 export default function SafetyItems() {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [items, setItems] = useState(mockData.safetyItems || []);
+    const [expandedRows, setExpandedRows] = useState({});
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-
     const [addQtyModal, setAddQtyModal] = useState({ open: false, item: null });
     const [distModal, setDistModal] = useState({ open: false, item: null });
 
@@ -227,6 +276,10 @@ export default function SafetyItems() {
                 item.description?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [items, searchTerm]);
+
+    const toggleExpand = (id) => {
+        setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+    };
 
     const handleAdd = () => {
         setEditingItem(null);
@@ -248,6 +301,7 @@ export default function SafetyItems() {
                 ...data,
                 id: `s${Math.random().toString(36).slice(2, 7)}`,
                 quantity: data.quantity || 0,
+                distributedDepartments: [],
             };
             setItems((prev) => [...prev, newItem]);
         }
@@ -263,21 +317,32 @@ export default function SafetyItems() {
     const handleAddQuantity = (item, amount) => {
         setItems((prev) =>
             prev.map((i) =>
-                i.id === item.id ? { ...i, quantity: (i.quantityInStock || 0) + amount } : i
+                i.id === item.id ? { ...i, quantityInStock: (i.quantityInStock || 0) + amount } : i
             )
         );
     };
 
     const handleDistribute = (item, { deptId, quantity }) => {
-        setItems((prev) =>
-            prev.map((i) =>
-                i.id === item.id
-                    ? { ...i, quantity: Math.max((i.quantityInStock || 0) - quantity, 0) }
-                    : i
-            )
-        );
         const deptName = departments.find((d) => d.id === deptId)?.name;
-        alert(`Đã phân phát ${quantity} ${item.name} cho phòng ${deptName}`);
+        setItems((prev) =>
+            prev.map((i) => {
+                if (i.id === item.id) {
+                    const updatedList = i.distributedDepartments || [];
+                    const existing = updatedList.find((d) => d.department === deptId);
+                    if (existing) {
+                        existing.quantity += quantity;
+                    } else {
+                        updatedList.push({ department: deptName, quantity });
+                    }
+                    return {
+                        ...i,
+                        quantityInStock: Math.max((i.quantityInStock || 0) - quantity, 0),
+                        distributedDepartments: updatedList,
+                    };
+                }
+                return i;
+            })
+        );
     };
 
     return (
@@ -298,7 +363,6 @@ export default function SafetyItems() {
                     </TabsList>
                 </Tabs>
 
-                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold">Danh sách đồ bảo hộ</h1>
@@ -312,7 +376,6 @@ export default function SafetyItems() {
                     </Button>
                 </div>
 
-                {/* Tìm kiếm */}
                 <Card className="p-4">
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative">
@@ -327,11 +390,11 @@ export default function SafetyItems() {
                     </div>
                 </Card>
 
-                {/* Bảng danh sách */}
                 <Card>
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead></TableHead>
                                 <TableHead>Tên vật tư</TableHead>
                                 <TableHead>Chu kỳ thay mới</TableHead>
                                 <TableHead>Hạn sử dụng</TableHead>
@@ -343,34 +406,89 @@ export default function SafetyItems() {
 
                         <TableBody>
                             {filteredItems.map((item) => (
-                                <TableRow key={item.id} className="hover:bg-muted/50">
-                                    <TableCell className="font-medium">{item.name}</TableCell>
-                                    <TableCell>{item.replacementCycleDays}</TableCell>
-                                    <TableCell>{item.defaultExpireDays}</TableCell>
-                                    <TableCell>{item.quantityInStock || 0}</TableCell>
-                                    <TableCell className="max-w-sm truncate">
-                                        {item.description || "-"}
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-1">
-                                        <Button variant="ghost" size="sm" onClick={() => setAddQtyModal({ open: true, item })}>
-                                            <PackagePlus className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => setDistModal({ open: true, item })}>
-                                            <Share2 className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(item.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
+                                <>
+                                    <TableRow key={item.id} className="hover:bg-muted/50">
+                                        <TableCell>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => toggleExpand(item.id)}
+                                            >
+                                                {expandedRows[item.id] ? (
+                                                    <ChevronUp className="h-4 w-4" />
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </TableCell>
+                                        <TableCell className="font-medium">{item.name}</TableCell>
+                                        <TableCell>{item.replacementCycleDays}</TableCell>
+                                        <TableCell>{item.defaultExpireDays}</TableCell>
+                                        <TableCell>{item.quantityInStock || 0}</TableCell>
+                                        <TableCell className="max-w-sm truncate">
+                                            {item.description || "-"}
+                                        </TableCell>
+                                        <TableCell className="text-right space-x-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setAddQtyModal({ open: true, item })}
+                                            >
+                                                <PackagePlus className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setDistModal({ open: true, item })}
+                                            >
+                                                <Share2 className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleEdit(item)}
+                                            >
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-destructive"
+                                                onClick={() => handleDelete(item.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+
+                                    {expandedRows[item.id] && item.distributedDepartments?.length > 0 && (
+                                        <TableRow className="bg-muted/30">
+                                            <TableCell colSpan={7}>
+                                                <div className="pl-10 space-y-2">
+                                                    <p className="font-medium text-sm text-muted-foreground">
+                                                        Đã phân phát cho:
+                                                    </p>
+                                                    <ul className="list-disc pl-6 space-y-1 text-sm">
+                                                        {item.distributedDepartments.map((d, index) => (
+                                                            <li key={index}>
+                                                                {d.department}:{" "}
+                                                                <span className="font-semibold">{d.quantity}</span> cái
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </>
                             ))}
 
                             {filteredItems.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                                    <TableCell
+                                        colSpan={7}
+                                        className="text-center py-6 text-muted-foreground"
+                                    >
                                         Không tìm thấy vật tư phù hợp.
                                     </TableCell>
                                 </TableRow>
@@ -384,7 +502,6 @@ export default function SafetyItems() {
                 </div>
             </div>
 
-            {/* Các modal */}
             <SafetyItemModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}

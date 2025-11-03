@@ -60,8 +60,8 @@ export default function TrainingDetail() {
         {status === 'Completed'
           ? 'Hoàn thành'
           : status === 'Ongoing'
-          ? 'Đang diễn ra'
-          : 'Sắp tới'}
+            ? 'Đang diễn ra'
+            : 'Sắp tới'}
       </Badge>
     );
   };
@@ -93,130 +93,147 @@ export default function TrainingDetail() {
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Thời lượng
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">{training.durationDays} ngày</p>
-                </CardContent>
-              </Card>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Thời lượng
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">{training.durationDays} ngày</p>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Học viên
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {enrollments.length}
-                    {training.maxParticipants && (
-                      <span className="text-sm text-muted-foreground font-normal">
-                        {' '}
-                        / {training.maxParticipants}
-                      </span>
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Học viên
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold">
+                {enrollments.length}
+                {training.maxParticipants && (
+                  <span className="text-sm text-muted-foreground font-normal">
+                    {' '}
+                    / {training.maxParticipants}
+                  </span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Giảng viên
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg font-semibold">{training.instructor || 'Chưa có'}</p>
-                </CardContent>
-              </Card>
-            </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Giảng viên
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-lg font-semibold">{training.instructor || 'Chưa có'}</p>
+            </CardContent>
+          </Card>
 
-            {training.location && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    Địa điểm
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-base">{training.location}</p>
-                </CardContent>
-              </Card>
-            )}
-
-            {training.deadline && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    Hạn chót
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-base">
-                    {new Date(training.deadline).toLocaleDateString('vi-VN')}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
+          
+          {training.description && (
             <Card>
-              <CardHeader>
-                <CardTitle>Danh sách nhân viên đã được giao ({enrolledEmployees.length})</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <PlayCircle className="h-4 w-4" />
+                  Mô tả khóa học
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {enrolledEmployees.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nhân viên</TableHead>
-                        <TableHead>Phòng ban</TableHead>
-                        <TableHead>Bậc</TableHead>
-                        <TableHead>Ngày giao</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {enrolledEmployees.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">
-                                {item.employee?.firstName} {item.employee?.lastName}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {item.employee?.email}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>{item.department?.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.employee?.grade}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(item.enrolledDate).toLocaleDateString('vi-VN')}
-                          </TableCell>
-                          <TableCell>{getEnrollmentStatusBadge(item.status)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Chưa có nhân viên nào được giao
-                  </p>
-                )}
+                <p className="text-base leading-relaxed text-muted-foreground whitespace-pre-line">
+                  {training.description}
+                </p>
               </CardContent>
             </Card>
+          )}
+        </div>
+
+        {training.location && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Địa điểm
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-base">{training.location}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {training.deadline && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Hạn chót
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-base">
+                {new Date(training.deadline).toLocaleDateString('vi-VN')}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Danh sách nhân viên đã được giao ({enrolledEmployees.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {enrolledEmployees.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nhân viên</TableHead>
+                    <TableHead>Phòng ban</TableHead>
+                    <TableHead>Bậc</TableHead>
+                    <TableHead>Ngày giao</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {enrolledEmployees.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">
+                            {item.employee?.firstName} {item.employee?.lastName}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.employee?.email}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.department?.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{item.employee?.grade}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(item.enrolledDate).toLocaleDateString('vi-VN')}
+                      </TableCell>
+                      <TableCell>{getEnrollmentStatusBadge(item.status)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Chưa có nhân viên nào được giao
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

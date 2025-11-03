@@ -32,9 +32,14 @@ import DepartmentList from "./pages/admin/DepartmentList";
 import AdminCatalog from "./pages/admin/Catalog";
 import EmployeeCareerPath from "./pages/employee/CareerPath";
 import AdminMedicalRecords from "./pages/admin/AdminMedicalRecord";
+import AdminTransferManagement from "./pages/admin/TransferManagement";
 import WorkScheduleManagement from "./pages/admin/WorkSchedule";
 import LeaveRequestPage from "./pages/admin/LeaveRequest";
 import Reports from "./pages/admin/Reports";
+import AdminKPIManagement from "./pages/admin/KPIManagement";
+import ManagerKPIManagement from "./pages/manager/KPIManagement";
+import ManagerTrainingManagement from "./pages/manager/TrainingManagement";
+import ManagerTransferManagement from "./pages/manager/TransferManagement";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +56,7 @@ function RoleBasedRedirect() {
   
   if (role === 'Employee') {
     return <Navigate to="/employee/profile" replace />;
-  } else if (role === 'Manager') {
+  } else if (role === 'ViceDirector' || role === 'DepartmentHead' || role === 'DeputyHead') {
     return <Navigate to="/manager/dashboard" replace />;
   }
   
@@ -104,6 +109,46 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AdminTraining />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/kpi"
+            element={
+              <ProtectedRoute>
+                <AdminKPIManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/transfers"
+            element={
+              <ProtectedRoute>
+                <AdminTransferManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/kpi"
+            element={
+              <ProtectedRoute>
+                <ManagerKPIManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/training-management"
+            element={
+              <ProtectedRoute>
+                <ManagerTrainingManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/transfers"
+            element={
+              <ProtectedRoute>
+                <ManagerTransferManagement />
               </ProtectedRoute>
             }
           />

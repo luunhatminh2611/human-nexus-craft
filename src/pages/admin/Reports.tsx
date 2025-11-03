@@ -11,6 +11,7 @@ import mockData from "@/mock/data";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Layout } from "@/components/Layout";
 
 interface Column {
   id: string;
@@ -176,81 +177,83 @@ export default function Reports() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Báo cáo tổng hợp</h1>
-          <p className="text-muted-foreground mt-1">Quản lý và xuất báo cáo thông tin nhân viên</p>
-        </div>
-        <div className="flex gap-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline">
-                <Settings2 className="h-4 w-4 mr-2" />
-                Tùy chỉnh cột
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Tùy chỉnh hiển thị cột</SheetTitle>
-                <SheetDescription>Chọn các cột muốn hiển thị trong báo cáo</SheetDescription>
-              </SheetHeader>
-              <ScrollArea className="h-[calc(100vh-200px)] mt-4">
-                <div className="space-y-4">
-                  {columns.map((col) => (
-                    <div key={col.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={col.id}
-                        checked={col.visible}
-                        onCheckedChange={() => toggleColumn(col.id)}
-                      />
-                      <Label htmlFor={col.id} className="cursor-pointer">
-                        {col.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
-          <Button onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Xuất báo cáo
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Danh sách nhân viên chi tiết</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border overflow-auto">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableContext items={visibleColumns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-                      {visibleColumns.map((col) => (
-                        <SortableHeader key={col.id} column={col} />
-                      ))}
-                    </SortableContext>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportData.map((row) => (
-                    <TableRow key={row.id}>
-                      {visibleColumns.map((col) => (
-                        <TableCell key={col.id}>{row[col.id as keyof typeof row]}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </DndContext>
+    <Layout>
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Báo cáo tổng hợp</h1>
+            <p className="text-muted-foreground mt-1">Quản lý và xuất báo cáo thông tin nhân viên</p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="flex gap-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline">
+                  <Settings2 className="h-4 w-4 mr-2" />
+                  Tùy chỉnh cột
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Tùy chỉnh hiển thị cột</SheetTitle>
+                  <SheetDescription>Chọn các cột muốn hiển thị trong báo cáo</SheetDescription>
+                </SheetHeader>
+                <ScrollArea className="h-[calc(100vh-200px)] mt-4">
+                  <div className="space-y-4">
+                    {columns.map((col) => (
+                      <div key={col.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={col.id}
+                          checked={col.visible}
+                          onCheckedChange={() => toggleColumn(col.id)}
+                        />
+                        <Label htmlFor={col.id} className="cursor-pointer">
+                          {col.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </SheetContent>
+            </Sheet>
+            <Button onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Xuất báo cáo
+            </Button>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Danh sách nhân viên chi tiết</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border overflow-auto">
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableContext items={visibleColumns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+                        {visibleColumns.map((col) => (
+                          <SortableHeader key={col.id} column={col} />
+                        ))}
+                      </SortableContext>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reportData.map((row) => (
+                      <TableRow key={row.id}>
+                        {visibleColumns.map((col) => (
+                          <TableCell key={col.id}>{row[col.id as keyof typeof row]}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </DndContext>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
   );
 }

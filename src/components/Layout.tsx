@@ -51,18 +51,18 @@ export function Layout({ children }: LayoutProps) {
     if (role === 'Employee') {
       return [
         { label: 'Hồ sơ', icon: User, path: '/employee/profile' },
-        // { label: 'Lương & Phúc lợi', icon: DollarSign, path: '/employee/payroll' },
         { label: 'Đào tạo', icon: BookOpen, path: '/employee/learning' },
-        // { label: 'Đánh giá', icon: FileText, path: '/employee/performance' },
         { label: 'BHLĐ được cấp', icon: BoxIcon, path: '/employee/safety' },
         { label: 'Lộ trình thăng tiến', icon: TrendingUp, path: '/employee/career-path' },
       ];
-    } else if (role === 'Manager') {
+    } else if (role === 'ViceDirector' || role === 'DepartmentHead' || role === 'DeputyHead') {
       return [
         { label: 'Dashboard', icon: LayoutDashboard, path: '/manager/dashboard' },
-        { label: 'Team', icon: Users, path: '/manager/employees' },
+        { label: 'Phòng ban', icon: Users, path: '/manager/employees' },
         { label: 'Sơ đồ tổ chức', icon: Network, path: '/manager/org-chart' },
-        { label: 'Đào tạo', icon: BookOpen, path: '/manager/training' },
+        { label: 'Đào tạo', icon: BookOpen, path: '/manager/training-management' },
+        { label: 'Quản lý KPI', icon: FileBarChart, path: '/manager/kpi' },
+        { label: 'Quản lý điều động', icon: Users, path: '/manager/transfers' },
         { label: 'Hồ sơ', icon: User, path: '/manager/profile' },
         { label: 'Phân phát BHLĐ', icon: BoxIcon, path: '/manager/safety-items' },
         { label: 'Lộ trình thăng tiến', icon: TrendingUp, path: '/employee/career-path' },
@@ -72,9 +72,10 @@ export function Layout({ children }: LayoutProps) {
       { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
       { label: 'Nhân viên', icon: Users, path: '/admin/employees' },
       { label: 'Sơ đồ tổ chức', icon: Network, path: '/admin/org-chart' },
-      { label: 'Đào tạo', icon: BookOpen, path: '/admin/training' },
-      { label: 'Lương', icon: DollarSign, path: '/admin/employee-salary' },
-      { label: 'Hồ sơ', icon: User, path: '/admin/profile' },
+      { label: 'Duyệt đào tạo', icon: BookOpen, path: '/admin/training' },
+      { label: 'Quản lý KPI', icon: FileBarChart, path: '/admin/kpi' },
+      { label: 'Quản lý điều động', icon: Users, path: '/admin/transfers' },
+      { label: 'Lương', icon: DollarSign, path: '/admin/salary' },
       { label: 'Quản lý BHLĐ', icon: BoxIcon, path: '/admin/safety-dashboard' },
       { label: 'Danh mục hệ thống', icon: Briefcase, path: '/admin/catalog' },
       { label: 'HSYT cần duyệt', icon: HeartPulse, path: '/admin/medical-records' },
@@ -164,7 +165,7 @@ export function Layout({ children }: LayoutProps) {
                 <DropdownMenuItem
                   onClick={() => {
                     if (role === 'Employee') navigate('/employee/profile');
-                    else if (role === 'Manager') navigate('/manager/profile');
+                    else if (role === 'ViceDirector' || role === 'DepartmentHead' || role === 'DeputyHead') navigate('/manager/profile');
                     else navigate('/admin/profile');
                   }}
                 >

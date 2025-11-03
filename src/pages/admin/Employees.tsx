@@ -41,8 +41,6 @@ export default function Employees() {
 
   // State cho dialog thêm nhân viên
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [employees, setEmployees] = useState(mockData.employees);
-  const [departments, setDepartments] = useState(mockData.departments);
 
   // Form state
   const emptyForm = {
@@ -61,19 +59,19 @@ export default function Employees() {
   // Kiểm tra phòng ban đã có trưởng phòng chưa
   const canBeManager = useMemo(() => {
     if (!form.departmentId) return false;
-    const dept = departments.find(d => d.id === form.departmentId);
+    const dept = mockData.departments.find(d => d.id === form.departmentId);
     return !dept?.managerId; // Trả về true nếu chưa có managerId
-  }, [form.departmentId, departments]);
+  }, [form.departmentId]);
 
   // Filter based on role
   const baseEmployees = useMemo(() => {
-    if (role === 'Admin') {
-      return employees;
-    } else if (role === 'Manager') {
-      return employees.filter(e => e.managerId === employeeId || e.id === employeeId);
+    if (role === 'Director') {
+      return mockData.employees;
+    } else if (role === 'ViceDirector' || role === 'DepartmentHead' || role === 'DeputyHead') {
+      return mockData.employees.filter(e => e.managerId === employeeId || e.id === employeeId);
     }
     return [];
-  }, [role, employeeId, employees]);
+  }, [role, employeeId]);
 
   const filteredEmployees = baseEmployees.filter((emp) => {
     const matchesSearch =
@@ -98,7 +96,7 @@ export default function Employees() {
     }
 
     // Kiểm tra email trùng
-    if (employees.some(e => e.email.toLowerCase() === email.toLowerCase())) {
+    if (mockData.employees.some(e => e.email.toLowerCase() === email.toLowerCase())) {
       alert('Email đã tồn tại');
       return;
     }
@@ -132,16 +130,15 @@ export default function Employees() {
       trainingsCompleted: [],
     };
 
-    // Thêm nhân viên mới
-    setEmployees(prev => [...prev, newEmployee]);
+    // Thêm nhân viên mới vào mockData (in production, this would be an API call)
+    mockData.employees.push(newEmployee);
 
     // Nếu là trưởng phòng, cập nhật department
     if (isManager && canBeManager) {
-      setDepartments(prev =>
-        prev.map(d =>
-          d.id === departmentId ? { ...d, managerId: newEmpId } : d
-        )
-      );
+      const deptIndex = mockData.departments.findIndex(d => d.id === departmentId);
+      if (deptIndex !== -1) {
+        mockData.departments[deptIndex].managerId = newEmpId;
+      }
     }
 
     // Reset form
@@ -171,7 +168,7 @@ export default function Employees() {
   };
 
   const getDeptName = (deptId: string) => {
-    return departments.find((d) => d.id === deptId)?.name || deptId;
+    return mockData.departments.find((d) => d.id === deptId)?.name || deptId;
   };
 
   return (
@@ -180,13 +177,13 @@ export default function Employees() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">
-              {role === 'Manager' ? 'Quản lý team' : 'Danh sách nhân viên'}
+              {role === 'ViceDirector' || role === 'DepartmentHead' || role === 'DeputyHead' ? 'Quản lý team' : 'Danh sách nhân viên'}
             </h1>
             <p className="text-muted-foreground">
-              {role === 'Manager' ? 'Danh sách thành viên trong team' : 'Quản lý thông tin nhân viên'}
+              {role === 'ViceDirector' || role === 'DepartmentHead' || role === 'DeputyHead' ? 'Danh sách thành viên trong team' : 'Quản lý thông tin nhân viên'}
             </p>
           </div>
-          {role === 'Admin' && (
+          {role === 'Director' && (
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Thêm nhân viên
@@ -212,7 +209,7 @@ export default function Employees() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả phòng ban</SelectItem>
-                {departments.map((dept) => (
+                {mockData.departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -242,7 +239,7 @@ export default function Employees() {
                 <TableHead>Nhân viên</TableHead>
                 <TableHead>Chức danh</TableHead>
                 <TableHead>Phòng ban</TableHead>
-                <TableHead>Bậc</TableHead>
+                <TableHead>Chức danh</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Ngày vào</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
@@ -269,7 +266,7 @@ export default function Employees() {
                   <TableCell>{emp.position}</TableCell>
                   <TableCell>{getDeptName(emp.departmentId)}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{emp.grade}</Badge>
+                    <Badge variant="outline">{emp.position}</Badge>
                   </TableCell>
                   <TableCell>{getStatusBadge(emp.status)}</TableCell>
                   <TableCell>
@@ -363,7 +360,7 @@ export default function Employees() {
                     <SelectValue placeholder="Chọn phòng ban" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
+                    {mockData.departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.id}>
                         {dept.name} {dept.managerId ? '(Đã có trưởng phòng)' : '(Chưa có trưởng phòng)'}
                       </SelectItem>
@@ -381,7 +378,6 @@ export default function Employees() {
                     onValueChange={(v) => {
                       setForm(s => ({ ...s, position: v, grade: '' }));
                     }}
-                    disabled={!form.departmentId}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn chức danh" />
@@ -403,7 +399,6 @@ export default function Employees() {
                   <Select
                     value={form.grade}
                     onValueChange={(v) => setForm(s => ({ ...s, grade: v }))}
-                    disabled={!form.position}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn bậc" />
@@ -441,7 +436,7 @@ export default function Employees() {
                     className="w-4 h-4"
                   />
                   <Label htmlFor="isManager" className="cursor-pointer">
-                    Đặt làm trưởng phòng {departments.find(d => d.id === form.departmentId)?.name}
+                    Đặt làm trưởng phòng {mockData.departments.find(d => d.id === form.departmentId)?.name}
                   </Label>
                 </div>
               )}

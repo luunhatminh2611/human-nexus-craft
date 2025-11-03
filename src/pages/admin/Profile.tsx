@@ -37,6 +37,10 @@ import {
 } from "@/components/ui/table";
 import { AddFamilyForm } from './component/FamilyAddForm';
 import { FamilyList } from './component/FamilyList';
+import MedicalRecordForm from './component/MedicalRecordForm';
+import { CVTab } from './component/CVTab';
+import { KPITab } from './component/KPITab';
+import TransferTab from './component/TransferTab';
 
 function ProfileContent() {
   const { id } = useParams();
@@ -45,7 +49,36 @@ function ProfileContent() {
   // Use URL param or current user's ID
   const currentEmpId = id || employeeId;
   const employee = mockData.employees.find((e) => e.id === currentEmpId);
+  const [selectedWeek, setSelectedWeek] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const week = Math.ceil(
+      ((now.getTime() - new Date(year, 0, 1).getTime()) / 86400000 + new Date(year, 0, 1).getDay() + 1) / 7
+    );
+    return `${year}-W${week.toString().padStart(2, "0")}`;
+  });
 
+  const getWeekDays = () => {
+    const [year, week] = selectedWeek.split("-W").map(Number);
+    const simple = new Date(year, 0, 1 + (week - 1) * 7);
+    const dow = simple.getDay();
+    const ISOweekStart = new Date(simple);
+    if (dow <= 4)
+      ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
+    else
+      ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
+
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(ISOweekStart);
+      d.setDate(d.getDate() + i);
+      return {
+        id: i,
+        name: ["T2", "T3", "T4", "T5", "T6", "T7", "CN"][i],     // label VN
+        nameEnglish: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][i], // key for data
+        date: d.toISOString().split("T")[0],
+      };
+    });
+  };
   if (!employee) {
     return (
       <Layout>
@@ -158,22 +191,23 @@ function ProfileContent() {
 
         {/* Tabs */}
         <Tabs defaultValue="info" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="info">Thông tin</TabsTrigger>
-            <TabsTrigger value="work">Công việc</TabsTrigger>
-            <TabsTrigger value="training">Đào tạo</TabsTrigger>
-            <TabsTrigger value="salary">Lương</TabsTrigger>
+            <TabsTrigger value="cv">Sơ yếu lý lịch</TabsTrigger>
             <TabsTrigger value="medical">Y tế</TabsTrigger>
-            <TabsTrigger value="schedule">Lịch công tác</TabsTrigger>
+            <TabsTrigger value="training">Đào tạo</TabsTrigger>
+            <TabsTrigger value="kpi">KPI</TabsTrigger>
+            <TabsTrigger value="transfer">Điều động</TabsTrigger>
+            <TabsTrigger value="salary">Lương</TabsTrigger>
+            <TabsTrigger value="contracts">Hợp đồng</TabsTrigger>
             <TabsTrigger value="leaves">Đơn nghỉ phép</TabsTrigger>
-            <TabsTrigger value="family">Thân nhân</TabsTrigger>
           </TabsList>
 
-          {/* Basic Info */}
+          {/* Combined Info + Work */}
           <TabsContent value="info" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Thông tin cơ bản</CardTitle>
+                <CardTitle>Thông tin cơ bản & Công việc</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
@@ -217,41 +251,6 @@ function ProfileContent() {
                       {new Date(employee.startDate).toLocaleDateString('vi-VN')}
                     </p>
                   </div>
-                </div>
-
-                {employee.documents && employee.documents.length > 0 && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-semibold mb-3">Tài liệu</p>
-                    <div className="space-y-2">
-                      {employee.documents.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <span className="text-sm">{doc.name}</span>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Work Info */}
-          <TabsContent value="work" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Thông tin công việc</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Chức danh</p>
                     <p className="font-medium">{employee.position}</p>
@@ -277,110 +276,109 @@ function ProfileContent() {
             </Card>
           </TabsContent>
 
-          {/* Training & Grade */}
+          {/* CV Tab */}
+          <TabsContent value="cv">
+            <CVTab employeeId={employee.id} />
+          </TabsContent>
+
+          {/* Medical Tab */}
+          <TabsContent value="medical">
+            <MedicalRecordForm employee={employee} medicalRecord={medicalRecord} />
+          </TabsContent>
+
+          {/* Training Tab with Year/Quarter/Month filters */}
           <TabsContent value="training" className="space-y-4">
-            <Card>
+            <Card className="mb-4">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-primary" />
-                  Lộ trình đào tạo
-                </CardTitle>
+                <CardTitle>Tiến độ đào tạo tổng thể</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-
-
-                {/* Training Progress */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">Tiến độ đào tạo</h3>
-                    <span className="text-sm font-semibold">
-                      {mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length}/{mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length} khóa học
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      Đã hoàn thành: {mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length} / {mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length} khóa học
+                    </span>
+                    <span className="text-sm font-bold">
+                      {Math.round((mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length / Math.max(1, mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length)) * 100)}%
                     </span>
                   </div>
                   <Progress 
-                    value={(mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length / Math.max(mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length, 1)) * 100} 
-                    className="mb-4" 
+                    value={(mockData.trainingEnrollments.filter(e => e.employeeId === employee.id && e.status === 'Completed').length / Math.max(1, mockData.trainingEnrollments.filter(e => e.employeeId === employee.id).length)) * 100}
+                    className="h-3"
                   />
-
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Khóa học</TableHead>
-                        <TableHead>Thời lượng</TableHead>
-                        <TableHead>Trạng thái</TableHead>
-                        <TableHead>Điểm</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockData.trainingEnrollments
-                        .filter(e => e.employeeId === employee.id)
-                        .map((enrollment) => {
-                          const training = mockData.trainings.find(t => t.id === enrollment.trainingId);
-                          const getEnrollmentStatusBadge = (status: string) => {
-                            const statusConfig: Record<string, { variant: 'default' | 'secondary' | 'outline' | 'destructive', label: string }> = {
-                              Assigned: { variant: 'outline', label: 'Đã giao' },
-                              'In Progress': { variant: 'secondary', label: 'Đang học' },
-                              Completed: { variant: 'default', label: 'Hoàn thành' },
-                              Failed: { variant: 'destructive', label: 'Trượt' },
-                            };
-                            const config = statusConfig[status] || { variant: 'outline', label: status };
-                            return <Badge variant={config.variant}>{config.label}</Badge>;
-                          };
-                          
-                          return (
-                            <TableRow key={enrollment.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <div className={`p-2 rounded-full ${
-                                    enrollment.status === 'Completed' ? 'bg-success/10' : 
-                                    enrollment.status === 'In Progress' ? 'bg-warning/10' :
-                                    enrollment.status === 'Failed' ? 'bg-destructive/10' :
-                                    'bg-muted'
-                                  }`}>
-                                    <GraduationCap className={`h-4 w-4 ${
-                                      enrollment.status === 'Completed' ? 'text-success' :
-                                      enrollment.status === 'In Progress' ? 'text-warning' :
-                                      enrollment.status === 'Failed' ? 'text-destructive' :
-                                      'text-muted-foreground'
-                                    }`} />
-                                  </div>
-                                  <p className="font-medium">{training?.title}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell>{training?.durationDays} ngày</TableCell>
-                              <TableCell>{getEnrollmentStatusBadge(enrollment.status)}</TableCell>
-                              <TableCell>
-                                {enrollment.testScore ? (
-                                  <span className={enrollment.testScore >= 8 ? 'text-success font-semibold' : 'text-destructive font-semibold'}>
-                                    {enrollment.testScore}/10
-                                  </span>
-                                ) : '-'}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
                 </div>
-
-                {/* Next Grade Requirements */}
-                {employee.grade !== 'G3' && (
-                  <div className="pt-4 border-t">
-                    <h3 className="font-semibold mb-3">Yêu cầu thăng bậc</h3>
-                    <div className="p-4 bg-accent rounded-lg space-y-2">
-                      <p className="text-sm">
-                        Để thăng lên bậc tiếp theo, bạn cần:
-                      </p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                        <li>Hoàn thành tất cả khóa đào tạo bắt buộc</li>
-                        <li>Đạt hiệu suất công việc tốt trong 6 tháng</li>
-                        <li>Phát triển đủ kỹ năng chuyên môn</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
+
+            <Tabs defaultValue="all">
+              <TabsList>
+                <TabsTrigger value="all">Tất cả</TabsTrigger>
+                <TabsTrigger value="year">Khóa năm</TabsTrigger>
+                <TabsTrigger value="quarter">Khóa quý</TabsTrigger>
+                <TabsTrigger value="month">Khóa tháng</TabsTrigger>
+              </TabsList>
+              {['all', 'year', 'quarter', 'month'].map((type) => (
+                <TabsContent key={type} value={type}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-primary" />
+                        Khóa học {type === 'year' ? 'năm' : type === 'quarter' ? 'quý' : type === 'month' ? 'tháng' : ''}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Khóa học</TableHead>
+                            <TableHead>Thời lượng</TableHead>
+                            <TableHead>Tiến độ</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {mockData.trainingEnrollments
+                            .filter(e => {
+                              const training = mockData.trainings.find(t => t.id === e.trainingId);
+                              return e.employeeId === employee.id && (type === 'all' || training?.courseType === type);
+                            })
+                            .map((enrollment) => {
+                              const training = mockData.trainings.find(t => t.id === enrollment.trainingId);
+                              return (
+                                <TableRow key={enrollment.id}>
+                                  <TableCell className="font-medium">{training?.title}</TableCell>
+                                  <TableCell>{training?.durationDays} ngày</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Progress value={enrollment.progress} className="h-2 w-20" />
+                                      <span className="text-xs text-muted-foreground">{enrollment.progress}%</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant={enrollment.status === 'Completed' ? 'default' : 'secondary'}>
+                                      {enrollment.status === 'Completed' ? 'Hoàn thành' : 'Đang học'}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </TabsContent>
+
+          {/* KPI Tab */}
+          <TabsContent value="kpi">
+            <KPITab employeeId={employee.id} />
+          </TabsContent>
+
+          {/* Transfer Tab */}
+          <TabsContent value="transfer">
+            <TransferTab employeeId={employee.id} />
           </TabsContent>
 
           {/* Salary */}
@@ -388,88 +386,7 @@ function ProfileContent() {
             <SalaryTabWithDragDrop employee={employee} />
           </TabsContent>
 
-          {/* Medical */}
-          <TabsContent value="medical" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-destructive" />
-                  Hồ sơ y tế
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {medicalRecord && medicalRecord.status === 'Approved' ? (
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <span className="font-medium text-sm">{medicalRecord.fileUrl}</span>
-                      <Badge variant="outline">Đã duyệt</Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(medicalRecord.fileUrl, '_blank')}
-                      >
-                        Xem
-                      </Button>
-                      <a href={medicalRecord.fileUrl} download>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Chưa có hồ sơ y tế được chấp thuận
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="schedule" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-600" />
-                  Lịch công tác của nhân viên
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {workSchedules.length > 0 ? (
-                  <div className="space-y-2">
-                    {workSchedules.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-blue-50 transition"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 rounded-full">
-                            <Clock className="h-4 w-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {(s.dayOfWeek)} — {s.startTime}
-                            </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Map className="h-3 w-3" />
-                              {s.shift || 'Không rõ địa điểm'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-6">
-                    Nhân viên này chưa có lịch công tác nào.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          
           <TabsContent value="leaves" className="space-y-4">
             <Card>
               <CardHeader>
@@ -563,6 +480,81 @@ function ProfileContent() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="contracts" className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Hợp đồng lao động
+                </CardTitle>
+
+                <div>
+                  <input
+                    type="file"
+                    id="contractUpload"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      console.log("Uploading contract:", file);
+                    }}
+                  />
+                  <Button
+                    onClick={() =>
+                      document.getElementById("contractUpload")?.click()
+                    }
+                  >
+                    + Upload hợp đồng
+                  </Button>
+                </div>
+              </CardHeader>
+
+
+              <CardContent>
+                {employee.contracts && employee.contracts.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mã HĐ</TableHead>
+                        <TableHead>Loại hợp đồng</TableHead>
+                        <TableHead>Ngày hiệu lực</TableHead>
+                        <TableHead>Ngày hết hạn</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                        <TableHead className="text-right">Xem</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {employee.contracts.map((c) => (
+                        <TableRow key={c.id}>
+                          <TableCell>{c.code}</TableCell>
+                          <TableCell>{c.type}</TableCell>
+                          <TableCell>{formatDate(c.startDate)}</TableCell>
+                          <TableCell>{formatDate(c.endDate)}</TableCell>
+                          <TableCell>
+                            <Badge variant={c.status === "Active" ? "default" : "secondary"}>
+                              {c.status === "Active" ? "Hiệu lực" : "Hết hạn"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    Chưa có hợp đồng nào
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Modal xem hoặc tạo hợp đồng sẽ đặt ở đây */}
+          </TabsContent>
         </Tabs>
       </div>
     </Layout>

@@ -57,7 +57,7 @@ export default function ManagerTraining() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Quản lý đào tạo</h1>
-            <p className="text-muted-foreground">Chương trình đào tạo và phát triển team</p>
+            <p className="text-muted-foreground">Chương trình đào tạo và phát triển </p>
           </div>
         </div>
 

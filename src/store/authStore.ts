@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type UserRole = 'Admin' | 'Manager' | 'Employee';
+export type UserRole = 'Director' | 'ViceDirector' | 'DepartmentHead' | 'DeputyHead' | 'Employee';
 
 interface AuthState {
   role: UserRole | null;
