@@ -73,6 +73,8 @@ export interface Department {
   name: string;
   parentId?: string;
   managerId?: string;
+  deputyDirectorId?: string; // Phó giám đốc
+  deputyManagerId?: string; // Phó phòng
 }
 
 export interface TrainingQuestion {
@@ -692,9 +694,9 @@ const mockData = {
   ] as Employee[],
 
   departments: [
-    { id: 'dept001', name: 'Phòng Nhân sự', managerId: 'emp001' },
-    { id: 'dept002', name: 'Phòng Kỹ thuật', parentId: 'dept001', managerId: 'emp002' },
-    { id: 'dept003', name: 'Phòng Kinh doanh', parentId: 'dept001', managerId: 'emp003' },
+    { id: 'dept001', name: 'Phòng Nhân sự', managerId: 'emp001', deputyDirectorId: 'emp004' },
+    { id: 'dept002', name: 'Phòng Kỹ thuật', parentId: 'dept001', managerId: 'emp002', deputyManagerId: 'emp005' },
+    { id: 'dept003', name: 'Phòng Kinh doanh', parentId: 'dept001', managerId: 'emp003', deputyManagerId: 'emp006' },
     { id: 'dept004', name: 'Phòng Vận hành', parentId: 'dept001', managerId: 'emp001' },
     {
       id: "5",
