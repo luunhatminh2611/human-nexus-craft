@@ -20,6 +20,7 @@ export default function EmployeePerformance() {
 
   const myReviews = mockData.performanceReviews.filter((r) => r.employeeId === employeeId);
   const myGoals = mockData.goals.filter((g) => g.employeeId === employeeId);
+  const myKPIs = mockData.kpis?.filter((k) => k.employeeId === employeeId) || [];
   
   const currentReview = myReviews.find((r) => r.status === 'Draft' || r.status === 'Submitted');
   const completedReviews = myReviews.filter((r) => r.status === 'Completed');
@@ -75,11 +76,68 @@ export default function EmployeePerformance() {
           <p className="text-muted-foreground">Theo dõi mục tiêu và đánh giá hiệu suất của bạn</p>
         </div>
 
+        {/* KPIs */}
+        {myKPIs.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                KPI của tôi
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {myKPIs.map((kpi) => (
+                  <div key={kpi.id} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{kpi.kpiName}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{kpi.description}</p>
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span>
+                            Mục tiêu: <span className="font-medium">{kpi.target} {kpi.unit}</span>
+                          </span>
+                          <span>
+                            Thực tế: <span className="font-medium">{kpi.actual || 0} {kpi.unit}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(kpi.startDate).toLocaleDateString('vi-VN')} - {new Date(kpi.endDate).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                      </div>
+                      <Badge variant={
+                        kpi.status === 'Hoàn thành' ? 'default' : 
+                        kpi.status === 'Đang thực hiện' ? 'secondary' :
+                        kpi.status === 'Chưa đạt' ? 'destructive' : 'outline'
+                      }>
+                        {kpi.status}
+                      </Badge>
+                    </div>
+
+                    {kpi.actual !== undefined && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Tiến độ</span>
+                          <span className="font-medium">{Math.round((kpi.actual / kpi.target) * 100)}%</span>
+                        </div>
+                        <Progress value={Math.min((kpi.actual / kpi.target) * 100, 100)} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Goals */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
+              <TrendingUp className="h-5 w-5 text-primary" />
               Mục tiêu cá nhân
             </CardTitle>
           </CardHeader>

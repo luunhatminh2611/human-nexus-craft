@@ -36,6 +36,8 @@ import AdminTransferManagement from "./pages/admin/TransferManagement";
 import WorkScheduleManagement from "./pages/admin/WorkSchedule";
 import LeaveRequestPage from "./pages/admin/LeaveRequest";
 import Reports from "./pages/admin/Reports";
+import SafetyEquipmentPlan from "./pages/admin/SafetyEquipmentPlan";
+import SafetyEquipmentRegister from "./pages/manager/SafetyEquipmentRegister";
 import AdminKPIManagement from "./pages/admin/KPIManagement";
 import ManagerKPIManagement from "./pages/manager/KPIManagement";
 import ManagerTrainingManagement from "./pages/manager/TrainingManagement";
@@ -254,6 +256,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/safety-equipment-plan"
+            element={
+              <ProtectedRoute>
+                <SafetyEquipmentPlan />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Manager Routes */}
           <Route
@@ -317,6 +327,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <ManagerSafetyDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/safety-equipment-register"
+            element={
+              <ProtectedRoute>
+                <SafetyEquipmentRegister />
               </ProtectedRoute>
             }
           />

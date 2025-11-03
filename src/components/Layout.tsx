@@ -65,6 +65,7 @@ export function Layout({ children }: LayoutProps) {
         { label: 'Quản lý điều động', icon: Users, path: '/manager/transfers' },
         { label: 'Hồ sơ', icon: User, path: '/manager/profile' },
         { label: 'Phân phát BHLĐ', icon: BoxIcon, path: '/manager/safety-items' },
+        { label: 'Đăng ký BHLĐ', icon: Box, path: '/manager/safety-equipment-register' },
         { label: 'Lộ trình thăng tiến', icon: TrendingUp, path: '/employee/career-path' },
       ];
     }
@@ -77,6 +78,7 @@ export function Layout({ children }: LayoutProps) {
       { label: 'Quản lý điều động', icon: Users, path: '/admin/transfers' },
       { label: 'Lương', icon: DollarSign, path: '/admin/salary' },
       { label: 'Quản lý BHLĐ', icon: BoxIcon, path: '/admin/safety-dashboard' },
+      { label: 'Kế hoạch BHLĐ', icon: Box, path: '/admin/safety-equipment-plan' },
       { label: 'Danh mục hệ thống', icon: Briefcase, path: '/admin/catalog' },
       { label: 'HSYT cần duyệt', icon: HeartPulse, path: '/admin/medical-records' },
       { label: 'Lịch công tác', icon: BriefcaseBusiness, path: '/admin/work-schedule' },

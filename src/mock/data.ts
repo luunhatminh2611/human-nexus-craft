@@ -210,6 +210,44 @@ export interface Transfer {
   effectiveDate?: string;
 }
 
+export interface SafetyEquipmentPlan {
+  id: string;
+  year: number;
+  departmentId: string;
+  departmentName: string;
+  createdBy: string;
+  createdByName: string;
+  items: Array<{
+    safetyItemId: string;
+    itemName: string;
+    quantity: number;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    approvedBy?: string;
+    approvedDate?: string;
+    rejectedReason?: string;
+  }>;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
+  approvedBy?: string;
+  approvedDate?: string;
+  rejectedReason?: string;
+}
+
+export interface SafetyDistribution {
+  id: string;
+  planId: string;
+  departmentId: string;
+  safetyItemId: string;
+  itemName: string;
+  quantityDistributed: number;
+  distributedBy: string;
+  distributedDate: string;
+  receivedBy?: string;
+  receivedDate?: string;
+  status: 'Distributed' | 'Received';
+  note?: string;
+}
+
 export const healthClassifications = [
   'Loại I - Khỏe mạnh',
   'Loại II - Khỏe mạnh có bệnh đã được điều trị ổn định',
@@ -1600,60 +1638,133 @@ const mockData = {
   transfers: [
     {
       id: "TF001",
-      employeeId: "NV001",
-      employeeName: "Nguyễn Văn A",
-      fromDepartmentId: "IT",
-      fromDepartmentName: "Phòng Công nghệ thông tin",
-      toDepartmentId: "HR",
-      toDepartmentName: "Phòng Nhân sự",
-      reason: "Phát triển kỹ năng quản lý nhân sự",
-      createdBy: "NV003",
-      createdByName: "Trần Văn C",
-      createdAt: "2024-01-15",
+      employeeId: "emp005",
+      employeeName: "Hoàng Văn Em",
+      fromDepartmentId: "dept004",
+      fromDepartmentName: "Phòng Vận hành",
+      toDepartmentId: "dept002",
+      toDepartmentName: "Phòng Kỹ thuật",
+      reason: "Chuyển sang phòng Kỹ thuật để phát triển kỹ năng chuyên môn",
+      createdBy: "emp001",
+      createdByName: "Nguyễn Văn An",
+      createdAt: "2023-01-15",
       status: "approved",
-      directorApprovedBy: "DIR001",
-      directorApprovedByName: "Nguyễn Giám Đốc",
-      directorApprovedAt: "2024-01-16",
+      directorApprovedBy: "emp001",
+      directorApprovedByName: "Nguyễn Văn An",
+      directorApprovedAt: "2023-01-16",
       directorComment: "Đồng ý điều động",
-      finalApprovedBy: "NV005",
-      finalApprovedByName: "Phạm Văn E",
-      finalApprovedAt: "2024-01-17",
+      finalApprovedBy: "emp001",
+      finalApprovedByName: "Nguyễn Văn An",
+      finalApprovedAt: "2023-01-17",
       finalComment: "Phê duyệt",
-      effectiveDate: "2024-02-01"
+      effectiveDate: "2023-02-01"
     },
     {
       id: "TF002",
-      employeeId: "NV002",
-      employeeName: "Trần Thị B",
-      fromDepartmentId: "HR",
-      fromDepartmentName: "Phòng Nhân sự",
-      toDepartmentId: "FIN",
-      toDepartmentName: "Phòng Tài chính",
-      reason: "Bổ sung nhân sự phòng tài chính",
-      createdBy: "NV005",
-      createdByName: "Phạm Văn E",
-      createdAt: "2024-02-20",
-      status: "pending_final_approval",
-      directorApprovedBy: "DIR001",
-      directorApprovedByName: "Nguyễn Giám Đốc",
-      directorApprovedAt: "2024-02-21",
-      directorComment: "Đồng ý"
+      employeeId: "emp006",
+      employeeName: "Võ Thị Phương",
+      fromDepartmentId: "dept002",
+      fromDepartmentName: "Phòng Kỹ thuật",
+      toDepartmentId: "dept003",
+      toDepartmentName: "Phòng Kinh doanh",
+      reason: "Bổ sung nhân sự kinh doanh",
+      createdBy: "emp001",
+      createdByName: "Nguyễn Văn An",
+      createdAt: "2022-08-20",
+      status: "approved",
+      directorApprovedBy: "emp001",
+      directorApprovedByName: "Nguyễn Văn An",
+      directorApprovedAt: "2022-08-21",
+      directorComment: "Đồng ý",
+      finalApprovedBy: "emp001",
+      finalApprovedByName: "Nguyễn Văn An",
+      finalApprovedAt: "2022-08-22",
+      finalComment: "Phê duyệt",
+      effectiveDate: "2022-09-01"
     },
     {
       id: "TF003",
-      employeeId: "NV004",
-      employeeName: "Lê Văn D",
-      fromDepartmentId: "FIN",
-      fromDepartmentName: "Phòng Tài chính",
-      toDepartmentId: "IT",
-      toDepartmentName: "Phòng Công nghệ thông tin",
-      reason: "Tăng cường đội ngũ IT",
-      createdBy: "NV006",
-      createdByName: "Hoàng Văn F",
-      createdAt: "2024-03-01",
-      status: "pending_director_approval"
+      employeeId: "emp010",
+      employeeName: "Phan Thị Kim",
+      fromDepartmentId: "dept003",
+      fromDepartmentName: "Phòng Kinh doanh",
+      toDepartmentId: "dept002",
+      toDepartmentName: "Phòng Kỹ thuật",
+      reason: "Tăng cường đội ngũ kỹ thuật",
+      createdBy: "emp001",
+      createdByName: "Nguyễn Văn An",
+      createdAt: "2023-01-01",
+      status: "approved",
+      directorApprovedBy: "emp001",
+      directorApprovedByName: "Nguyễn Văn An",
+      directorApprovedAt: "2023-01-02",
+      directorComment: "Chấp thuận",
+      finalApprovedBy: "emp001",
+      finalApprovedByName: "Nguyễn Văn An",
+      finalApprovedAt: "2023-01-03",
+      finalComment: "Đồng ý",
+      effectiveDate: "2023-01-10"
     }
   ] as Transfer[],
+
+  safetyEquipmentPlans: [
+    {
+      id: 'plan001',
+      year: 2025,
+      departmentId: 'dept002',
+      departmentName: 'Phòng Kỹ thuật',
+      createdBy: 'emp002',
+      createdByName: 'Trần Thị Bình',
+      items: [
+        { safetyItemId: 's001', itemName: 'Mũ bảo hiểm', quantity: 10, status: 'Approved' as const, approvedBy: 'emp001', approvedDate: '2024-12-01' },
+        { safetyItemId: 's002', itemName: 'Giày bảo hộ', quantity: 10, status: 'Approved' as const, approvedBy: 'emp001', approvedDate: '2024-12-01' },
+      ],
+      status: 'Approved' as const,
+      createdAt: '2024-11-15',
+      approvedBy: 'emp001',
+      approvedDate: '2024-12-01',
+    },
+    {
+      id: 'plan002',
+      year: 2025,
+      departmentId: 'dept003',
+      departmentName: 'Phòng Kinh doanh',
+      createdBy: 'emp003',
+      createdByName: 'Lê Văn Cường',
+      items: [
+        { safetyItemId: 's001', itemName: 'Mũ bảo hiểm', quantity: 5, status: 'Pending' as const },
+      ],
+      status: 'Pending' as const,
+      createdAt: '2024-12-20',
+    },
+  ] as SafetyEquipmentPlan[],
+
+  safetyDistributions: [
+    {
+      id: 'dist001',
+      planId: 'plan001',
+      departmentId: 'dept002',
+      safetyItemId: 's001',
+      itemName: 'Mũ bảo hiểm',
+      quantityDistributed: 10,
+      distributedBy: 'emp001',
+      distributedDate: '2024-12-15',
+      receivedBy: 'emp002',
+      receivedDate: '2024-12-16',
+      status: 'Received' as const,
+    },
+    {
+      id: 'dist002',
+      planId: 'plan001',
+      departmentId: 'dept002',
+      safetyItemId: 's002',
+      itemName: 'Giày bảo hộ',
+      quantityDistributed: 10,
+      distributedBy: 'emp001',
+      distributedDate: '2024-12-15',
+      status: 'Distributed' as const,
+    },
+  ] as SafetyDistribution[],
 };
 
 export default mockData;
