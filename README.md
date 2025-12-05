@@ -1,235 +1,191 @@
-# Hệ thống Quản lý Nhân sự (HR Management System)
+# HR Management System - PM_QL_NHAN_SU
 
-Prototype frontend đầy đủ tính năng cho hệ thống quản lý nhân sự với 3 vai trò: Admin, Manager, và Employee.
+Quản lý Nhân sự hệ thống (HR Management System) được xây dựng với React + TypeScript, sử dụng Feature-based Architecture.
 
-## 🚀 Tính năng
-
-### Quản lý theo vai trò
-- **Admin**: Toàn quyền quản lý - xem tất cả dữ liệu, quản lý nhân viên, cơ cấu lương, sơ đồ tổ chức
-- **Manager**: Quản lý team - xem dữ liệu team, phê duyệt đào tạo, báo cáo
-- **Employee**: Xem và chỉnh sửa hồ sơ cá nhân, xem đào tạo được giao, tải phiếu lương
-
-### Các module chính
-
-#### 1. Dashboard
-- Thống kê tổng quan (tổng nhân viên, tuyển dụng mới, nghỉ phép, hoàn thành đào tạo)
-- Biểu đồ: Xu hướng nhân sự 12 tháng, phân bổ theo phòng ban, phân bổ theo bậc
-- KPI cards với trend indicators
-- Quick stats tổng hợp
-
-#### 2. Quản lý nhân viên
-- Danh sách đầy đủ với tìm kiếm, lọc (phòng ban, trạng thái)
-- Hồ sơ chi tiết với tabs:
-  - Thông tin cơ bản
-  - Công việc (chức danh, phòng ban, quản lý)
-  - **Lộ trình đào tạo & Bậc**: Timeline, progress, current grade, next requirements
-  - Lương (summary, allowances)
-  - Hồ sơ y tế (EHR-like/FHIR-like)
-- Inline edit (theo quyền)
-
-#### 3. Sơ đồ tổ chức
-- Org chart tương tác với react-flow
-- Hiển thị cấu trúc phòng ban, số lượng nhân viên
-- Click node để xem chi tiết phòng ban
-- Zoom, pan, expand/collapse
-
-#### 4. Quản lý đào tạo
-- Dashboard với tổng số khóa, đang diễn ra, hoàn thành, sắp tới
-- Danh sách courses với:
-  - Tiêu đề, mô tả, thời lượng
-  - Required for grades
-  - Completion rate, deadline
-  - Trạng thái (Upcoming/Ongoing/Completed)
-- Giao diện assign course (mock)
-
-#### 5. Cơ cấu lương
-- Salary structure builder
-- 3 templates mẫu (G1, G2, G3)
-- Chi tiết các pay items: earnings, deductions
-- **Preview phiếu lương**: Chọn nhân viên, tính toán tự động, export PDF (mock)
-- Calculation methods: Fixed, % of base, Formula
-
-#### 6. Hồ sơ y tế (EHR-lite)
-- FHIR-like structure:
-  - Allergies
-  - Conditions (ICD codes)
-  - Immunizations (vaccine, date, provider)
-  - Observations (vital signs, lab results)
-  - Visits (timeline, diagnosis, notes)
-- Privacy controls theo role
-
-## 🛠 Tech Stack
-
-- **Frontend**: React 18 + TypeScript
-- **UI Framework**: Tailwind CSS
-- **Components**: shadcn/ui
-- **State Management**: Zustand
-- **Charts**: Recharts
-- **Org Chart**: @xyflow/react
-- **Routing**: React Router v6
-- **Build Tool**: Vite
-
-## 📦 Cài đặt & Chạy
-
-```bash
-# Clone repository
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
-
-# Cài đặt dependencies
-npm install
-
-# Chạy development server
-npm run dev
-```
-
-Ứng dụng sẽ chạy tại `http://localhost:8080`
-
-## 🎭 Testing theo vai trò
-
-Khi vào trang login, chọn một trong 3 vai trò:
-
-### 1. Admin (Quản trị viên)
-- Employee ID: `emp001` (Nguyễn Văn An - CEO)
-- Quyền: Full access toàn bộ hệ thống
-
-### 2. Manager (Quản lý)
-- Employee ID: `emp002` (Trần Thị Bình - Trưởng phòng Kỹ thuật)
-- Quyền: Quản lý team, view reports, assign training
-
-### 3. Employee (Nhân viên)
-- Employee ID: `emp005` (Hoàng Văn Em - Kỹ sư phần mềm)
-- Quyền: View/edit profile cá nhân, view trainings
-
-## 📁 Cấu trúc Project
+## 🏗️ Cấu Trúc Dự Án
 
 ```
 src/
-├── components/
-│   ├── ui/              # shadcn/ui components
-│   └── Layout.tsx       # Main layout với navigation
-├── mock/
-│   └── data.ts          # Mock data (employees, departments, trainings, etc.)
-├── pages/
-│   ├── Login.tsx        # Role selection
-│   ├── Dashboard.tsx    # Dashboard với charts & KPIs
-│   ├── Employees.tsx    # Employee directory
-│   ├── OrgChart.tsx     # Organization chart
-│   ├── Training.tsx     # Training management
-│   ├── Salary.tsx       # Salary structures & payslip
-│   └── Profile.tsx      # Employee profile (tabbed)
-├── store/
-│   └── authStore.ts     # Zustand store cho authentication
-├── App.tsx              # Routes & protected routes
-└── main.tsx             # Entry point
+├── app/                          # App-level configuration
+│   ├── App.tsx                  # Main app component
+│   ├── providers/               # React providers (QueryClient, Toast, etc.)
+│   └── routes/                  # Route definitions với lazy loading
+│
+├── features/                    # Feature modules (business domains)
+│   ├── auth/                    # Authentication module
+│   │   ├── api/                 # Auth API calls
+│   │   ├── components/          # Auth-specific components (Login, NotFound)
+│   │   ├── store/               # Auth Zustand store
+│   │   ├── types/               # Auth TypeScript types
+│   │   └── index.ts             # Feature exports
+│   │
+│   ├── dashboard/               # Dashboard module
+│   │   └── pages/               # Dashboard pages
+│   │       ├── admin/           # Admin dashboard
+│   │       └── manager/         # Manager dashboard
+│   │
+│   ├── employees/               # Employee management module
+│   │   ├── api/                 # Employee API
+│   │   ├── store/               # Employee Zustand store
+│   │   ├── types/               # Employee types
+│   │   ├── pages/               # Employee pages
+│   │   │   ├── admin/           # Admin views
+│   │   │   ├── manager/         # Manager views
+│   │   │   └── employee/        # Employee views
+│   │   └── index.ts
+│   │
+│   ├── training/                # Training module
+│   ├── salary/                  # Salary/Payroll module
+│   ├── departments/             # Departments module
+│   ├── medical/                 # Medical records module
+│   ├── safety/                  # Safety equipment module
+│   ├── performance/            # Performance reviews module
+│   ├── schedule/                # Work schedule module
+│   └── reports/                 # Reports module
+│
+├── shared/                      # Shared across features
+│   ├── components/             # Reusable components
+│   │   ├── ui/                 # shadcn components (49 files)
+│   │   ├── layouts/            # Layout components
+│   │   └── forms/              # Form components
+│   ├── hooks/                  # Shared custom hooks
+│   ├── types/                  # Shared types
+│   ├── constants/              # App constants
+│   └── config/                 # App configuration
+│
+├── lib/                         # Third-party library configurations
+│   ├── axios.ts                # Axios instance
+│   ├── react-query.ts          # React Query setup
+│   └── utils.ts                # Utility functions
+│
+├── assets/                      # Static assets
+│   ├── images/
+│   ├── icons/
+│   └── fonts/
+│
+└── mock/                        # Mock data
+    └── data.ts
 ```
 
-## 📊 Mock Data
+## 🎯 Các Feature Modules
 
-File `src/mock/data.ts` chứa tất cả dữ liệu mẫu:
+Mỗi feature module có cấu trúc:
+- `api/` - API calls (axios)
+- `store/` - Zustand store
+- `types/` - TypeScript types
+- `pages/` - Pages/components
+- `index.ts` - Exports
 
-- **10 employees** (4 departments, 3 grades)
-- **4 departments** (HR, Kỹ thuật, Kinh doanh, Vận hành)
-- **5 trainings** với các trạng thái khác nhau
-- **3 salary structures** (theo grade G1, G2, G3)
-- **10 medical records** (EHR-like/FHIR-like format)
-- **3 grades** với salary ranges và requirements
+### Features Available
+1. **auth** - Authentication & Authorization
+2. **dashboard** - Dashboard tổng quan (Admin & Manager)
+3. **employees** - Employee management
+4. **training** - Training programs
+5. **salary** - Salary & Payroll
+6. **departments** - Department management
+7. **medical** - Medical records
+8. **safety** - Safety equipment
+9. **performance** - Performance reviews
+10. **schedule** - Work schedule
+11. **reports** - Reports & Analytics
 
-## ✨ Tính năng nổi bật
+## 🛠️ Technologies
 
-### 1. Role-based Access Control
-- UI tự động ẩn/hiện theo quyền
-- Protected routes
-- Data filtering theo role
+- **React 18** - UI library
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **Zustand** - State management
+- **React Query** - Data fetching
+- **React Router** - Routing
+- **Axios** - HTTP client
+- **shadcn/ui** - UI components
+- **Tailwind CSS** - Styling
+- **Lucide React** - Icons
 
-### 2. Responsive Design
-- Mobile, tablet, desktop friendly
-- Tailwind CSS breakpoints
-- Touch-friendly navigation
+## 🚀 Getting Started
 
-### 3. Accessibility
-- ARIA labels
-- Keyboard navigation
-- Semantic HTML
+```bash
+# Install dependencies
+npm install
 
-### 4. Interactive Charts
-- Line chart (headcount trend)
-- Bar chart (department distribution)
-- Pie chart (grade distribution)
-- Responsive & animated
+# Start development server
+npm run dev
 
-### 5. Org Chart
-- Interactive drag/zoom
-- Expandable nodes
-- Department details on click
+# Build for production
+npm run build
 
-### 6. Training Progress Tracking
-- Individual progress bars
-- Completion rate
-- Deadline indicators
-- Required vs. completed
+# Preview production build
+npm run preview
+```
 
-### 7. Salary Calculator
-- Dynamic calculation
-- Multiple pay items
-- Preview payslip
-- Export ready (print-friendly)
+## 📦 Project URLs
 
-### 8. EHR Medical Records
-- FHIR-like structure
-- Privacy controls
-- Visit timeline
-- Lab results & observations
+**Production URL**: https://lovable.dev/projects/0803d892-8676-4b67-97ba-729e159d2758
 
-## 🎨 Design System
+## How can I edit this code?
 
-### Colors
-- **Primary**: Blue (#3B82F6) - Professional
-- **Success**: Green (#10B981) - Positive metrics
-- **Warning**: Amber (#F59E0B) - Pending items
-- **Destructive**: Red (#EF4444) - Critical actions
+There are several ways of editing your application.
 
-### Typography
-- Clean, readable fonts
-- Consistent sizing
-- Proper hierarchy
+**Use Lovable**
 
-### Components
-- Card-based layouts
-- Soft shadows
-- Rounded corners (0.75rem)
-- Smooth transitions
+Simply visit the [Lovable Project](https://lovable.dev/projects/0803d892-8676-4b67-97ba-729e159d2758) and start prompting.
 
-## 📝 Future Enhancements (Backend Integration)
+Changes made via Lovable will be committed automatically to this repo.
 
-Khi tích hợp backend, có thể thêm:
+**Use your preferred IDE**
 
-- Real-time notifications
-- File upload thực tế
-- Email/messaging
-- Advanced search
-- Bulk operations
-- Audit logs
-- API integration với ERP/HRIS
-- SSO authentication
-- Multi-language support
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-## 🔒 Security Notes
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-⚠️ **Đây là prototype frontend** - dữ liệu mock không có bảo mật thực tế.
+Follow these steps:
 
-Khi deploy production cần:
-- Backend API với authentication
-- Authorization middleware
-- Data encryption
-- HTTPS
-- Input validation
-- XSS/CSRF protection
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-## 📄 License
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-MIT License - Free to use and modify
+# Step 3: Install the necessary dependencies.
+npm i
 
----
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
 
-**Developed with ❤️ using Lovable & React**
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/0803d892-8676-4b67-97ba-729e159d2758) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

@@ -73,8 +73,6 @@ export interface Department {
   name: string;
   parentId?: string;
   managerId?: string;
-  deputyDirectorId?: string; // Phó giám đốc
-  deputyManagerId?: string; // Phó phòng
 }
 
 export interface TrainingQuestion {
@@ -97,12 +95,6 @@ export interface Training {
   location?: string;
   maxParticipants?: number;
   questions?: TrainingQuestion[];
-  courseType: 'year' | 'quarter' | 'month'; // Loại khóa học
-  departmentId?: string; // Phòng ban
-  createdBy?: string; // ID người tạo (Trưởng phòng)
-  approvalStatus: 'Pending' | 'Approved' | 'Rejected'; // Trạng thái duyệt
-  approvedBy?: string; // ID người duyệt
-  approvedDate?: string;
 }
 
 export interface TrainingEnrollment {
@@ -145,118 +137,8 @@ export interface MedicalRecord {
   emergencyContact?: string;
   emergencyContactPhone?: string;
   lastCheckupDate?: string;
-  occupationalDisease?: string; // Bệnh nghề nghiệp
-  healthClassification?: string; // Phân loại sức khỏe
   notes?: string;
 }
-
-export interface CVData {
-  employeeId: string;
-  placeOfBirth?: string;
-  hometown?: string;
-  ethnicity?: string;
-  religion?: string;
-  idNumber?: string;
-  idIssueDate?: string;
-  idIssuePlace?: string;
-  permanentAddress?: string;
-  currentAddress?: string;
-  education?: string;
-  degree?: string;
-  specialization?: string;
-  politicalTheory?: string;
-  foreignLanguage?: string;
-  computerSkills?: string;
-  workExperience?: string;
-  militaryService?: string;
-  professionalQualifications?: string;
-}
-
-export interface KPI {
-  id: string;
-  employeeId: string;
-  assignedBy: string; // ID of person who assigned
-  assignedByName: string;
-  kpiName: string;
-  description: string;
-  target: number;
-  actual?: number;
-  unit: string;
-  startDate: string;
-  endDate: string;
-  status: 'Đã giao' | 'Đang thực hiện' | 'Hoàn thành' | 'Chưa đạt';
-  note?: string;
-}
-
-export interface Transfer {
-  id: string;
-  employeeId: string;
-  employeeName: string;
-  fromDepartmentId: string;
-  fromDepartmentName: string;
-  toDepartmentId: string;
-  toDepartmentName: string;
-  reason: string;
-  createdBy: string;
-  createdByName: string;
-  createdAt: string;
-  status: 'pending_director_approval' | 'pending_final_approval' | 'approved' | 'rejected';
-  directorApprovedBy?: string;
-  directorApprovedByName?: string;
-  directorApprovedAt?: string;
-  directorComment?: string;
-  finalApprovedBy?: string;
-  finalApprovedByName?: string;
-  finalApprovedAt?: string;
-  finalComment?: string;
-  effectiveDate?: string;
-}
-
-export interface SafetyEquipmentPlan {
-  id: string;
-  year: number;
-  departmentId: string;
-  departmentName: string;
-  createdBy: string;
-  createdByName: string;
-  items: Array<{
-    safetyItemId: string;
-    itemName: string;
-    quantity: number;
-    status: 'Pending' | 'Approved' | 'Rejected';
-    approvedBy?: string;
-    approvedDate?: string;
-    rejectedReason?: string;
-  }>;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  createdAt: string;
-  approvedBy?: string;
-  approvedDate?: string;
-  rejectedReason?: string;
-}
-
-export interface SafetyDistribution {
-  id: string;
-  planId: string;
-  departmentId: string;
-  safetyItemId: string;
-  itemName: string;
-  quantityDistributed: number;
-  distributedBy: string;
-  distributedDate: string;
-  receivedBy?: string;
-  receivedDate?: string;
-  status: 'Distributed' | 'Received';
-  note?: string;
-}
-
-export const healthClassifications = [
-  'Loại I - Khỏe mạnh',
-  'Loại II - Khỏe mạnh có bệnh đã được điều trị ổn định',
-  'Loại III - Giảm sức khỏe tạm thời',
-  'Loại IV - Giảm sức khỏe lâu dài',
-  'Loại V - Yếu'
-];
 
 export interface PayrollHistory {
   id: string;
@@ -525,7 +407,7 @@ const mockData = {
       email: 'pham.thi.dung@company.com',
       phone: '0904567890',
       departmentId: 'dept002',
-      position: 'Phó giám đốc kỹ thuật',
+      position: 'Kỹ sư phần mềm Senior',
       grade: 'G2',
       startDate: '2022-01-15',
       contractType: 'Full-time' as const,
@@ -550,7 +432,7 @@ const mockData = {
       email: 'hoang.van.em@company.com',
       phone: '0905678901',
       departmentId: 'dept002',
-      position: 'Phó phòng kỹ thuật',
+      position: 'Kỹ sư phần mềm',
       grade: 'G1',
       startDate: '2023-03-01',
       contractType: 'Full-time' as const,
@@ -694,9 +576,9 @@ const mockData = {
   ] as Employee[],
 
   departments: [
-    { id: 'dept001', name: 'Phòng Nhân sự', managerId: 'emp001', deputyDirectorId: 'emp004' },
-    { id: 'dept002', name: 'Phòng Kỹ thuật', parentId: 'dept001', managerId: 'emp002', deputyManagerId: 'emp005' },
-    { id: 'dept003', name: 'Phòng Kinh doanh', parentId: 'dept001', managerId: 'emp003', deputyManagerId: 'emp006' },
+    { id: 'dept001', name: 'Phòng Nhân sự', managerId: 'emp001' },
+    { id: 'dept002', name: 'Phòng Kỹ thuật', parentId: 'dept001', managerId: 'emp002' },
+    { id: 'dept003', name: 'Phòng Kinh doanh', parentId: 'dept001', managerId: 'emp003' },
     { id: 'dept004', name: 'Phòng Vận hành', parentId: 'dept001', managerId: 'emp001' },
     {
       id: "5",
@@ -724,12 +606,6 @@ const mockData = {
       instructor: 'TS. Nguyễn Văn A',
       location: 'Phòng hội nghị A',
       maxParticipants: 30,
-      courseType: 'month' as const,
-      departmentId: 'dept001',
-      createdBy: 'emp001',
-      approvalStatus: 'Approved' as const,
-      approvedBy: 'emp001',
-      approvedDate: '2024-12-01',
       questions: [
         {
           id: 'q1',
@@ -757,12 +633,6 @@ const mockData = {
       instructor: 'ThS. Trần Thị B',
       location: 'Phòng đào tạo B',
       maxParticipants: 25,
-      courseType: 'quarter' as const,
-      departmentId: 'dept003',
-      createdBy: 'emp003',
-      approvalStatus: 'Approved' as const,
-      approvedBy: 'emp001',
-      approvedDate: '2024-12-15',
       questions: [
         {
           id: 'q1',
@@ -790,12 +660,6 @@ const mockData = {
       instructor: 'GS. Lê Văn C',
       location: 'Trung tâm đào tạo',
       maxParticipants: 20,
-      courseType: 'year' as const,
-      departmentId: 'dept001',
-      createdBy: 'emp002',
-      approvalStatus: 'Approved' as const,
-      approvedBy: 'emp001',
-      approvedDate: '2024-11-20',
     },
     {
       id: 'tr004',
@@ -809,12 +673,6 @@ const mockData = {
       instructor: 'Kỹ sư Phạm Văn D',
       location: 'Phòng lab máy tính',
       maxParticipants: 15,
-      courseType: 'quarter' as const,
-      departmentId: 'dept002',
-      createdBy: 'emp002',
-      approvalStatus: 'Approved' as const,
-      approvedBy: 'emp001',
-      approvedDate: '2024-10-05',
     },
     {
       id: 'tr005',
@@ -827,12 +685,6 @@ const mockData = {
       instructor: 'Chuyên gia Hoàng Thị E',
       location: 'Phòng hội nghị C',
       maxParticipants: 40,
-      courseType: 'month' as const,
-      departmentId: 'dept003',
-      createdBy: 'emp003',
-      approvalStatus: 'Approved' as const,
-      approvedBy: 'emp001',
-      approvedDate: '2024-09-10',
     },
   ] as Training[],
 
@@ -1583,37 +1435,6 @@ const mockData = {
     },
   ] as LeaveRequest[],
 
-  kpis: [
-    {
-      id: 'kpi001',
-      employeeId: 'emp002',
-      assignedBy: 'emp001',
-      assignedByName: 'Nguyễn Văn An',
-      kpiName: 'Doanh số bán hàng Q1',
-      description: 'Đạt doanh số bán hàng tối thiểu 500 triệu trong quý 1',
-      target: 500,
-      actual: 450,
-      unit: 'triệu đồng',
-      startDate: '2025-01-01',
-      endDate: '2025-03-31',
-      status: 'Đang thực hiện',
-    },
-    {
-      id: 'kpi002',
-      employeeId: 'emp003',
-      assignedBy: 'emp001',
-      assignedByName: 'Nguyễn Văn An',
-      kpiName: 'Hoàn thành dự án',
-      description: 'Hoàn thành 3 dự án lớn trong quý',
-      target: 3,
-      actual: 3,
-      unit: 'dự án',
-      startDate: '2025-01-01',
-      endDate: '2025-03-31',
-      status: 'Hoàn thành',
-    },
-  ] as KPI[],
-
   familyMembers: [
     {
       id: 'fam1',
@@ -1636,137 +1457,6 @@ const mockData = {
       occupation: 'Nội trợ',
     },
   ] as FamilyMember[],
-
-  transfers: [
-    {
-      id: "TF001",
-      employeeId: "emp005",
-      employeeName: "Hoàng Văn Em",
-      fromDepartmentId: "dept004",
-      fromDepartmentName: "Phòng Vận hành",
-      toDepartmentId: "dept002",
-      toDepartmentName: "Phòng Kỹ thuật",
-      reason: "Chuyển sang phòng Kỹ thuật để phát triển kỹ năng chuyên môn",
-      createdBy: "emp001",
-      createdByName: "Nguyễn Văn An",
-      createdAt: "2023-01-15",
-      status: "approved",
-      directorApprovedBy: "emp001",
-      directorApprovedByName: "Nguyễn Văn An",
-      directorApprovedAt: "2023-01-16",
-      directorComment: "Đồng ý điều động",
-      finalApprovedBy: "emp001",
-      finalApprovedByName: "Nguyễn Văn An",
-      finalApprovedAt: "2023-01-17",
-      finalComment: "Phê duyệt",
-      effectiveDate: "2023-02-01"
-    },
-    {
-      id: "TF002",
-      employeeId: "emp006",
-      employeeName: "Võ Thị Phương",
-      fromDepartmentId: "dept002",
-      fromDepartmentName: "Phòng Kỹ thuật",
-      toDepartmentId: "dept003",
-      toDepartmentName: "Phòng Kinh doanh",
-      reason: "Bổ sung nhân sự kinh doanh",
-      createdBy: "emp001",
-      createdByName: "Nguyễn Văn An",
-      createdAt: "2022-08-20",
-      status: "approved",
-      directorApprovedBy: "emp001",
-      directorApprovedByName: "Nguyễn Văn An",
-      directorApprovedAt: "2022-08-21",
-      directorComment: "Đồng ý",
-      finalApprovedBy: "emp001",
-      finalApprovedByName: "Nguyễn Văn An",
-      finalApprovedAt: "2022-08-22",
-      finalComment: "Phê duyệt",
-      effectiveDate: "2022-09-01"
-    },
-    {
-      id: "TF003",
-      employeeId: "emp010",
-      employeeName: "Phan Thị Kim",
-      fromDepartmentId: "dept003",
-      fromDepartmentName: "Phòng Kinh doanh",
-      toDepartmentId: "dept002",
-      toDepartmentName: "Phòng Kỹ thuật",
-      reason: "Tăng cường đội ngũ kỹ thuật",
-      createdBy: "emp001",
-      createdByName: "Nguyễn Văn An",
-      createdAt: "2023-01-01",
-      status: "approved",
-      directorApprovedBy: "emp001",
-      directorApprovedByName: "Nguyễn Văn An",
-      directorApprovedAt: "2023-01-02",
-      directorComment: "Chấp thuận",
-      finalApprovedBy: "emp001",
-      finalApprovedByName: "Nguyễn Văn An",
-      finalApprovedAt: "2023-01-03",
-      finalComment: "Đồng ý",
-      effectiveDate: "2023-01-10"
-    }
-  ] as Transfer[],
-
-  safetyEquipmentPlans: [
-    {
-      id: 'plan001',
-      year: 2025,
-      departmentId: 'dept002',
-      departmentName: 'Phòng Kỹ thuật',
-      createdBy: 'emp002',
-      createdByName: 'Trần Thị Bình',
-      items: [
-        { safetyItemId: 's001', itemName: 'Mũ bảo hiểm', quantity: 10, status: 'Approved' as const, approvedBy: 'emp001', approvedDate: '2024-12-01' },
-        { safetyItemId: 's002', itemName: 'Giày bảo hộ', quantity: 10, status: 'Approved' as const, approvedBy: 'emp001', approvedDate: '2024-12-01' },
-      ],
-      status: 'Approved' as const,
-      createdAt: '2024-11-15',
-      approvedBy: 'emp001',
-      approvedDate: '2024-12-01',
-    },
-    {
-      id: 'plan002',
-      year: 2025,
-      departmentId: 'dept003',
-      departmentName: 'Phòng Kinh doanh',
-      createdBy: 'emp003',
-      createdByName: 'Lê Văn Cường',
-      items: [
-        { safetyItemId: 's001', itemName: 'Mũ bảo hiểm', quantity: 5, status: 'Pending' as const },
-      ],
-      status: 'Pending' as const,
-      createdAt: '2024-12-20',
-    },
-  ] as SafetyEquipmentPlan[],
-
-  safetyDistributions: [
-    {
-      id: 'dist001',
-      planId: 'plan001',
-      departmentId: 'dept002',
-      safetyItemId: 's001',
-      itemName: 'Mũ bảo hiểm',
-      quantityDistributed: 10,
-      distributedBy: 'emp001',
-      distributedDate: '2024-12-15',
-      receivedBy: 'emp002',
-      receivedDate: '2024-12-16',
-      status: 'Received' as const,
-    },
-    {
-      id: 'dist002',
-      planId: 'plan001',
-      departmentId: 'dept002',
-      safetyItemId: 's002',
-      itemName: 'Giày bảo hộ',
-      quantityDistributed: 10,
-      distributedBy: 'emp001',
-      distributedDate: '2024-12-15',
-      status: 'Distributed' as const,
-    },
-  ] as SafetyDistribution[],
 };
 
 export default mockData;
