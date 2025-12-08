@@ -1,6 +1,6 @@
 import { Badge } from '@/shared/components/ui/badge';
 import DataTable, { DataTableColumn } from '@/shared/components/tables/DataTable';
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Eye, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/shared/components/ui/button/Button2';
 
@@ -71,6 +71,26 @@ export default function EmployeeTable({
           {employee.startDate ? new Date(employee.startDate).toLocaleDateString('vi-VN') : '-'}
         </span>
       ),
+    },
+    {
+      key: 'accountStatus',
+      header: 'Tài khoản',
+      sortable: true,
+      render: (employee) => {
+        const hasAccount = employee.email != null && employee.email !== '';
+        
+        return hasAccount ? (
+          <Badge className="flex items-center gap-1 w-fit">
+            <CheckCircle className="h-3 w-3" />
+            Đã tạo
+          </Badge>
+        ) : (
+          <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+            <XCircle className="h-3 w-3" />
+            Chưa tạo
+          </Badge>
+        );
+      },
     },
     {
       key: 'actions',

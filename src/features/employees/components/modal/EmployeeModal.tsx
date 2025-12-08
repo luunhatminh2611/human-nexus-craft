@@ -307,7 +307,7 @@ export default function EmployeeModal({
               {/* Thông tin cơ bản */}
               <div>
                 <h3 className="text-lg font-semibold mb-3">Thông tin cơ bản</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="code">
                       Mã nhân viên <span className="text-destructive">*</span>
@@ -365,6 +365,36 @@ export default function EmployeeModal({
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="cccd">
+                      CCCD/CMND
+                    </Label>
+                    <Input
+                      id="cccd"
+                      placeholder="Nhập CCCD hoặc CMND"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cccd-place">
+                      Ngày cấp
+                    </Label>
+                    <Input
+                      id="cccd-place"
+                      placeholder="Nhập nơi cấp"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cccd-date">
+                      Nơi cấp
+                    </Label>
+                    <Input
+                      id="cccd-date"
+                      placeholder="Nhập ngày cấp"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="ethnicity">Dân tộc</Label>
                     <Select
                       value={formData.ethnicity}
@@ -381,6 +411,35 @@ export default function EmployeeModal({
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nationalityId">Quốc tịch</Label>
+                    <Select
+                      value={formData.nationalityId}
+                      onValueChange={(value) => handleChange('nationalityId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn quốc tịch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {nationalities?.map((item) => (
+                          <SelectItem key={item.id} value={item.id.toString()}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="religion">Tôn giáo</Label>
+                    <Input
+                      id="religion"
+                      value={formData.religion}
+                      onChange={(e) => handleChange('religion', e.target.value)}
+                      placeholder="Nhập tôn giáo"
+                    />
                   </div>
                 </div>
               </div>
@@ -447,7 +506,7 @@ export default function EmployeeModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="departmentId">Phòng ban <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="departmentId">Phòng ban/Phân xưởng <span className="text-destructive">*</span></Label>
                     <Select
                       value={formData.departmentId}
                       onValueChange={(value) => handleChange('departmentId', value)}
@@ -539,35 +598,6 @@ export default function EmployeeModal({
                       </SelectTrigger>
                       <SelectContent>
                         {languageLevels?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="religion">Tôn giáo</Label>
-                    <Input
-                      id="religion"
-                      value={formData.religion}
-                      onChange={(e) => handleChange('religion', e.target.value)}
-                      placeholder="Nhập tôn giáo"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="nationalityId">Quốc tịch</Label>
-                    <Select
-                      value={formData.nationalityId}
-                      onValueChange={(value) => handleChange('nationalityId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn quốc tịch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {nationalities?.map((item) => (
                           <SelectItem key={item.id} value={item.id.toString()}>
                             {item.name}
                           </SelectItem>

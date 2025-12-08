@@ -13,9 +13,9 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
   const [userData, setUserData] = useState(initialUserData);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { user } = useAuthStore();
-  
+
   const isAdmin = user?.roles === 'ADMIN';
-  
+
   const handleOpenEditModal = () => {
     setIsModalOpen(true);
   };
@@ -59,6 +59,15 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
               />
             </div>
             <div>
+              <Label className="text-sm text-muted-foreground mb-1">Quốc tịch</Label>
+              <Input
+                value={userData.nationality?.name || ''}
+                disabled
+                placeholder="Chưa cập nhật"
+                className='mt-2'
+              />
+            </div>
+            <div>
               <Label className="text-sm text-muted-foreground mb-1">Dân tộc</Label>
               <Input
                 value={userData.ethnicity || ''}
@@ -71,15 +80,6 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
               <Label className="text-sm text-muted-foreground mb-1">Tôn giáo</Label>
               <Input
                 value={userData.religion || ''}
-                disabled
-                placeholder="Chưa cập nhật"
-                className='mt-2'
-              />
-            </div>
-            <div>
-              <Label className="text-sm text-muted-foreground mb-1">Quốc tịch</Label>
-              <Input
-                value={userData.nationality?.name || ''}
                 disabled
                 placeholder="Chưa cập nhật"
                 className='mt-2'
