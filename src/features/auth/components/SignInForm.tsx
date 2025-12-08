@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { authService } from "@/features/auth/api/authApi";
 import { useAuthStore } from "@/features/employees/hooks/useAuth";
 import { Button } from "@/shared/components/ui/button/Button2";
+import logoHeader from '@/assets/icons/log_ct_001.png';
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -44,7 +45,7 @@ export default function SignInForm() {
     }
 
     // Check for EMPLOYEE
-    if (userRoles==='EMPLOYEE') {
+    if (userRoles === 'EMPLOYEE') {
       navigate(ROUTES.EMPLOYEE_PROFILE);
       return;
     }
@@ -72,10 +73,10 @@ export default function SignInForm() {
     try {
       // ✅ Sử dụng login từ useAuthStore (Redux)
       const result = await login(username, password);
-      
+
       if (result.success && result.data) {
         toast.success('Đăng nhập thành công!');
-        
+
         // Navigate dựa trên role
         navigateByRoles(result.data.user.roles);
       } else {
@@ -94,9 +95,12 @@ export default function SignInForm() {
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-1">
-            <h1 className="mb-2 font-semibold text-gray-800 text-title-sm dark:text-white/90 sm:text-title-md">
+            <img src={logoHeader} alt="Logo" className="w-14 h-14 sm:w-20 sm:h-20 flex justify-self-center" />
+          </div>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-green-600 dark:text-blue-400">
               Đăng nhập
-            </h1>
+            </h2>
           </div>
           <div>
             <div className="relative py-3 sm:py-4">
@@ -148,7 +152,7 @@ export default function SignInForm() {
                 <div>
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full bg-green-500 hover:bg-green-700"
                     size="sm"
                     disabled={isLoading}
                   >
@@ -157,12 +161,6 @@ export default function SignInForm() {
                 </div>
               </div>
             </form>
-
-            <div className="mt-5">
-              <p className="text-sm font-normal text-center text-gray-700 dark:text-gray-400 sm:text-start">
-                Bạn chưa có tài khoản hãy liên hệ với quản trị viên để được tạo tài khoản.
-              </p>
-            </div>
           </div>
         </div>
       </div>
