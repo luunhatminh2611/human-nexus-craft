@@ -1,11 +1,16 @@
-import { Layout } from '@/shared/components/layouts/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card } from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Search, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
-import Button from '@/shared/components/ui/button/Button';
-import { useAuthStore } from '@/features/auth';
-import mockData from '@/mock/data';
-import { BookOpen, Clock, Plus, Edit, Trash2, UserPlus, Eye } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Button } from '@/shared/components/ui/button/Button2';
 import {
   Table,
   TableBody,
@@ -14,427 +19,336 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/shared/components/ui/dialog';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { X } from 'lucide-react';
+import { trainingApi } from '../../api/trainingApi';
+import { useNavigate } from 'react-router-dom';
 
-export default function AdminTraining() {
+export default function TrainingAdminPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('PENDING_APPROVAL');
+  const [trainings, setTrainings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [sortField, setSortField] = useState('');
+  const [sortOrder, setSortOrder] = useState('');
+
   const navigate = useNavigate();
-  const { role } = useAuthStore();
 
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedTrainingId, setSelectedTrainingId] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-  const [assignType, setAssignType] = useState("company");
-  
+  // Fetch trainings khi filter thay đổi
+  useEffect(() => {
+    fetchTrainings();
+  }, [pageNumber, pageSize, searchTerm, filterStatus, sortField, sortOrder]);
+
+  const fetchTrainings = async () => {
+    try {
+      setIsLoading(true);
+      console.log("Fetching trainings with params:", {
+        pageNumber,
+        pageSize,
+        keyword: searchTerm,
+        status: filterStatus,
+        sortField,
+        sortOrder
+      });
+
+      const data = await trainingApi.getAllAdmin({
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+        keyword: searchTerm || '',
+        status: filterStatus || '',
+        sortField: sortField || undefined,
+        sortOrder: sortOrder || undefined
+      });
+
+      console.log("Trainings response:", data);
+
+      // Xử lý response - có thể là array hoặc object với data và total
+      if (Array.isArray(data)) {
+        setTrainings(data);
+        setTotalItems(data.length);
+      } else if (data?.data) {
+        setTrainings(Array.isArray(data.data) ? data.data : []);
+        setTotalItems(data.total || data.data.length);
+      } else {
+        setTrainings([]);
+        setTotalItems(0);
+      }
+
+      setError(null);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách khóa đào tạo:", err);
+      setError(err);
+      setTrainings([]);
+      setTotalItems(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-      Completed: 'default',
-      Ongoing: 'secondary',
-      Upcoming: 'outline',
+    const statusConfig = {
+      'DRAFT': { label: 'Nháp', className: 'bg-gray-100 text-gray-800' },
+      'PENDING_APPROVAL': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
+      'APPROVED': { label: 'Đã duyệt', className: 'bg-blue-100 text-blue-800' },
+      'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
+      'IN_PROGRESS': { label: 'Đang diễn ra', className: 'bg-purple-100 text-purple-800' },
+      'COMPLETED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
     };
+
+    const config = statusConfig[status] || { label: status, className: '' };
+
     return (
-      <Badge variant={variants[status] || 'outline'}>
-        {status === 'Completed'
-          ? 'Hoàn thành'
-          : status === 'Ongoing'
-            ? 'Đang diễn ra'
-            : 'Sắp tới'}
+      <Badge className={config.className}>
+        {config.label}
       </Badge>
     );
   };
 
-  const employeesByDepartment = selectedDepartments.length === 0
-    ? mockData.employees // toàn công ty
-    : mockData.employees.filter(emp => selectedDepartments.includes(emp.departmentId));
+  const getCourseTypeBadge = (type: string) => {
+    const typeConfig = {
+      'QUARTERLY': { label: 'Khóa Học Quý', className: 'bg-blue-100 text-blue-800' },
+      'MONTHLY': { label: 'Khóa Học Tháng', className: 'bg-green-100 text-green-800' },
+      'YEARLY': { label: 'Khóa Học Năm', className: 'bg-purple-100 text-purple-800' },
+    };
 
-  const handleAssignTraining = (trainingId: string) => {
-    setSelectedTrainingId(trainingId);
-    setSelectedEmployees([]);
-    setSearchQuery('');
-    setAssignDialogOpen(true);
-  };
+    const config = typeConfig[type] || { label: type, className: '' };
 
-  const handleSelectEmployee = (employeeId: string) => {
-    if (!selectedEmployees.includes(employeeId)) {
-      setSelectedEmployees([...selectedEmployees, employeeId]);
-      setSearchQuery('');
-    }
-  };
-
-  const handleRemoveEmployee = (employeeId: string) => {
-    setSelectedEmployees(selectedEmployees.filter(id => id !== employeeId));
-  };
-
-  const handleConfirmAssign = () => {
-    if (selectedEmployees.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một nhân viên');
-      return;
-    }
-    toast.success(`Đã giao khóa học cho ${selectedEmployees.length} nhân viên`);
-    setAssignDialogOpen(false);
-    setSelectedEmployees([]);
-  };
-
-  const filteredEmployees = employeesByDepartment.filter(emp => {
-    const fullName = `${emp.firstName} ${emp.lastName}`.toLowerCase();
     return (
-      fullName.includes(searchQuery.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchQuery.toLowerCase())
+      <Badge className={config.className}>
+        {config.label}
+      </Badge>
     );
-  });
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPageNumber(1); // Reset về trang đầu khi search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize + 1;
+  const endIndex = Math.min(pageNumber * pageSize, totalItems);
+
+  if (error && !isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-destructive">Lỗi: Không thể tải danh sách khóa đào tạo</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý đào tạo</h1>
-          <p className="text-muted-foreground">Chương trình đào tạo và phát triển</p>
+          <h1 className="text-3xl font-bold">Phê duyệt đào tạo</h1>
+          <p className="text-muted-foreground">
+            Danh sách khóa đào tạo cần phê duyệt ({totalItems} bản ghi)
+          </p>
         </div>
-        {role === 'Admin' && (
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tạo khóa học mới
-          </Button>
-        )}
       </div>
 
-      {/* Training Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Tổng khóa học
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockData.trainings.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Đang diễn ra
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {mockData.trainings.filter((t) => t.status === 'Ongoing').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Hoàn thành
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              {mockData.trainings.filter((t) => t.status === 'Completed').length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Sắp tới
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {mockData.trainings.filter((t) => t.status === 'Upcoming').length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm kiếm theo tên khóa đào tạo"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-      {/* Training Table */}
+          <Select
+            value={filterStatus}
+            onValueChange={setFilterStatus}
+          >
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="Tất cả trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PENDING_APPROVAL">Chờ duyệt</SelectItem>
+              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+              <SelectItem value="REJECTED">Từ chối</SelectItem>
+              <SelectItem value="IN_PROGRESS">Đang diễn ra</SelectItem>
+              <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
+      {/* Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Danh sách khóa học</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Khóa học</TableHead>
-                <TableHead>Thời lượng</TableHead>
-                <TableHead>Học viên</TableHead>
+                <TableHead>Tên khóa đào tạo</TableHead>
+                <TableHead>Phòng ban</TableHead>
+                <TableHead>Loại khóa học</TableHead>
+                <TableHead>Địa điểm</TableHead>
+                <TableHead>Thời gian</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockData.trainings.map((training) => {
-                const enrollments = mockData.trainingEnrollments.filter(
-                  (e) => e.trainingId === training.id
-                );
-
-                return (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span className="text-sm">Đang tải...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : trainings.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <Search className="h-8 w-8" />
+                      <p>Không có dữ liệu</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                trainings.map((training) => (
                   <TableRow key={training.id}>
                     <TableCell>
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{training.title}</p>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            {training.description}
-                          </p>
-                        </div>
+                      <div>
+                        <p className="font-medium">{training.title || '-'}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {training.description || '-'}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>{training.durationDays} ngày</span>
-                      </div>
+                      <span className="text-sm">{training.departmentName || '-'}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="font-medium">{enrollments.length}</span> học viên
+                      {getCourseTypeBadge(training.courseType)}
                     </TableCell>
-                    <TableCell>{getStatusBadge(training.status)}</TableCell>
                     <TableCell>
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/training/${training.id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        {role === 'Admin' && (
+                      <span className="text-sm">{training.location || '-'}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {training.courseType === 'YEARLY' && (
+                          <p>Năm: {training.year || '-'}</p>
+                        )}
+                        {training.courseType === 'QUARTERLY' && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleAssignTraining(training.id)}
-                            >
-                              <UserPlus className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <p>Quý: {training.quarter || '-'}</p>
+                            <p>Năm: {training.year || '-'}</p>
+                          </>
+                        )}
+                        {training.courseType === 'MONTHLY' && (
+                          <>
+                            <p>Tháng: {training.month || '-'}</p>
+                            <p>Năm: {training.year || '-'}</p>
                           </>
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      {getStatusBadge(training.status)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Xem chi tiết và phê duyệt"
+                          onClick={() => navigate(`/training/${training.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                );
-              })}
+                ))
+              )}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
+
+        {/* Pagination */}
+        {!isLoading && trainings.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="text-sm text-muted-foreground">
+              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setPageNumber(1);
+                }}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPageNumber(1)}
+                  disabled={pageNumber === 1}
+                >
+                  Đầu
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPageNumber(p => p - 1)}
+                  disabled={pageNumber === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <span className="px-3 text-sm">
+                  Trang {pageNumber} / {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPageNumber(p => p + 1)}
+                  disabled={pageNumber >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPageNumber(totalPages)}
+                  disabled={pageNumber >= totalPages}
+                >
+                  Cuối
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
-
-      {/* Create Training Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Tạo khóa học mới</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Tên khóa học</Label>
-              <Input id="title" placeholder="Nhập tên khóa học" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Mô tả</Label>
-              <Textarea id="description" placeholder="Nhập mô tả khóa học" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="duration">Thời lượng (ngày)</Label>
-                <Input id="duration" type="number" placeholder="5" />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="instructor">Giảng viên</Label>
-                <Input id="instructor" placeholder="Tên giảng viên" />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button onClick={() => {
-              toast.success('Đã tạo khóa học mới');
-              setCreateDialogOpen(false);
-            }}>
-              Tạo khóa học
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign Training Dialog */}
-      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Giao khóa học</DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* Loại giao */}
-            <div className="grid gap-2">
-              <Label>Hình thức giao</Label>
-              <div className="flex gap-2">
-                {["company", "department", "employee"].map(type => (
-                  <Button
-                    key={type}
-                    variant={assignType === type ? "primary" : "outline"}
-                    onClick={() => {
-                      setAssignType(type);
-                      setSelectedEmployees([]);
-                      setSelectedDepartments([]);
-                      setSearchQuery("");
-                    }}
-                  >
-                    {type === "company"
-                      ? "Toàn công ty"
-                      : type === "department"
-                        ? "Theo phòng ban"
-                        : "Theo nhân viên"}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Nếu chọn theo phòng ban */}
-            {assignType === "department" && (
-              <div className="grid gap-2">
-                <Label>Chọn phòng ban (có thể chọn nhiều)</Label>
-                <div className="flex flex-wrap gap-2">
-                  {mockData.departments.map(dep => {
-                    const active = selectedDepartments.includes(dep.id);
-                    return (
-                      <Badge
-                        key={dep.id}
-                        variant={active ? "default" : "outline"}
-                        className="cursor-pointer"
-                        onClick={() => {
-                          setSelectedDepartments(
-                            active
-                              ? selectedDepartments.filter(id => id !== dep.id)
-                              : [...selectedDepartments, dep.id]
-                          );
-                          setSearchQuery("");
-                        }}
-                      >
-                        {dep.name}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Nếu chọn theo nhân viên hoặc phòng ban thì mới hiện phần chọn nhân viên */}
-            {assignType !== "company" && (
-              <>
-                {/* Selected Employees */}
-                {selectedEmployees.length > 0 && (
-                  <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-lg">
-                    {selectedEmployees.map(empId => {
-                      const emp = mockData.employees.find(e => e.id === empId);
-                      return (
-                        <Badge key={empId} variant="secondary" className="pl-3 pr-1 py-1">
-                          {emp?.firstName} {emp?.lastName}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 ml-1 hover:bg-transparent"
-                            onClick={() => handleRemoveEmployee(empId)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Search Employee */}
-                <div className="grid gap-2">
-                  <Label htmlFor="search">Tìm kiếm nhân viên</Label>
-                  <Input
-                    id="search"
-                    placeholder="Nhập tên hoặc email nhân viên..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-
-                {/* Search Results */}
-                {searchQuery && (
-                  <div className="border rounded-lg max-h-60 overflow-y-auto">
-                    {filteredEmployees.length > 0 ? (
-                      filteredEmployees.map(emp => (
-                        <div
-                          key={emp.id}
-                          className={`p-3 hover:bg-muted cursor-pointer border-b last:border-b-0 ${selectedEmployees.includes(emp.id) ? "bg-muted" : ""
-                            }`}
-                          onClick={() => handleSelectEmployee(emp.id)}
-                        >
-                          <p className="font-medium">
-                            {emp.firstName} {emp.lastName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{emp.email}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-center text-muted-foreground py-4">
-                        Không tìm thấy nhân viên
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button
-              onClick={() => {
-                if (assignType === "company") {
-                  toast.success("Đã giao khóa học cho toàn công ty");
-                } else {
-                  toast.success(
-                    `Đã giao khóa học cho ${assignType === "department"
-                      ? selectedDepartments.length + " phòng ban"
-                      : selectedEmployees.length + " nhân viên"
-                    }`
-                  );
-                }
-                setAssignDialogOpen(false);
-              }}
-            >
-              Xác nhận giao
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

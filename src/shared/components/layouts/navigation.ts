@@ -33,8 +33,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
   } else if (role === 'MANAGER') {
     return [
       { label: 'Hồ sơ', icon: Users, path: '/employee/profile' },
-      { label: 'Đào tạo', icon: BookOpen, path: '/employee/learning' },
-      { label: 'Hồ sơ', icon: User, path: '/manager/profile' },
+      { label: 'Đào tạo', icon: BookOpen, path: '/manager/learning' },
       { label: 'Quản lý điều động', icon: Rotate3d, path: '/manager/transfer' },
       { label: 'Phân phát BHLĐ', icon: BoxIcon, path: '/manager/safety-items' },
       // { label: 'Lộ trình thăng tiến', icon: TrendingUp, path: '/employee/career-path' },

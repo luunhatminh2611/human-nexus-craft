@@ -12,6 +12,7 @@ import AdminLeaveRequest from '@/features/leave-request/pages/admin/LeaveRequest
 import TransferManagerPage from '@/features/transfer/pages/manager/ManagerTransfer';
 import EmployeeTransferPage from '@/features/transfer/pages/employee/EmployeeTransfer';
 import TransferAdminPage from '@/features/transfer/pages/admin/AdminTransfer';
+import TrainingManagerPage from '@/features/training/pages/manager/ManagerTraining';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -105,7 +106,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },
       { path: ROUTES.MANAGER_ORG_CHART.slice(1), element: <ManagerOrgChart /> },
-      { path: ROUTES.MANAGER_TRAINING.slice(1), element: <ManagerTraining /> },
+      { path: ROUTES.MANAGER_TRAINING.slice(1), element: <TrainingManagerPage /> },
       { path: ROUTES.MANAGER_PROFILE.slice(1), element: <ManagerProfile /> },
       { path: ROUTES.MANAGER_PROFILE_ID.slice(1), element: <ManagerProfile /> },
       { path: ROUTES.MANAGER_SAFETY_ITEMS.slice(1), element: <ManagerSafetyDistribution /> },

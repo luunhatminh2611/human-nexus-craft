@@ -391,6 +391,7 @@ export default function EmployeeModal({
                     <Input
                       id="cccd-date"
                       placeholder="Nhập ngày cấp"
+                      type="date"
                     />
                   </div>
 

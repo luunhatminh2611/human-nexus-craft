@@ -1,52 +1,128 @@
-import apiClient from '@/lib/axios';
-import type { Training, TrainingEnrollment, TrainingFeedback } from '../types';
+import { api } from "../../../lib/axios";
 
 export const trainingApi = {
-  // Trainings
-  getAllTrainings: async (): Promise<Training[]> => {
-    const response = await apiClient.get<Training[]>('/trainings');
-    return response.data;
-  },
+    getAll: async (params) => {
+        try {
+            const response = await api.get("/manager/training-courses", {
+                pageSize: params?.pageSize,
+                pageNumber: params?.pageNumber,
+                sortField: params?.sortField,
+                sortOrder: params?.sortOrder,
+                departmentId: params?.departmentId,
+                status: params?.status,
+                keyword: params?.keyword,
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  getTrainingById: async (id: string): Promise<Training> => {
-    const response = await apiClient.get<Training>(`/trainings/${id}`);
-    return response.data;
-  },
+    getAllAdmin: async (params) => {
+        try {
+            const response = await api.get("/admin/training-courses", {
+                pageSize: params?.pageSize,
+                pageNumber: params?.pageNumber,
+                sortField: params?.sortField,
+                sortOrder: params?.sortOrder,
+                status: params?.status,
+                keyword: params?.keyword,
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo (Admin):", error);
+            throw error;
+        }
+    },
 
-  createTraining: async (training: Partial<Training>): Promise<Training> => {
-    const response = await apiClient.post<Training>('/trainings', training);
-    return response.data;
-  },
+    getById: async (id) => {
+        try {
+            const response = await api.get(`/manager/training-courses/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  updateTraining: async (id: string, training: Partial<Training>): Promise<Training> => {
-    const response = await apiClient.put<Training>(`/trainings/${id}`, training);
-    return response.data;
-  },
+    update: async (id, data) => {
+        try {
+            const response = await api.put(`/manager/training-courses/${id}`, data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi cập nhật khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  deleteTraining: async (id: string): Promise<void> => {
-    await apiClient.delete(`/trainings/${id}`);
-  },
+    delete: async (id) => {
+        try {
+            const response = await api.delete(`/manager/training-courses/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi xóa khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  // Enrollments
-  getEnrollmentsByEmployee: async (employeeId: string): Promise<TrainingEnrollment[]> => {
-    const response = await apiClient.get<TrainingEnrollment[]>(`/enrollments?employeeId=${employeeId}`);
-    return response.data;
-  },
+    create: async (data) => {
+        try {
+            const response = await api.post("/manager/training-courses", data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi tạo khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  enrollEmployee: async (enrollment: Partial<TrainingEnrollment>): Promise<TrainingEnrollment> => {
-    const response = await apiClient.post<TrainingEnrollment>('/enrollments', enrollment);
-    return response.data;
-  },
+    submitApproval: async (id) => {
+        try {
+            const response = await api.post(`/manager/training-courses/${id}/submit-approval`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi gửi yêu cầu phê duyệt khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  updateEnrollment: async (id: string, enrollment: Partial<TrainingEnrollment>): Promise<TrainingEnrollment> => {
-    const response = await apiClient.put<TrainingEnrollment>(`/enrollments/${id}`, enrollment);
-    return response.data;
-  },
+    assignEmployees: async (data) => {
+        try {
+            const response = await api.post("/manager/training-courses/assign/employees", data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi phân công nhân viên vào khóa đào tạo:", error);
+            throw error;
+        }
+    },
 
-  // Feedbacks
-  submitFeedback: async (feedback: Partial<TrainingFeedback>): Promise<TrainingFeedback> => {
-    const response = await apiClient.post<TrainingFeedback>('/feedbacks', feedback);
-    return response.data;
-  },
+    getProgress: async (id) => {
+        try {
+            const response = await api.get(`/manager/training-courses/${id}/progress`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy tiến độ khóa đào tạo:", error);
+            throw error;
+        }
+    },
+
+    approveCourse: async (data) => {
+        try {
+            const response = await api.post("/admin/training-courses/approve", data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi phê duyệt khóa đào tạo:", error);
+            throw error;
+        }
+    },
+
+    rejectCourse: async (data) => {
+        try {
+            const response = await api.post("/admin/training-courses/reject", data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi từ chối khóa đào tạo:", error);
+            throw error;
+        }
+    },
 };
-

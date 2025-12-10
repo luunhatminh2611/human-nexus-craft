@@ -21,7 +21,6 @@ export const ROUTES = {
   MANAGER_DASHBOARD: '/manager/dashboard',
   MANAGER_EMPLOYEES: '/manager/employees',
   MANAGER_ORG_CHART: '/manager/org-chart',
-  MANAGER_TRAINING: '/manager/training',
   MANAGER_PROFILE: '/manager/profile',
   MANAGER_PROFILE_ID: '/manager/profile/:id',
   MANAGER_SAFETY_ITEMS: '/manager/safety-items',
@@ -29,7 +28,7 @@ export const ROUTES = {
   MANAGER_LEAVE_REQUESTS: '/manager/leave-requests',
   MANAGER_WORK_SCHEDULE: '/manager/work-schedule',
   MANAGER_TRANSFER: '/manager/transfer',
-
+  MANAGER_TRAINING: '/manager/learning',
   EMPLOYEE_PROFILE: '/employee/profile',
   EMPLOYEE_PAYROLL: '/employee/payroll',
   EMPLOYEE_LEARNING: '/employee/learning',
