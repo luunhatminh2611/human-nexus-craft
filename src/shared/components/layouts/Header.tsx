@@ -66,7 +66,7 @@ export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, on
             PHẦN MỀM QUẢN LÝ NHÂN SỰ
           </div>
           <div className="text-base sm:text-xs font-bold text-center">
-            Công TY THAN UÔNG BÍ - TKV
+            CÔNG TY THAN UÔNG BÍ - TKV
           </div>
           <div className="flex flex-col sm:flex-row items-center sm:items-end sm:justify-center gap-2 sm:gap-4 text-white text-sm sm:text-xs sm:text-center font-medium">
             <div className="flex items-center gap-2">

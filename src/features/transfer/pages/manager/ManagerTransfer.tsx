@@ -42,10 +42,10 @@ export default function TransferManagerPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTransferId, setSelectedTransferId] = useState(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  
+
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedDetailTransferId, setSelectedDetailTransferId] = useState(null);
-  
+
   // Fetch user department và departments
   useEffect(() => {
     fetchUserDepartment();
@@ -289,9 +289,9 @@ export default function TransferManagerPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nhân viên được điều động</TableHead>
-                <TableHead>Người tạo</TableHead>
                 <TableHead>Từ phòng ban</TableHead>
-                <TableHead>Đến phòng ban</TableHead>
+                <TableHead>Đến phòng ban</TableHead>   
+                <TableHead>Người tạo</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
@@ -322,9 +322,7 @@ export default function TransferManagerPage() {
                     <TableCell>
                       <span className="font-medium">{transfer.employeeName || '-'}</span>
                     </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{transfer.creatorName || '-'}</span>
-                    </TableCell>
+
                     <TableCell>
                       <div>
                         <p className="font-medium">{transfer.fromDepartmentName || '-'}</p>
@@ -336,6 +334,9 @@ export default function TransferManagerPage() {
                         <p className="font-medium">{transfer.toDepartmentName || '-'}</p>
                         <p className="text-sm text-muted-foreground">{transfer.toPositionName || '-'}</p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{transfer.creatorName || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">

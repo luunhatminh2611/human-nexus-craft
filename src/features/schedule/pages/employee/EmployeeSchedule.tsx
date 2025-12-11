@@ -129,7 +129,6 @@ export default function EmployeeWorkSchedule() {
 
       setLoading(true);
       setError(null);
-      console.log("AÂ", employeeId)
       
       const schedules = await workScheduleApi.getByUser(employeeId);
       const scheduleArray = Array.isArray(schedules) ? schedules : [];

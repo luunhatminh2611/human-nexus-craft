@@ -266,10 +266,10 @@ export default function OrgChart() {
             <table className="w-full text-sm border">
               <thead className="bg-muted text-left">
                 <tr>
+                  <th className="p-3 border">Mã phòng ban</th>
                   <th className="p-3 border">Tên phòng ban</th>
-                  <th className="p-3 border">Loại</th>
-                  <th className="p-3 border">Mã</th>
-                  <th className="p-3 border">Phòng ban cha</th>
+                  <th className="p-3 border">Loại phòng ban</th>
+                  <th className="p-3 border">Phòng ban gốc</th>
                   <th className="p-3 border text-center">Số nhân viên</th>
                   <th className="p-3 border text-center w-[120px]">Thao tác</th>
                 </tr>
@@ -281,16 +281,16 @@ export default function OrgChart() {
 
                     return (
                       <tr key={dept.id} className="hover:bg-muted/40">
+                        <td className="p-3 border text-sm text-muted-foreground">{dept.code || '-'}</td>
                         <td className="p-3 border font-medium">{dept.name}</td>
                         <td className="p-3 border">
                           <Badge variant="outline">{dept.type || 'Phòng'}</Badge>
                         </td>
-                        <td className="p-3 border text-sm text-muted-foreground">{dept.code || '-'}</td>
                         <td className="p-3 border">
                           {parentDept ? (
                             parentDept.name
                           ) : (
-                            <span className="text-muted-foreground italic">(Phòng gốc)</span>
+                            <span className="text-muted-foreground italic">(Phòng ban gốc)</span>
                           )}
                         </td>
                         <td className="p-3 border text-center">

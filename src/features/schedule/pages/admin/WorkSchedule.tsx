@@ -369,7 +369,7 @@ export default function WorkSchedule() {
             }}
             className="bg-green-500 text-white hover:bg-green-300"
           >
-            <Plus className="w-4 h-4 mr-1" /> Tạo lịch công tác
+            <Plus className="w-4 h-4 mr-1" /> Thêm lịch công tác
           </Button>
         </div>
       </div>

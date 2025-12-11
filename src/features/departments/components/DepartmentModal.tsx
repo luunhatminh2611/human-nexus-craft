@@ -86,7 +86,7 @@ export function DepartmentFormModal({
 
         // Kiểm tra không được chọn chính mình làm phòng ban cha
         if (isEditMode && editingDept && String(editingDept.id) === String(parentId)) {
-            onError({ title: 'Lỗi', description: 'Không thể chọn chính phòng ban làm phòng ban cha' });
+            onError({ title: 'Lỗi', description: 'Không thể chọn chính phòng ban làm phòng ban gốc' });
             return;
         }
 
@@ -170,7 +170,7 @@ export function DepartmentFormModal({
                     <div>
                         <Label>Tên phòng ban *</Label>
                         <Input
-                            placeholder="VD: Kỹ thuật"
+                            placeholder="Nhập tên phòng ban"
                             value={form.name}
                             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
                         />
@@ -178,7 +178,7 @@ export function DepartmentFormModal({
                     <div>
                         <Label>Mã phòng ban</Label>
                         <Input
-                            placeholder="VD: KT01"
+                            placeholder="Nhập mã phòng ban"
                             value={form.code}
                             onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))}
                         />
@@ -201,13 +201,13 @@ export function DepartmentFormModal({
                         </Select>
                     </div>
                     <div>
-                        <Label>Phòng ban cha (tùy chọn)</Label>
+                        <Label>Phòng ban gốc (tùy chọn)</Label>
                         <Select
                             value={form.parent || 'none'}
                             onValueChange={(v) => setForm((s) => ({ ...s, parent: v === 'none' ? '' : v }))}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Không chọn (là phòng ban cha)" />
+                                <SelectValue placeholder="Không chọn (là phòng ban gốc)" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="none">Không chọn (phòng ban gốc)</SelectItem>
@@ -227,7 +227,7 @@ export function DepartmentFormModal({
                         </Button>
                         <Button onClick={handleSubmit} disabled={submitting}>
                             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            {isEditMode ? 'Lưu' : 'Thêm'}
+                            {isEditMode ? 'Lưu' : 'Thêm phòng ban'}
                         </Button>
                     </div>
                 </div>

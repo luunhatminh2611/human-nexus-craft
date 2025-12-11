@@ -6,7 +6,6 @@ export const roleApi = {
   getAll: async () => {
     try {
       const response = await api.get("/role");
-      console.log("Response data:", response);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách vai trò:", error);
@@ -68,7 +67,6 @@ export const jobTitleApi = {
   getAll: async () => {
     try {
       const response = await api.get("/position");
-      console.log("Response data:", response);
       const positions = response.data.data.filter(item => item.type === "Chức danh");
       return positions;
     } catch (error) {
@@ -139,7 +137,6 @@ export const majorApi = {
   getAll: async () => {
     try {
       const response = await api.get("/position");
-      console.log("Response data:", response);
       const majors = response.data.data.filter(item => item.type === "Ngành nghề");
       return majors;
     } catch (error) {
@@ -210,7 +207,6 @@ export const degreeApi = {
   getAll: async () => {
     try {
       const response = await api.get("/education_level");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách bậc học:", error);
@@ -274,7 +270,6 @@ export const ethnicityApi = {
   getAll: async () => {
     try {
       const response = await api.get("/ethnicity");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách dân tộc:", error);
@@ -340,7 +335,6 @@ export const wardApi = {
   getAll: async () => {
     try {
       const response = await api.get("/ward");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách phường/xã:", error);
@@ -405,7 +399,6 @@ export const provinceCityApi = {
   getAll: async () => {
     try {
       const response = await api.get("/province_city");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách tỉnh/thành phố:", error);
@@ -470,7 +463,6 @@ export const specialtyApi = {
   getAll: async () => {
     try {
       const response = await api.get("/specialty");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách chuyên môn:", error);
@@ -538,7 +530,6 @@ export const politicalTheoryApi = {
   getAll: async () => {
     try {
       const response = await api.get("/political_theory");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách lý luận chính trị:", error);
@@ -603,7 +594,6 @@ export const languageLevelApi = {
   getAll: async () => {
     try {
       const response = await api.get("/language_level");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách trình độ ngoại ngữ:", error);
@@ -669,7 +659,6 @@ export const nationalityApi = {
   getAll: async () => {
     try {
       const response = await api.get("/nationality");
-      console.log("Response data:", response);
       return response.data.data;
     } catch (error) {
       console.error("Lỗi khi lấy danh sách quốc tịch:", error);

@@ -381,6 +381,7 @@ export default function EmployeeModal({
                     <Input
                       id="cccd-place"
                       placeholder="Nhập nơi cấp"
+                      type="date"
                     />
                   </div>
 
@@ -390,8 +391,8 @@ export default function EmployeeModal({
                     </Label>
                     <Input
                       id="cccd-date"
-                      placeholder="Nhập ngày cấp"
-                      type="date"
+                      placeholder="Nhập nơi cấp"
+
                     />
                   </div>
 
@@ -638,7 +639,7 @@ export default function EmployeeModal({
                 {isLoading
                   ? 'Đang xử lý...'
                   : mode === 'create'
-                    ? 'Tạo nhân viên'
+                    ? 'Thêm nhân viên'
                     : 'Lưu thay đổi'}
               </Button>
             </DialogFooter>

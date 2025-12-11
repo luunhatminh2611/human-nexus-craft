@@ -19,7 +19,7 @@ export default function AuthLayout({
               PHẦN MỀM QUẢN LÝ NHÂN SỰ
             </div>
             <div className="text-base sm:text-xl font-bold text-center">
-              Công TY THAN UÔNG BÍ - TKV
+              CÔNG TY THAN UÔNG BÍ - TKV
             </div>
             <div className="flex flex-col sm:flex-row items-center sm:items-end sm:justify-center gap-2 sm:gap-4 text-white text-sm sm:text-xl sm:text-center font-medium">
               <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ export default function AuthLayout({
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              © 2024 Công TY THAN UÔNG BÍ - TKV. All rights reserved.
+              © 2024 CÔNG TY THAN UÔNG BÍ - TKV. All rights reserved.
             </p>
           </div>
         </div>

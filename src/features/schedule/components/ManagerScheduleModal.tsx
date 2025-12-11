@@ -99,7 +99,7 @@ export default function ManagerWorkScheduleModal({
             ) : (
               <>
                 <Plus size={20} className="text-green-600" />
-                {isFromDayCell ? "Thêm lịch công tác" : "Tạo lịch công tác"}
+                {isFromDayCell ? "Thêm lịch công tác" : "Thêm lịch công tác"}
               </>
             )}
           </DialogTitle>

@@ -16,7 +16,7 @@ export default function EmployeeTable({
   const columns = [
     {
       key: 'code',
-      header: 'Mã NV',
+      header: 'Mã nhân viên',
       sortable: true,
       render: (employee) => (
         <span className="font-medium text-primary">{employee.employeeCode}</span>

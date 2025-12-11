@@ -181,9 +181,10 @@ export default function EmployeeTransferPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Người tạo</TableHead>
+
                 <TableHead>Từ phòng ban</TableHead>
                 <TableHead>Đến phòng ban</TableHead>
+                <TableHead>Người tạo</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
@@ -211,9 +212,7 @@ export default function EmployeeTransferPage() {
               ) : (
                 transfers.map((transfer) => (
                   <TableRow key={transfer.id}>
-                    <TableCell>
-                      <span className="text-sm">{transfer.creatorName || '-'}</span>
-                    </TableCell>
+
                     <TableCell>
                       <div>
                         <p className="font-medium">{transfer.fromDepartmentName || '-'}</p>
@@ -225,6 +224,9 @@ export default function EmployeeTransferPage() {
                         <p className="font-medium">{transfer.toDepartmentName || '-'}</p>
                         <p className="text-sm text-muted-foreground">{transfer.toPositionName || '-'}</p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{transfer.creatorName || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
