@@ -88,7 +88,7 @@ export default function ManagerEmployees() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên, email, chức danh..."
+              placeholder="Tìm kiếm theo tên, email, chức vụ..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -128,7 +128,7 @@ export default function ManagerEmployees() {
           <TableHeader>
             <TableRow>
               <TableHead>Nhân viên</TableHead>
-              <TableHead>Chức danh</TableHead>
+              <TableHead>Chức vụ</TableHead>
               <TableHead>Phòng ban</TableHead>
               <TableHead>Bậc</TableHead>
               <TableHead>Trạng thái</TableHead>

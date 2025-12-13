@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Button from '@/shared/components/ui/button/Button';
 import { Input } from '@/shared/components/ui/input';
 import { Card } from '@/shared/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -11,25 +12,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, Edit, Trash2, Shield } from 'lucide-react';
 import EmployeeTable from '@/features/employees/components/EmployeeTable';
 import { employeeApi } from '../../api/employeeApi';
+import { userApi } from '../../api/userApi';
 import EmployeeModal from '../../components/modal/EmployeeModal';
+import UserAccountModal from '../../components/modal/UserAccountModal';
+import RoleModal from '../../../auth/components/RoleModal';
 import { unitApi } from '@/features/departments/api/departmentApi';
 
 export default function Employees() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  
+  // User modal states
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [userModalMode, setUserModalMode] = useState<'create' | 'edit'>('create');
+
+  // Role modal states
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [selectedUserData, setSelectedUserData] = useState(null);
+
+  // Pagination states for users
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Fetch employees
-  const { data: employees = [], isLoading, error } = useQuery({
+  const { data: employees = [], isLoading: isLoadingEmployees, error: employeesError } = useQuery({
     queryKey: ['employees'],
     queryFn: employeeApi.getAll,
+  });
+
+  // Fetch users
+  const { data: users = [], isLoading: isLoadingUsers, error: usersError } = useQuery({
+    queryKey: ['users'],
+    queryFn: userApi.getAll,
+    enabled: activeTab === 'users',
   });
 
   // Fetch departments
@@ -59,12 +84,33 @@ export default function Employees() {
         emp.departmentName === filterDepartment ||
         emp.department?.name === filterDepartment;
 
-
       return matchesSearch && matchesStatus && matchesDepartment;
     });
 
     return result;
   }, [employees, searchTerm, filterStatus, filterDepartment]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((user) => {
+      const text = searchTerm.toLowerCase();
+      return (
+        user.username?.toLowerCase().includes(text) ||
+        user.email?.toLowerCase().includes(text) ||
+        user.fullName?.toLowerCase().includes(text)
+      );
+    });
+  }, [users, searchTerm]);
+
+  // Pagination calculations for users
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search term changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleOpenCreateModal = () => {
     setModalMode('create');
@@ -94,6 +140,50 @@ export default function Employees() {
     }
   };
 
+  // User modal handlers
+  const handleOpenCreateUserModal = () => {
+    setUserModalMode('create');
+    setSelectedUserId(null);
+    setIsUserModalOpen(true);
+  };
+
+  const handleOpenEditUserModal = (id: number) => {
+    setUserModalMode('edit');
+    setSelectedUserId(id);
+    setIsUserModalOpen(true);
+  };
+
+  const handleCloseUserModal = () => {
+    setIsUserModalOpen(false);
+    setSelectedUserId(null);
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (confirm('Bạn có chắc chắn muốn xóa tài khoản này không?')) {
+      try {
+        // await userApi.delete(id);
+        alert('Xóa tài khoản thành công');
+      } catch (error) {
+        alert('Lỗi khi xóa tài khoản');
+      }
+    }
+  };
+
+  // Role modal handlers
+  const handleOpenRoleModal = (user: any) => {
+    console.log("âdsa", user)
+    setSelectedUserData(user);
+    setIsRoleModalOpen(true);
+  };
+
+  const handleCloseRoleModal = () => {
+    setIsRoleModalOpen(false);
+    setSelectedUserData(null);
+  };
+
+  const isLoading = activeTab === 'employees' ? isLoadingEmployees : isLoadingUsers;
+  const error = activeTab === 'employees' ? employeesError : usersError;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -105,75 +195,252 @@ export default function Employees() {
   if (error) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-destructive">Lỗi: Không thể tải danh sách nhân viên</p>
+        <p className="text-destructive">Lỗi: Không thể tải dữ liệu</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Danh sách nhân viên</h1>
-          <p className="text-muted-foreground">
-            Quản lý thông tin nhân viên ({filteredEmployees.length}/{employees.length})
-          </p>
-        </div>
-        <Button onClick={handleOpenCreateModal} className='bg-green-500 text-white'>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm nhân viên
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm theo mã nhân viên, tên nhân viên, email"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Header with Tabs on Same Row */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Quản lý nhân viên</h1>
+            <p className="text-muted-foreground">
+              {activeTab === 'employees'
+                ? `Quản lý thông tin nhân viên (${filteredEmployees.length}/${employees.length})`
+                : `Quản lý tài khoản người dùng (${filteredUsers.length}/${users.length})`
+              }
+            </p>
           </div>
 
-          <Select
-            value={filterDepartment}
-            onValueChange={(v) => {
-              setFilterDepartment(v);
-            }}
-          >
-            <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Phòng ban" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả phòng ban</SelectItem>
-              {departments.map(dept => (
-                <SelectItem key={dept.id} value={dept.name}>
-                  {dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TabsList>
+            <TabsTrigger value="employees">Danh sách nhân viên</TabsTrigger>
+            <TabsTrigger value="users">Danh sách tài khoản</TabsTrigger>
+          </TabsList>
         </div>
-      </Card>
 
-      {/* Table */}
-      <Card>
-        <EmployeeTable
-          employees={filteredEmployees}
-          onView={(id) => navigate(`/admin/profile/${id}`)}
-          onEdit={handleOpenEditModal}
-          onDelete={handleDelteEmployee}
-        />
-      </Card>
+        <TabsContent value="employees" className="space-y-4 mt-6">
+          {/* Filters */}
+          <Card className="p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm theo mã nhân viên, tên nhân viên, email"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select
+                value={filterDepartment}
+                onValueChange={(v) => {
+                  setFilterDepartment(v);
+                }}
+              >
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Phòng ban" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả phòng ban</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button onClick={handleOpenCreateModal} className='bg-green-500 text-white'>
+                <Plus className="h-4 w-4 mr-2" />
+                Thêm nhân viên
+              </Button>
+            </div>
+          </Card>
+
+          {/* Employee Table */}
+          <Card>
+            <EmployeeTable
+              employees={filteredEmployees}
+              onView={(id) => navigate(`/admin/profile/${id}`)}
+              onEdit={handleOpenEditModal}
+              onDelete={handleDelteEmployee}
+            />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-4 mt-6">
+          {/* Search for Users */}
+          <Card className="p-4">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm theo username, email"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <Button onClick={handleOpenCreateUserModal} className='bg-green-500 text-white'>
+                <Plus className="h-4 w-4 mr-2" />
+                Thêm tài khoản
+              </Button>
+            </div>
+          </Card>
+
+          {/* Users Table */}
+          <Card>
+            <div className="">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className='font-normal text-muted-foreground text-sm'>
+                    <tr className="border-b">
+                      <th className="text-left p-4">Tên đăng nhập</th>
+                      <th className="text-left p-4">Email</th>
+                      <th className="text-left p-4">Điện thoại</th>
+                      <th className="text-left p-4">Trạng thái</th>
+                      <th className="text-center p-4">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedUsers.map((user) => (
+                      <tr key={user.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4">{user.username}</td>
+                        <td className="p-4">{user.email}</td>
+                        <td className="p-4">{user.phone}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-sm ${user.status === "Active" ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                            {user.status ? 'Hoạt động' : 'Không hoạt động'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenRoleModal(user)}
+                              className="hover:bg-blue-50"
+                              title="Phân quyền"
+                            >
+                              <Shield className="h-4 w-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenEditUserModal(user.id)}
+                              className="hover:bg-gray-100"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="h-4 w-4 text-gray-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="hover:bg-red-50"
+                              title="Xóa"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {filteredUsers.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Không tìm thấy tài khoản nào
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination Controls */}
+              {filteredUsers.length > 0 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredUsers.length)} trong tổng số {filteredUsers.length} tài khoản
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 / trang</SelectItem>
+                        <SelectItem value="10">10 / trang</SelectItem>
+                        <SelectItem value="20">20 / trang</SelectItem>
+                        <SelectItem value="50">50 / trang</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      <span className="px-4 py-2 text-sm">
+                        Trang {currentPage} / {totalPages}
+                      </span>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <EmployeeModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         employeeId={selectedEmployeeId}
         mode={modalMode}
+      />
+
+      <UserAccountModal
+        isOpen={isUserModalOpen}
+        onClose={handleCloseUserModal}
+        userId={selectedUserId}
+        mode={userModalMode}
+      />
+
+      <RoleModal
+        isOpen={isRoleModalOpen}
+        onClose={handleCloseRoleModal}
+        userData={selectedUserData}
+        onSuccess={() => {
+          window.location.reload();
+        }}
       />
     </div>
   );

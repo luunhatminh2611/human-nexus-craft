@@ -12,9 +12,14 @@ export const userApi = {
     }
   },
 
-  getById: async (id: string) => {
-    const response = await api.get(`/users/${id}`);
-    return response.data;
+  getById: async (id: number) => {
+    try {
+      const response = await api.get(`/users/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông tin user ${id}:`, error);
+      throw error;
+    }
   },
 
   create: async (employee: Partial<Employee>): Promise<Employee> => {

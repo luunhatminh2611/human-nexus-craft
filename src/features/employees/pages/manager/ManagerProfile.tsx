@@ -305,7 +305,7 @@ export default function ManagerProfile() {
                             <CardContent className="space-y-4">
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
-                                        <p className="text-sm text-muted-foreground">Chức danh</p>
+                                        <p className="text-sm text-muted-foreground">Chức vụ</p>
                                         <p className="font-medium">{employee.position}</p>
                                     </div>
                                     <div>
@@ -387,7 +387,7 @@ export default function ManagerProfile() {
                                             <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                                                 <li>Hoàn thành tất cả khóa đào tạo bắt buộc</li>
                                                 <li>Đạt hiệu suất công việc tốt trong 6 tháng</li>
-                                                <li>Phát triển đủ kỹ năng chuyên môn</li>
+                                                <li>Phát triển đủ kỹ năng chuyên ngành</li>
                                             </ul>
                                         </div>
                                     </div>

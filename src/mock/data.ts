@@ -236,7 +236,7 @@ export interface SafetyItem {
   replacementCycleDays: number;
   defaultExpireDays: number;
   quantityInStock: number;
-    distributedDepartments: {
+  distributedDepartments: {
     department: string;
     quantity: number;
   }[];
@@ -313,23 +313,23 @@ const mockData = {
       address: '123 Đường ABC, Quận 1, TP.HCM',
       dateOfBirth: '1985-05-20',
       contracts: [
-      {
-        id: "C001",
-        code: "HD-2024-03",
-        type: "Thử việc",
-        startDate: "2024-03-01",
-        endDate: "2024-05-31",
-        status: "Expired",
-      },
-      {
-        id: "C002",
-        code: "HD-2024-06",
-        type: "XĐTH 1 năm",
-        startDate: "2024-06-01",
-        endDate: "2025-05-31",
-        status: "Active",
-      },
-    ],
+        {
+          id: "C001",
+          code: "HD-2024-03",
+          type: "Thử việc",
+          startDate: "2024-03-01",
+          endDate: "2024-05-31",
+          status: "Expired",
+        },
+        {
+          id: "C002",
+          code: "HD-2024-06",
+          type: "XĐTH 1 năm",
+          startDate: "2024-06-01",
+          endDate: "2025-05-31",
+          status: "Active",
+        },
+      ],
     },
     {
       id: 'emp002',
@@ -356,23 +356,23 @@ const mockData = {
       address: '456 Đường XYZ, Quận 2, TP.HCM',
       dateOfBirth: '1988-08-15',
       contracts: [
-      {
-        id: "C001",
-        code: "HD-2024-03",
-        type: "Thử việc",
-        startDate: "2024-03-01",
-        endDate: "2024-05-31",
-        status: "Expired",
-      },
-      {
-        id: "C002",
-        code: "HD-2024-06",
-        type: "XĐTH 1 năm",
-        startDate: "2024-06-01",
-        endDate: "2025-05-31",
-        status: "Active",
-      },
-    ],
+        {
+          id: "C001",
+          code: "HD-2024-03",
+          type: "Thử việc",
+          startDate: "2024-03-01",
+          endDate: "2024-05-31",
+          status: "Expired",
+        },
+        {
+          id: "C002",
+          code: "HD-2024-06",
+          type: "XĐTH 1 năm",
+          startDate: "2024-06-01",
+          endDate: "2025-05-31",
+          status: "Active",
+        },
+      ],
     },
     {
       id: 'emp003',
@@ -1432,6 +1432,30 @@ const mockData = {
       uploadDate: "2025-04-10",
       reason: "Việc cá nhân",
       status: "Rejected"
+    },
+    {
+      id: "l003",
+      employeeId: "emp003",
+      fileName: "DonXinNghiPhep_ThangNam.pdf",
+      uploadDate: "2025-05-01",
+      reason: "Nghỉ phép năm",
+      status: "Pending"
+    },
+    {
+      id: "l004",
+      employeeId: "emp004",
+      fileName: "DonXinNghiOm.pdf",
+      uploadDate: "2025-05-02",
+      reason: "Bị ốm cần nghỉ dưỡng",
+      status: "Pending"
+    },
+    {
+      id: "l005",
+      employeeId: "emp005",
+      fileName: "DonXinNghiPhep_GiaDinh.pdf",
+      uploadDate: "2025-05-03",
+      reason: "Có việc gia đình đột xuất",
+      status: "Pending"
     },
   ] as LeaveRequest[],
 

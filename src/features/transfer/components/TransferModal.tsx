@@ -22,6 +22,7 @@ import { transferApi } from '../../transfer/api/transferApi';
 import { employeeApi } from '@/features/employees/api/employeeApi';
 import { unitApi } from '@/features/departments/api/departmentApi';
 import { jobTitleApi } from '@/features/categories/api/categoriesApi';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
 interface TransferModalProps {
     isOpen: boolean;
@@ -44,6 +45,8 @@ export default function TransferModal({
     const [positions, setPositions] = useState([]);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [existingFileKey, setExistingFileKey] = useState<string>('');
+
+    const { user } = useAuthStore()
 
     const [formData, setFormData] = useState({
         id: '',
@@ -88,16 +91,29 @@ export default function TransferModal({
 
     const fetchEmployees = async () => {
         try {
-            const data = await employeeApi.getAll();
-            const empList = Array.isArray(data) ? data : [];
+            // 1. Lấy profile của user hiện tại
+            const response = await employeeApi.getById(user.employeeId);
+            const profile = response.data;
+
+            const userDeptId = profile.departmentId;
+            if (!userDeptId) {
+                console.error("User không có departmentId");
+                return [];
+            }
+
+            // 2. Lấy danh sách nhân viên theo phòng ban của user
+            const data = await employeeApi.getByDepartmentId(userDeptId);
+            console.log("dcjkad", data)
+
+            const empList = Array.isArray(data.data) ? data.data : [];
             setEmployees(empList);
-            return empList; // Return để dùng trong Promise.all
+            return empList;
+
         } catch (error) {
-            console.error('Lỗi khi lấy danh sách nhân viên:', error);
+            console.error("Lỗi khi lấy danh sách nhân viên theo phòng ban:", error);
             return [];
         }
     };
-
     const fetchDepartments = async () => {
         try {
             const data = await unitApi.getAll();
@@ -217,15 +233,33 @@ export default function TransferModal({
         setExistingFileKey('');
     };
 
-    const handleDownloadFile = () => {
+    const handleDownloadFile = async () => {
         if (!existingFileKey) {
             alert('Không có file để tải xuống');
             return;
         }
 
-        const fileUrl = transferApi.getFileUrl(existingFileKey);
-        console.log("Opening file:", fileUrl);
-        window.open(fileUrl, "_blank");
+        try {
+            // Gọi API để lấy blob
+            const blob = await transferApi.downloadFile(existingFileKey);
+
+            // Tạo URL từ blob
+            const url = window.URL.createObjectURL(blob);
+
+            // Tạo thẻ a để tải file
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = getFileName(existingFileKey);
+            document.body.appendChild(a);
+            a.click();
+
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Lỗi khi tải file:', error);
+            alert('Không thể tải file. Vui lòng thử lại!');
+        }
     };
 
     const getFileName = (keyFile: string) => {

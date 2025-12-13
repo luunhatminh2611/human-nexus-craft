@@ -36,7 +36,13 @@ export default function OrgChart() {
         id: String(d.id),
         name: d.name,
         code: d.code,
-        type: d.type,
+        departmentType: d.departmentType ? {
+          id: d.departmentType.id,
+          code: d.departmentType.code,
+          name: d.departmentType.name,
+          description: d.departmentType.description,
+          isActive: d.departmentType.isActive
+        } : null,
         parent: d.parent?.id ? String(d.parent.id) : null,
         parentId: d.parent?.id ? String(d.parent.id) : null,
       }));
@@ -128,6 +134,15 @@ export default function OrgChart() {
             {dept.name}
           </h3>
           <p className="text-xs text-muted-foreground">{dept.code || "—"}</p>
+
+          {/* Loại phòng ban */}
+          {dept.departmentType && (
+            <div className="mt-1">
+              <Badge variant="outline" className="text-xs">
+                {dept.departmentType.name}
+              </Badge>
+            </div>
+          )}
 
           {/* Số nhân viên */}
           <div className="mt-2 flex items-center justify-center gap-1 text-sm text-primary font-medium">
@@ -262,7 +277,7 @@ export default function OrgChart() {
 
       <Card>
         <CardContent className="p-6">
-          <div>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm border">
               <thead className="bg-muted text-left">
                 <tr>
@@ -278,13 +293,21 @@ export default function OrgChart() {
                 {departments.length > 0 ? (
                   departments.map((dept) => {
                     const parentDept = departments.find((d) => d.id === dept.parentId);
-
+                    
                     return (
                       <tr key={dept.id} className="hover:bg-muted/40">
                         <td className="p-3 border text-sm text-muted-foreground">{dept.code || '-'}</td>
                         <td className="p-3 border font-medium">{dept.name}</td>
                         <td className="p-3 border">
-                          <Badge variant="outline">{dept.type || 'Phòng'}</Badge>
+                          {dept.departmentType ? (
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="outline" className="w-fit">
+                                {dept.departmentType.name}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground italic">-</span>
+                          )}
                         </td>
                         <td className="p-3 border">
                           {parentDept ? (

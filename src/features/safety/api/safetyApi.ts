@@ -1,53 +1,111 @@
-import apiClient from '@/lib/axios';
-import type { SafetyItem, IssuedSafetyItem, SafetyReplacementRequest } from '../types';
+import { api } from "../../../lib/axios";
 
-export const safetyApi = {
-  // Safety Items
-  getAllSafetyItems: async (): Promise<SafetyItem[]> => {
-    const response = await apiClient.get<SafetyItem[]>('/safety-items');
-    return response.data;
-  },
+export const ppeApi = {
+    // ========== PPE PLANS ==========
+    
+    // Lấy danh sách kế hoạch bảo hộ lao động
+    getAllPlans: async () => {
+        try {
+            const response = await api.get("/admin/ppe/plans");
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách kế hoạch bảo hộ:", error);
+            throw error;
+        }
+    },
 
-  getSafetyItemById: async (id: string): Promise<SafetyItem> => {
-    const response = await apiClient.get<SafetyItem>(`/safety-items/${id}`);
-    return response.data;
-  },
+    // Lấy kế hoạch bảo hộ theo ID
+    getPlanById: async (id: number) => {
+        try {
+            const response = await api.get(`/admin/ppe/plans/${id}`);
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy kế hoạch bảo hộ theo ID:", error);
+            throw error;
+        }
+    },
 
-  createSafetyItem: async (item: Partial<SafetyItem>): Promise<SafetyItem> => {
-    const response = await apiClient.post<SafetyItem>('/safety-items', item);
-    return response.data;
-  },
+    // Tạo kế hoạch bảo hộ mới
+    createPlan: async (data: {
+        year: number;
+        notes: string;
+        planDetails: Array<{
+            ppeItemId: number;
+            standardQuantity: number;
+        }>;
+    }) => {
+        try {
+            const response = await api.post("/admin/ppe/plans", data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi tạo kế hoạch bảo hộ:", error);
+            throw error;
+        }
+    },
 
-  updateSafetyItem: async (id: string, item: Partial<SafetyItem>): Promise<SafetyItem> => {
-    const response = await apiClient.put<SafetyItem>(`/safety-items/${id}`, item);
-    return response.data;
-  },
+    // Cập nhật kế hoạch bảo hộ
+    updatePlan: async (data: {
+        id: number;
+        notes: string;
+    }) => {
+        try {
+            const response = await api.put("/admin/ppe/plans", data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi cập nhật kế hoạch bảo hộ:", error);
+            throw error;
+        }
+    },
 
-  // Issued Items
-  getIssuedItemsByEmployee: async (employeeId: string): Promise<IssuedSafetyItem[]> => {
-    const response = await apiClient.get<IssuedSafetyItem[]>(`/safety-items/issued?employeeId=${employeeId}`);
-    return response.data;
-  },
+    // Đóng kế hoạch bảo hộ
+    closePlan: async (id: number) => {
+        try {
+            const response = await api.put(`/admin/ppe/plans/${id}/close`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi đóng kế hoạch bảo hộ:", error);
+            throw error;
+        }
+    },
 
-  issueSafetyItem: async (issue: Partial<IssuedSafetyItem>): Promise<IssuedSafetyItem> => {
-    const response = await apiClient.post<IssuedSafetyItem>('/safety-items/issued', issue);
-    return response.data;
-  },
+    // ========== PPE REGISTRATIONS ==========
 
-  replaceSafetyItem: async (id: string, replacedById: string): Promise<IssuedSafetyItem> => {
-    const response = await apiClient.post<IssuedSafetyItem>(`/safety-items/issued/${id}/replace`, { replacedById });
-    return response.data;
-  },
+    // Lấy danh sách đăng ký bảo hộ
+    getAllRegistrations: async () => {
+        try {
+            const response = await api.get("/admin/ppe/registrations");
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách đăng ký bảo hộ:", error);
+            throw error;
+        }
+    },
 
-  // Replacement Requests
-  createReplacementRequest: async (request: Partial<SafetyReplacementRequest>): Promise<SafetyReplacementRequest> => {
-    const response = await apiClient.post<SafetyReplacementRequest>('/safety-items/requests', request);
-    return response.data;
-  },
+    // Phê duyệt đăng ký bảo hộ
+    approveRegistration: async (id: number, data: {
+        id: number;
+        reason: string;
+    }) => {
+        try {
+            const response = await api.post(`/admin/ppe/registrations/${id}/approve`, data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi phê duyệt đăng ký bảo hộ:", error);
+            throw error;
+        }
+    },
 
-  approveReplacementRequest: async (id: string): Promise<SafetyReplacementRequest> => {
-    const response = await apiClient.post<SafetyReplacementRequest>(`/safety-items/requests/${id}/approve`);
-    return response.data;
-  },
+    // Từ chối đăng ký bảo hộ
+    rejectRegistration: async (id: number, data: {
+        id: number;
+        reason: string;
+    }) => {
+        try {
+            const response = await api.post(`/admin/ppe/registrations/${id}/reject`, data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi từ chối đăng ký bảo hộ:", error);
+            throw error;
+        }
+    },
 };
-

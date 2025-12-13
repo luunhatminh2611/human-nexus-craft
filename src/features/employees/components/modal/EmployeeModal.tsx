@@ -33,6 +33,8 @@ import {
 } from '../../../categories/api/categoriesApi';
 import { toast } from '@/shared/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
+import GenericSearchSelect from "@/features/employees/components/GenericSearchSelect";
+import { categoryConfigs } from "@/features/employees/components/CategoriesConfig";
 
 export default function EmployeeModal({
   isOpen,
@@ -48,9 +50,13 @@ export default function EmployeeModal({
     fullName: '',
     birthDate: '',
     startDate: '',
-    gender: 'Nam',
+    gender: 'NAM',
     status: 'Đang làm việc',
-    // IDs for categories
+    // Thêm các trường mới
+    cccdNumber: '',
+    cccdDate: '',
+    cccdPlace: '',
+    contactAddress: '',
     positionId: '',
     departmentId: '',
     ethnicity: '',
@@ -63,12 +69,6 @@ export default function EmployeeModal({
     religion: '',
     nationalityId: '',
     user: null as any,
-  });
-
-  // Fetch all categories
-  const { data: jobTitles, isLoading: loadingJobTitles } = useQuery({
-    queryKey: ['jobTitles'],
-    queryFn: () => jobTitleApi.getAll(),
   });
 
   const { data: degrees, isLoading: loadingDegrees } = useQuery({
@@ -111,6 +111,11 @@ export default function EmployeeModal({
     queryFn: () => unitApi.getAll(),
   });
 
+  const { data: nationalities, isLoading: loadingNationalities } = useQuery({
+    queryKey: ['nationalities'],
+    queryFn: () => nationalityApi.getAll(),
+  });
+
   // Fetch employee data for edit mode
   const { data: employee } = useQuery({
     queryKey: ['employee', employeeId],
@@ -118,34 +123,36 @@ export default function EmployeeModal({
     enabled: mode === 'edit' && !!employeeId,
   });
 
-  const { data: nationalities, isLoading: loadingNationalities } = useQuery({
-    queryKey: ['nationalities'],
-    queryFn: () => nationalityApi.getAll(),
-  });
-
   // Load employee data into form when editing
   useEffect(() => {
     if (mode === 'edit' && employee) {
+      const employeeData = employee.data || employee;
       setFormData({
-        id: employee.id,
-        code: employee.code || '',
-        fullName: employee.fullName || '',
-        birthDate: employee.birthDate || '',
-        startDate: employee.startDate || '',
-        gender: employee.gender || 'Nam',
-        status: employee.status || 'Đang làm việc',
-        positionId: employee.position?.id?.toString() || '',
-        departmentId: employee.department?.id?.toString() || '',
-        ethnicity: employee.ethnicity || '',
-        wardId: employee.ward?.id?.toString() || '',
-        provinceCityId: employee.provinceCity?.id?.toString() || '',
-        specialtyId: employee.specialty?.id?.toString() || '',
-        educationLevelId: employee.educationLevel?.id?.toString() || '',
-        politicalTheoryId: employee.politicalTheory?.id?.toString() || '',
-        languageLevelId: employee.languageLevel?.id?.toString() || '',
-        religion: employee.religion || '',
-        nationalityId: employee.nationality?.id?.toString() || '',
-        user: employee.user || null,
+        id: employeeData.id,
+        code: employeeData.code || '',
+        fullName: employeeData.name || '',
+        birthDate: employeeData.birthday || '',
+        startDate: employeeData.startDate || '',
+        gender: employeeData.gender || 'NAM',
+        status: employeeData.status || 'Đang làm việc',
+        // Các trường mới
+        cccdNumber: employeeData.cccdNumber || '',
+        cccdDate: employeeData.cccdDate || '',
+        cccdPlace: employeeData.cccdPalce || '', // Lưu ý: API trả về "cccdPalce" (có thể là typo)
+        contactAddress: employeeData.contactAddress || '',
+        // IDs từ response
+        positionId: employeeData.positionId?.toString() || '',
+        departmentId: employeeData.departmentId?.toString() || '',
+        ethnicity: employeeData.ethnicity || '',
+        wardId: employeeData.wardId?.toString() || '',
+        provinceCityId: employeeData.provinceCityId?.toString() || '',
+        specialtyId: employeeData.specialtyId?.toString() || '',
+        educationLevelId: employeeData.educationLevelId?.toString() || '',
+        politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
+        languageLevelId: employeeData.languageLevelId?.toString() || '',
+        religion: employeeData.religion || '',
+        nationalityId: employeeData.nationalityId?.toString() || '',
+        user: employeeData.userId ? { id: employeeData.userId } : null,
       });
     } else if (mode === 'create') {
       setFormData({
@@ -154,8 +161,12 @@ export default function EmployeeModal({
         fullName: '',
         birthDate: '',
         startDate: '',
-        gender: 'Nam',
+        gender: 'NAM',
         status: 'Đang làm việc',
+        cccdNumber: '',
+        cccdDate: '',
+        cccdPlace: '',
+        contactAddress: '',
         positionId: '',
         departmentId: '',
         ethnicity: '',
@@ -171,6 +182,43 @@ export default function EmployeeModal({
       });
     }
   }, [isOpen, mode, employee]);
+
+
+  const mapEmployeeToPayload = (formData, mode) => {
+    return {
+      ...(mode === "edit" && { id: Number(formData.id) }),
+
+      code: formData.code,
+      fullName: formData.fullName,
+      birthDate: formData.birthDate,
+      startDate: formData.startDate,
+      gender: formData.gender,
+      status: formData.status,
+
+      // Thông tin cá nhân
+      cccdNumber: formData.cccdNumber || null,
+      cccdDate: formData.cccdDate || null,
+      cccdPlace: formData.cccdPlace || null,
+      contactAddress: formData.contactAddress || null,
+      ethnicity: formData.ethnicity || null,
+      religion: formData.religion || null,
+
+      // Object references (backend REQUIRE objects)
+      department: formData.departmentId ? { id: Number(formData.departmentId) } : null,
+      position: formData.positionId ? { id: Number(formData.positionId) } : null,
+      ward: formData.wardId ? { id: Number(formData.wardId) } : null,
+      provinceCity: formData.provinceCityId ? { id: Number(formData.provinceCityId) } : null,
+      specialty: formData.specialtyId ? { id: Number(formData.specialtyId) } : null,
+      educationLevel: formData.educationLevelId ? { id: Number(formData.educationLevelId) } : null,
+      politicalTheory: formData.politicalTheoryId ? { id: Number(formData.politicalTheoryId) } : null,
+      languageLevel: formData.languageLevelId ? { id: Number(formData.languageLevelId) } : null,
+      nationality: formData.nationalityId ? { id: Number(formData.nationalityId) } : null,
+
+      ...(mode === "edit" && formData.user && {
+        user: { id: formData.user.id }
+      }),
+    };
+  };
 
   // Create mutation
   const createMutation = useMutation({
@@ -217,52 +265,28 @@ export default function EmployeeModal({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!formData.departmentId) {
-      toast({
+      return toast({
         title: "Thiếu thông tin",
         description: "Vui lòng chọn phòng ban",
         variant: "destructive",
       });
-      return;
     }
 
     if (!formData.positionId) {
-      toast({
+      return toast({
         title: "Thiếu thông tin",
-        description: "Vui lòng chọn chức danh",
+        description: "Vui lòng chọn chức vụ",
         variant: "destructive",
       });
-      return;
     }
 
-    const payload = {
-      ...(mode === 'edit' && { id: formData.id }),
-      code: formData.code,
-      fullName: formData.fullName,
-      birthDate: formData.birthDate,
-      startDate: formData.startDate,
-      gender: formData.gender,
-      status: 'Đang làm việc',
-      ethnicity: formData.ethnicity || null,
-      religion: formData.religion || null,
+    const payload = mapEmployeeToPayload(formData, mode);
 
-      // Truyền object thay vì chỉ ID
-      department: formData.departmentId ? { id: Number(formData.departmentId) } : null,
-      position: formData.positionId ? { id: Number(formData.positionId) } : null,
-      nationality: formData.nationalityId ? { id: Number(formData.nationalityId) } : null,
-      ward: formData.wardId ? { id: Number(formData.wardId) } : null,
-      provinceCity: formData.provinceCityId ? { id: Number(formData.provinceCityId) } : null,
-      specialty: formData.specialtyId ? { id: Number(formData.specialtyId) } : null,
-      educationLevel: formData.educationLevelId ? { id: Number(formData.educationLevelId) } : null,
-      politicalTheory: formData.politicalTheoryId ? { id: Number(formData.politicalTheoryId) } : null,
-      languageLevel: formData.languageLevelId ? { id: Number(formData.languageLevelId) } : null,
-      ...(mode === 'edit' && formData.user && { user: formData.user }),
-    };
-
-    if (mode === 'create') {
+    if (mode === "create") {
       createMutation.mutate(payload);
     } else {
       updateMutation.mutate(payload);
@@ -278,7 +302,7 @@ export default function EmployeeModal({
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
-  const isCategoriesLoading = loadingJobTitles || loadingDegrees || loadingEthnicities ||
+  const isCategoriesLoading = loadingDegrees || loadingEthnicities ||
     loadingWards || loadingProvinceCities || loadingSpecialties ||
     loadingPoliticalTheories || loadingLanguageLevels || loadingDepartments || loadingNationalities;
 
@@ -292,7 +316,7 @@ export default function EmployeeModal({
           <DialogDescription>
             {mode === 'create'
               ? 'Nhập thông tin để tạo nhân viên mới'
-              : `Chỉnh sửa thông tin nhân viên ${employee?.fullName || ''}`}
+              : `Chỉnh sửa thông tin nhân viên ${employee?.data?.name || ''}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -357,81 +381,61 @@ export default function EmployeeModal({
                         <SelectValue placeholder="Chọn giới tính" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Nam">Nam</SelectItem>
-                        <SelectItem value="Nữ">Nữ</SelectItem>
-                        <SelectItem value="Khác">Khác</SelectItem>
+                        <SelectItem value="NAM">Nam</SelectItem>
+                        <SelectItem value="NỮ">Nữ</SelectItem>
+                        <SelectItem value="KHÁC">Khác</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cccd">
-                      CCCD/CMND
-                    </Label>
+                    <Label htmlFor="cccdNumber">CCCD/CMND</Label>
                     <Input
-                      id="cccd"
-                      placeholder="Nhập CCCD hoặc CMND"
+                      id="cccdNumber"
+                      value={formData.cccdNumber}
+                      onChange={(e) => handleChange('cccdNumber', e.target.value)}
+                      placeholder="Nhập số CCCD/CMND"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cccd-place">
-                      Ngày cấp
-                    </Label>
+                    <Label htmlFor="cccdDate">Ngày cấp</Label>
                     <Input
-                      id="cccd-place"
-                      placeholder="Nhập nơi cấp"
+                      id="cccdDate"
                       type="date"
+                      value={formData.cccdDate}
+                      onChange={(e) => handleChange('cccdDate', e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cccd-date">
-                      Nơi cấp
-                    </Label>
+                    <Label htmlFor="cccdPlace">Nơi cấp</Label>
                     <Input
-                      id="cccd-date"
+                      id="cccdPlace"
+                      value={formData.cccdPlace}
+                      onChange={(e) => handleChange('cccdPlace', e.target.value)}
                       placeholder="Nhập nơi cấp"
-
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="ethnicity">Dân tộc</Label>
-                    <Select
-                      value={formData.ethnicity}
-                      onValueChange={(value) => handleChange('ethnicity', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn dân tộc" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ethnicities?.map((item) => (
-                          <SelectItem key={item.id} value={item.name}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.ethnicity.api}
+                      config={categoryConfigs.ethnicity}
+                      value={formData.ethnicity?.toString()}
+                      onChange={(v) => handleChange("ethnicity", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="nationalityId">Quốc tịch</Label>
-                    <Select
-                      value={formData.nationalityId}
-                      onValueChange={(value) => handleChange('nationalityId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn quốc tịch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {nationalities?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.nationality.api}
+                      config={categoryConfigs.nationality}
+                      value={formData.nationalityId?.toString()}
+                      onChange={(v) => handleChange("nationalityId", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
@@ -452,40 +456,32 @@ export default function EmployeeModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="provinceCityId">Tỉnh/Thành phố</Label>
-                    <Select
-                      value={formData.provinceCityId}
-                      onValueChange={(value) => handleChange('provinceCityId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn tỉnh/thành phố" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {provinceCities?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.provinceCity.api}
+                      config={categoryConfigs.provinceCity}
+                      value={formData.provinceCityId?.toString()}
+                      onChange={(v) => handleChange("provinceCityId", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="wardId">Phường/Xã</Label>
-                    <Select
-                      value={formData.wardId}
-                      onValueChange={(value) => handleChange('wardId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn phường/xã" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {wards?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.ward.api}
+                      config={categoryConfigs.ward}
+                      value={formData.wardId?.toString()}
+                      onChange={(v) => handleChange("wardId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="contactAddress">Địa chỉ cụ thể</Label>
+                    <Input
+                      id="contactAddress"
+                      value={formData.contactAddress}
+                      onChange={(e) => handleChange('contactAddress', e.target.value)}
+                      placeholder="Nhập địa chỉ chi tiết"
+                    />
                   </div>
                 </div>
               </div>
@@ -508,123 +504,73 @@ export default function EmployeeModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="departmentId">Phòng ban/Phân xưởng <span className="text-destructive">*</span></Label>
-                    <Select
-                      value={formData.departmentId}
-                      onValueChange={(value) => handleChange('departmentId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn phòng ban" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {departments?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="departmentId">
+                      Phòng ban/Phân xưởng <span className="text-destructive">*</span>
+                    </Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.department.api}
+                      config={categoryConfigs.department}
+                      value={formData.departmentId?.toString()}
+                      onChange={(v) => handleChange("departmentId", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="positionId">Chức danh <span className="text-destructive">*</span></Label>
-                    <Select
-                      value={formData.positionId}
-                      onValueChange={(value) => handleChange('positionId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn chức danh" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {jobTitles?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="positionId">
+                      Chức vụ <span className="text-destructive">*</span>
+                    </Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.jobTitle.api}
+                      config={categoryConfigs.jobTitle}
+                      value={formData.positionId?.toString()}
+                      onChange={(v) => handleChange("positionId", String(v))}
+                    />
                   </div>
                 </div>
               </div>
 
               {/* Trình độ & chuyên môn */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Trình độ & Chuyên môn</h3>
+                <h3 className="text-lg font-semibold mb-3">Trình độ & Chuyên ngành</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="educationLevelId">Bậc học</Label>
-                    <Select
-                      value={formData.educationLevelId}
-                      onValueChange={(value) => handleChange('educationLevelId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn bậc học" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {degrees?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.degree.api}
+                      config={categoryConfigs.degree}
+                      value={formData.educationLevelId?.toString()}
+                      onChange={(v) => handleChange("educationLevelId", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="specialtyId">Chuyên ngành</Label>
-                    <Select
-                      value={formData.specialtyId}
-                      onValueChange={(value) => handleChange('specialtyId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn chuyên ngành" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {specialties?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.specialty.api}
+                      config={categoryConfigs.specialty}
+                      value={formData.specialtyId?.toString()}
+                      onChange={(v) => handleChange("specialtyId", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="languageLevelId">Trình độ ngoại ngữ</Label>
-                    <Select
-                      value={formData.languageLevelId}
-                      onValueChange={(value) => handleChange('languageLevelId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trình độ ngoại ngữ" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languageLevels?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.languageLevel.api}
+                      config={categoryConfigs.languageLevel}
+                      value={formData.languageLevelId?.toString()}
+                      onChange={(v) => handleChange("languageLevelId", String(v))}
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="politicalTheoryId">Lý luận chính trị</Label>
-                    <Select
-                      value={formData.politicalTheoryId}
-                      onValueChange={(value) => handleChange('politicalTheoryId', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn lý luận chính trị" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {politicalTheories?.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <GenericSearchSelect
+                      api={categoryConfigs.politicalTheory.api}
+                      config={categoryConfigs.politicalTheory}
+                      value={formData.politicalTheoryId?.toString()}
+                      onChange={(v) => handleChange("politicalTheoryId", String(v))}
+                    />
                   </div>
                 </div>
               </div>

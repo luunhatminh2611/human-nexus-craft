@@ -101,8 +101,8 @@ export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, on
             <DropdownItem
               onClick={() => {
                 setIsAccountOpen(false);
-                if (role === 'EMPLOYEE') onNavigate(`/employee/profile/${user?.userId}`);
-                else if (role === 'MANAGER') onNavigate(`/manager/profile${user?.userId}`);
+                if (role === 'EMPLOYEE') onNavigate(`/employee/profile`);
+                else if (role === 'MANAGER') onNavigate(`/employee/profile`);
                 else onNavigate(`/admin/profile/${user?.userId}`);
               }}
               className="flex items-center gap-2 text-sm font-medium text-muted-foreground"

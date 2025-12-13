@@ -71,11 +71,12 @@ export default function TransferManagerPage() {
       const employeeData = await employeeApi.getProfile(user?.userId);
 
       if (employeeData?.id) {
-        const data = await employeeApi.getById(employeeData?.id);
+        const response = await employeeApi.getById(employeeData?.id);
+        const data = response?.data || response;
         console.log("User data:", data);
 
-        const deptId = data?.department?.id;
-        const deptName = data?.department?.name;
+        const deptId = data?.departmentId;
+        const deptName = data?.departmentName;
         setUserDepartmentId(deptId);
         setUserDepartmentName(deptName || '');
         setCurrentEmployeeId(data?.id);

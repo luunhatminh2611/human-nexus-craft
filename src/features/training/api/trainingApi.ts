@@ -36,6 +36,19 @@ export const trainingApi = {
         }
     },
 
+    getEmployeeAssignments: async (params) => {
+        try {
+            const response = await api.get("/employee/training-assignments", {
+                pageSize: params?.pageSize,
+                pageNumber: params?.pageNumber,
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo được giao:", error);
+            throw error;
+        }
+    },
+
     getById: async (id) => {
         try {
             const response = await api.get(`/manager/training-courses/${id}`);
@@ -122,6 +135,37 @@ export const trainingApi = {
             return response.data;
         } catch (error) {
             console.error("Lỗi khi từ chối khóa đào tạo:", error);
+            throw error;
+        }
+    },
+
+    startEmployeeAssignment: async (id) => {
+        try {
+            const response = await api.post(`/employee/training-assignments/${id}/start`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi bắt đầu khóa đào tạo:", error);
+            throw error;
+        }
+    },
+
+    // Hoàn thành khóa đào tạo
+    completeEmployeeAssignment: async (id) => {
+        try {
+            const response = await api.post(`/employee/training-assignments/${id}/complete`);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi hoàn thành khóa đào tạo:", error);
+            throw error;
+        }
+    },
+
+    getEmployeeAssignmentById: async (id) => {
+        try {
+            const response = await api.get(`/employee/training-assignments/${id}`);
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy chi tiết khóa đào tạo:", error);
             throw error;
         }
     },

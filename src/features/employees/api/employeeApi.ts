@@ -12,6 +12,16 @@ export const employeeApi = {
     }
   },
 
+  getByDepartmentId: async (departmentId) => {
+    try {
+      const response = await api.get(`/employee/employee/${departmentId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông tin nhân viên ${departmentId}:`, error);
+      throw error;
+    }
+  },
+
   getProfile: async (userId: number) => {
     try {
       const response = await api.get(`/employee/profile/${userId}`);
@@ -26,7 +36,7 @@ export const employeeApi = {
   getById: async (id) => {
     try {
       const response = await api.get(`/employee/${id}`);
-      return response.data.data;
+      return response;
     } catch (error) {
       console.error(`Lỗi khi lấy thông tin nhân viên ${id}:`, error);
       throw error;

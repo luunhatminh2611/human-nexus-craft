@@ -2,13 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { Card } from "@/shared/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/shared/components/tables/table";
-import { MapPin, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import { MapPin, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Trash2 } from "lucide-react";
 import { workScheduleApi } from "../../api/scheduleApi";
 import { employeeApi } from "@/features/employees";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover";
 import { Calendar } from "@/shared/components/ui/calendar";
 import { Button } from "@/shared/components/ui/button/Button2";
 import { useAuthStore } from "@/features/employees/hooks/useAuth";
+import EmployeeScheduleModal from "../../components/EmployeeScheduleModal";
 
 type ApiWorkSchedule = {
   id: number | string;
@@ -21,6 +22,7 @@ type ApiWorkSchedule = {
   startTime?: string;
   description?: string;
   status?: string;
+  createdById?: number | string;
   [k: string]: any;
 };
 
@@ -32,6 +34,7 @@ type DaySchedule = {
   location?: string;
   status?: string;
   employeeName?: string;
+  createdById?: number | string;
   raw?: ApiWorkSchedule;
 };
 
@@ -48,8 +51,19 @@ export default function EmployeeWorkSchedule() {
   const [expandedSchedules, setExpandedSchedules] = useState<DaySchedule[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Modal states
+  const [showModal, setShowModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<DaySchedule | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [isFromDayCell, setIsFromDayCell] = useState(false);
 
-  const ISODate = (d: Date) => d.toISOString().split("T")[0];
+  const ISODate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const getDatesBetween = (startStr: string, endStr?: string) => {
     const dates: string[] = [];
@@ -83,6 +97,7 @@ export default function EmployeeWorkSchedule() {
           location: item.location,
           status: item.status ?? "",
           employeeName: item.employeeName,
+          createdById: item.createdById,
           raw: item,
         });
       });
@@ -97,6 +112,12 @@ export default function EmployeeWorkSchedule() {
     setExpandedSchedules(result);
   };
 
+  // ✅ Kiểm tra xem nhân viên có phải là người tạo lịch không
+  const isScheduleOwner = (schedule: DaySchedule): boolean => {
+    if (!user?.userId || !schedule.createdById) return true;
+    return String(user.userId) === String(schedule.createdById);
+  };
+
   // ✅ Bước 1: Lấy employeeId từ userId
   const fetchEmployeeId = async () => {
     try {
@@ -109,7 +130,7 @@ export default function EmployeeWorkSchedule() {
       
       if (employeeData?.id) {
         setEmployeeId(employeeData.id);
-        console.log("Employee ID:", user);
+        console.log("Employee ID:", employeeData.id);
       } else {
         console.warn("Không tìm thấy employeeId");
       }
@@ -196,8 +217,8 @@ export default function EmployeeWorkSchedule() {
 
   const STATUS_CONFIG = {
     SCHEDULED: {
-      label: "Đã lên lịch",
-      color: "bg-blue-100 text-blue-700 border-blue-300",
+      label: "Chờ xác nhận",
+      color: "bg-yellow-100 text-yellow-700 border-yellow-300",
     },
     CONFIRMED: {
       label: "Đã xác nhận",
@@ -236,6 +257,87 @@ export default function EmployeeWorkSchedule() {
     "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
   ];
 
+  // ✅ Thêm lịch công tác
+  const handleAddSchedule = (day: string) => {
+    setEditingSchedule(null);
+    setSelectedDay(day);
+    setIsFromDayCell(true);
+    setShowModal(true);
+  };
+
+  // ✅ Sửa lịch công tác
+  const handleEdit = (sched: DaySchedule) => {
+    setEditingSchedule(sched);
+    setSelectedDay(sched.date);
+    setShowModal(true);
+  };
+
+  // ✅ Xóa lịch công tác
+  const handleDelete = async (sched: DaySchedule) => {
+    if (!confirm("Bạn có chắc muốn xóa lịch công tác này?")) return;
+    try {
+      setLoading(true);
+      await workScheduleApi.delete(sched.id);
+      await fetchWorkSchedules();
+    } catch (err) {
+      console.error("Lỗi khi xóa:", err);
+      alert("Xóa thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Lưu lịch công tác (tạo mới hoặc cập nhật)
+  const handleSaveSchedule = async (
+    title: string,
+    location: string,
+    description: string,
+    startDate: string,
+    endDate: string
+  ) => {
+    try {
+      if (!employeeId) {
+        alert("Không tìm thấy thông tin nhân viên");
+        return;
+      }
+
+      setLoading(true);
+      
+      if (editingSchedule) {
+        const raw = editingSchedule.raw as ApiWorkSchedule;
+        const payload = {
+          title,
+          employeeId: employeeId,
+          location,
+          startDateTime: startDate,
+          endDateTime: endDate,
+          description,
+          status: "SCHEDULED", // Trạng thái chờ xác nhận
+        };
+        await workScheduleApi.update(raw.id as number, payload);
+      } else {
+        const payload = {
+          title,
+          employeeId: employeeId,
+          location,
+          startDateTime: startDate,
+          endDateTime: endDate,
+          description,
+          status: "SCHEDULED", // Trạng thái chờ xác nhận
+        };
+        await workScheduleApi.create(payload);
+      }
+
+      await fetchWorkSchedules();
+      setShowModal(false);
+    } catch (err) {
+      console.error("Lỗi khi lưu lịch công tác:", err);
+      alert(err?.message || "Có lỗi xảy ra khi lưu lịch công tác");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
@@ -243,6 +345,22 @@ export default function EmployeeWorkSchedule() {
           <CalendarIcon className="w-7 h-7 text-blue-600" />
           Lịch công tác của tôi
         </h1>
+
+        <div className="flex gap-2 items-center">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              setEditingSchedule(null);
+              setSelectedDay(null);
+              setIsFromDayCell(false);
+              setShowModal(true);
+            }}
+            className="bg-green-500 text-white hover:bg-green-600"
+          >
+            <Plus className="w-4 h-4 mr-1" /> Tạo lịch công tác
+          </Button>
+        </div>
       </div>
 
       <Card className="p-6 shadow-lg">
@@ -321,28 +439,61 @@ export default function EmployeeWorkSchedule() {
                         </div>
 
                         <div className="flex-1 overflow-y-auto space-y-1">
-                          {daySchedules.map((s) => (
-                            <div
-                              key={s.instanceId}
-                              className="bg-blue-100 p-1.5 rounded-md text-xs"
-                            >
-                              <div className="font-semibold truncate text-gray-800">
-                                {s.raw?.title || "Công tác"}
-                              </div>
-                              <div className="text-gray-600 flex items-center gap-1 mt-0.5">
-                                <MapPin size={10} /> <span className="truncate">{s.location}</span>
-                              </div>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                {getStatusBadge(s.status)}
-                              </div>
-                              {s.raw?.description && (
-                                <div className="text-gray-500 text-xs mt-1 truncate">
-                                  {s.raw.description}
+                          {daySchedules.map((s) => {
+                            const isOwner = isScheduleOwner(s);
+                            const isConfirmed = s.status === "CONFIRMED";
+
+                            return (
+                              <div
+                                key={s.instanceId}
+                                className={`p-1.5 rounded-md text-xs group relative ${
+                                  isOwner && !isConfirmed
+                                    ? "bg-yellow-100 cursor-pointer hover:bg-yellow-200"
+                                    : isConfirmed
+                                    ? "bg-green-100 cursor-default"
+                                    : "bg-blue-100 cursor-default"
+                                } transition-all`}
+                                onClick={() => {
+                                  if (isOwner && !isConfirmed) {
+                                    handleEdit(s);
+                                  }
+                                }}
+                              >
+                                <div className="font-semibold truncate text-gray-800">
+                                  {s.raw?.title || "Công tác"}
                                 </div>
-                              )}
-                            </div>
-                          ))}
+                                <div className="text-gray-600 flex items-center gap-1 mt-0.5">
+                                  <MapPin size={10} /> <span className="truncate">{s.location}</span>
+                                </div>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {getStatusBadge(s.status)}
+                                </div>
+
+                                {isOwner && !isConfirmed && (
+                                  <Trash2
+                                    size={12}
+                                    className="absolute top-1 right-1 text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(s);
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
+
+                        {day.isCurrentMonth && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleAddSchedule(day.date)}
+                            className="mt-1 w-full border border-dashed border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 text-xs py-1 h-auto"
+                          >
+                            <Plus size={12} className="mr-1" /> Thêm
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   );
@@ -352,6 +503,15 @@ export default function EmployeeWorkSchedule() {
           </TableBody>
         </Table>
       </Card>
+
+      <EmployeeScheduleModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSave={handleSaveSchedule}
+        editingSchedule={editingSchedule}
+        selectedDay={selectedDay}
+        isFromDayCell={isFromDayCell}
+      />
     </div>
   );
 }

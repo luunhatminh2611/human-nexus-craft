@@ -21,10 +21,14 @@ import KpiTab from '@/features/employees/components/KpiTab';
 import ContractsTab from '@/features/employees/components/ContractsTab';
 import LeavesTab from '@/features/employees/components/LeavesTab';
 import { SalaryTabWithDragDrop } from '@/features/employees/components/SalaryTabWithDragDrop';
+import { userApi } from '../../api/userApi';
+import authService from '@/features/auth/api/authApi';
 
 function ProfileContent() {
   const { user } = useAuthStore();
   const [userData, setUserData] = useState<any>(null);
+  const [accountData, setAccountData] = useState<any>(null);
+  const [hasUserAccount, setHasUserAccount] = useState(false);
   const [loading, setLoading] = useState(true);
   const [employeeId, setEmployeeId] = useState<number | null>(null);
 
@@ -41,8 +45,26 @@ function ProfileContent() {
 
         // Bước 2: Lấy thông tin chi tiết employee bằng employeeId
         const detailedData = await employeeApi.getById(empId);
-        console.log("Employee detailed data:", detailedData);
-        setUserData(detailedData);
+        setUserData(detailedData.data);
+
+        const hasAccount = Boolean(detailedData.data.userId);
+        setHasUserAccount(hasAccount);
+
+        if (hasAccount && detailedData.data.userId) {
+          try {
+            const accountResponse = await userApi.getById(detailedData.data.userId);
+            const account = accountResponse.data || accountResponse;
+            setAccountData(account);
+
+          } catch (accountError) {
+            console.error('Error fetching user data:', accountError);
+            setAccountData(null);
+            setHasUserAccount(false);
+          }
+        } else {
+          setAccountData(null);
+        }
+
       } catch (error) {
         console.error('Error fetching employee profile:', error);
       } finally {
@@ -78,22 +100,22 @@ function ProfileContent() {
             <div
               className="w-24 h-24 rounded-full flex items-center justify-center"
               style={{
-                backgroundColor: `hsl(${(userData.fullName?.charCodeAt(0) || 0) * 137.508 % 360
+                backgroundColor: `hsl(${(userData.name?.charCodeAt(0) || 0) * 137.508 % 360
                   }, 70%, 50%)`
               }}
             >
               <span className="text-3xl font-bold text-white">
-                {userData.fullName?.charAt(0).toUpperCase() || 'N'}
+                {userData.name?.charAt(0).toUpperCase() || 'N'}
               </span>
             </div>
             <div className="flex-1">
               <div className="mb-4">
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold">{userData.fullName}</h1>
+                  <h1 className="text-3xl font-bold">{userData.name}</h1>
                 </div>
                 <p className="text-lg text-muted-foreground mt-1">
-                  {userData.position?.name || 'Chưa có chức vụ'}
-                  {userData.department && ` • ${userData.department.name}`}
+                  {userData.positionName || 'Chưa có chức vụ'}
+                  {userData.departmentName && ` • ${userData.departmentName}`}
                 </p>
               </div>
 
@@ -112,28 +134,28 @@ function ProfileContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span>{userData.user?.email || 'Chưa có email'}</span>
+                  <span>{accountData.email || 'Chưa có email'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{userData.user?.phone || 'Chưa có SĐT'}</span>
+                  <span>{accountData.phone || 'Chưa có SĐT'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {[userData?.ward?.name, userData?.provinceCity?.name]
+                    {[userData?.wardName, userData?.provinceCityName]
                       .filter(Boolean)
                       .join(', ') || 'Chưa cập nhật địa chỉ'}
                   </span>
                 </div>
-                {userData.user && (
+                {accountData && (
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      Tài khoản: <Badge variant="outline">{userData.user.username}</Badge>
+                      Tài khoản: <Badge variant="outline">{accountData.username}</Badge>
                       {' '}
-                      <Badge variant={userData.user.status === 'Active' ? 'default' : 'destructive'}>
-                        {userData.user.status}
+                      <Badge variant={accountData.status === 'Active' ? 'default' : 'destructive'}>
+                        {accountData.status}
                       </Badge>
                     </span>
                   </div>

@@ -13,6 +13,7 @@ import SpecialtiesTab from '@/features/categories/components/Specialty';
 import PoliticalTheoriesTab from '@/features/categories/components/PoliticalTheory';
 import LanguageLevelsTab from '@/features/categories/components/LanguageLevel';
 import Nationality from '@/features/categories/components/Nationality';
+import DepartmentTypesTab from '@/features/categories/components/DepartmentType';
 
 export default function Catalog() {
   const [activeTab, setActiveTab] = useState('jobTitles');
@@ -20,27 +21,30 @@ export default function Catalog() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Danh mục đào tạo & chức danh</h1>
+        <h1 className="text-3xl font-bold">Danh mục đào tạo & chức vụ</h1>
         <p className="text-muted-foreground">Quản lý các danh mục trong hệ thống</p>
       </div>
 
       <Card>
         <CardHeader>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-5 w-full">
-              <TabsTrigger value="jobTitles">Chức danh</TabsTrigger>
+            <TabsList className="grid grid-cols-6 w-full">
+              <TabsTrigger value="jobTitles">Chức vụ</TabsTrigger>
+              <TabsTrigger value="ppe">Đồ bảo hộ lao động</TabsTrigger>
+              <TabsTrigger value="departmentTypes">Loại Phòng Ban</TabsTrigger>
               <TabsTrigger value="nationality">Quốc tịch</TabsTrigger>
               <TabsTrigger value="majors">Ngành nghề</TabsTrigger>
               <TabsTrigger value="degrees">Bậc học</TabsTrigger>
-              <TabsTrigger value="ethnicities">Dân tộc</TabsTrigger>
             </TabsList>
-            
-            <TabsList className="grid grid-cols-5 w-full mt-2">
+
+            <TabsList className="grid grid-cols-6 w-full mt-2">
               <TabsTrigger value="wards">Phường/Xã</TabsTrigger>
-              <TabsTrigger value="provinces">Tỉnh/TP</TabsTrigger>
+              <TabsTrigger value="provinces">Tỉnh/Thành Phố</TabsTrigger>
               <TabsTrigger value="specialties">Chuyên ngành</TabsTrigger>
-              <TabsTrigger value="politicalTheories">Lý luận CT</TabsTrigger>
-              <TabsTrigger value="languageLevels">Trình độ NN</TabsTrigger>
+              <TabsTrigger value="politicalTheories">Lý luận chính trị</TabsTrigger>
+              <TabsTrigger value="languageLevels">Trình độ ngoại ngữ</TabsTrigger>
+              <TabsTrigger value="ethnicities">Dân tộc</TabsTrigger>
+
             </TabsList>
 
             <TabsContent value="nationality">
@@ -81,6 +85,10 @@ export default function Catalog() {
 
             <TabsContent value="languageLevels">
               <LanguageLevelsTab />
+            </TabsContent>
+
+            <TabsContent value="departmentTypes">
+              <DepartmentTypesTab />
             </TabsContent>
           </Tabs>
         </CardHeader>

@@ -13,6 +13,7 @@ import TransferManagerPage from '@/features/transfer/pages/manager/ManagerTransf
 import EmployeeTransferPage from '@/features/transfer/pages/employee/EmployeeTransfer';
 import TransferAdminPage from '@/features/transfer/pages/admin/AdminTransfer';
 import TrainingManagerPage from '@/features/training/pages/manager/ManagerTraining';
+import EmployeeTrainingDetailPage from '@/features/training/pages/EmployeeTrainingDetail';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -124,6 +125,8 @@ export const router = createBrowserRouter([
       { path: ROUTES.EMPLOYEE_CAREER_PATH.slice(1), element: <EmployeeCareerPath /> },
       { path: ROUTES.EMPLOYEE_WORK_SCHEDULE.slice(1), element: <EmployeeWorkSchedule /> },
       { path: ROUTES.EMPLOYEE_TRANSFER.slice(1), element: <EmployeeTransferPage /> },
+      { path: ROUTES.EMPLOYEE_TRAINING.slice(1), element: <EmployeeTrainingDetailPage /> },
+      
       // Shared Training Detail
       { path: ROUTES.TRAINING_DETAIL.slice(1), element: <TrainingDetail /> },
       { path: ROUTES.LEAVE_REQUESTS.slice(1), element: <LeaveRequest /> },

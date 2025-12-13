@@ -127,15 +127,23 @@ export default function AdminDashboard() {
   // Chart 3: Phân bổ theo cấp/bậc
   const gradeDistribution = [
     {
-      grade: 'G1 - Nhân viên',
+      grade: 'Nhân viên',
       count: employees.filter((e) => e.grade === 'G1' && e.status !== 'Resigned').length,
     },
     {
-      grade: 'G2 - Chuyên viên/Quản lý',
+      grade: 'Phó phòng',
+      count: employees.filter((e) => e.grade === 'G1' && e.status !== 'Resigned').length,
+    },
+    {
+      grade: 'Trưởng phòng',
       count: employees.filter((e) => e.grade === 'G2' && e.status !== 'Resigned').length,
     },
     {
-      grade: 'G3 - Điều hành',
+      grade: 'Phó giám đốc',
+      count: employees.filter((e) => e.grade === 'G2' && e.status !== 'Resigned').length,
+    },
+    {
+      grade: 'Giám đốc',
       count: employees.filter((e) => e.grade === 'G3' && e.status !== 'Resigned').length,
     },
   ];
@@ -319,7 +327,12 @@ export default function AdminDashboard() {
                           <p className="font-medium">
                             {employee?.firstName} {employee?.lastName}
                           </p>
-                          <p className="text-xs text-muted-foreground">{req.reason}</p>
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">{req.fileName}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Lý do: {req.reason}
+                          </p>
                         </div>
                       </div>
                     );
@@ -331,7 +344,6 @@ export default function AdminDashboard() {
                   </p>
                 )}
               </div>
-
 
               <Button
                 onClick={() => window.location.href = '/admin/leave-requests'}
@@ -457,7 +469,7 @@ export default function AdminDashboard() {
           {/* Chart 3: Phân bổ theo cấp/bậc */}
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Phân bổ theo cấp/bậc</CardTitle>
+              <CardTitle>Phân bổ theo chức vụ</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-center py-8 px-4">

@@ -183,7 +183,7 @@ export default function TrainingDetailPage() {
 
   const canEditOrDelete = (status: string) => {
     // return ['DRAFT', 'REJECTED'].includes(status);
-    return ['DRAFT'].includes(status);
+    return ['DRAFT', 'REJECTED'].includes(status);
 
   };
 
@@ -404,7 +404,7 @@ export default function TrainingDetailPage() {
             )}
 
             {/* {!isAdmin && ['APPROVED', 'IN_PROGRESS'].includes(trainingDetail.status) && ( */}
-            {!isAdmin && ['APPROVED'].includes(trainingDetail.status) && (
+            {!isAdmin && ['APPROVED', 'IN_PROGRESS'].includes(trainingDetail.status) && (
               <div className="space-y-2 pt-2 border-t">
                 <Button
                   onClick={() => setIsAssignModalOpen(true)}

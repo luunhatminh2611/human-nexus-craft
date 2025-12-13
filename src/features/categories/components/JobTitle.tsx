@@ -1,7 +1,6 @@
 // components/catalog/PositionsTab.tsx
 import { useState, useEffect } from 'react';
 import { CardContent } from '@/shared/components/ui/card';
-import Button from '@/shared/components/ui/button/Button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
@@ -16,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { jobTitleApi } from '../api/categoriesApi';
+import { Button } from '@/shared/components/ui/button/Button2';
 
 export default function PositionsTab() {
   const { toast } = useToast();
@@ -39,7 +39,7 @@ export default function PositionsTab() {
     } catch (error) {
       toast({
         title: 'Lỗi',
-        description: 'Không thể tải danh sách chức danh',
+        description: 'Không thể tải danh sách chức vụ',
         variant: 'destructive',
       });
     } finally {
@@ -65,7 +65,7 @@ export default function PositionsTab() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên chức danh', variant: 'destructive' });
+      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên chức vụ', variant: 'destructive' });
       return;
     }
 
@@ -77,14 +77,14 @@ export default function PositionsTab() {
         await jobTitleApi.update(editing.id, form);
         toast({
           title: 'Thành công',
-          description: 'Cập nhật chức danh thành công',
+          description: 'Cập nhật chức vụ thành công',
         });
       } else {
         // Thêm mới
         await jobTitleApi.create(form);
         toast({
           title: 'Thành công',
-          description: 'Thêm mới chức danh thành công',
+          description: 'Thêm mới chức vụ thành công',
         });
       }
       
@@ -93,7 +93,7 @@ export default function PositionsTab() {
     } catch (error) {
       toast({
         title: 'Lỗi',
-        description: `Không thể ${editing ? 'cập nhật' : 'thêm mới'} chức danh`,
+        description: `Không thể ${editing ? 'cập nhật' : 'thêm mới'} chức vụ`,
         variant: 'destructive',
       });
     } finally {
@@ -102,19 +102,19 @@ export default function PositionsTab() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa chức danh này?')) {
+    if (!confirm('Bạn có chắc chắn muốn xóa chức vụ này?')) {
       return;
     }
 
     try {
       setLoading(true);
       await jobTitleApi.delete(id);
-      toast({ title: 'Thành công', description: 'Xóa chức danh thành công' });
+      toast({ title: 'Thành công', description: 'Xóa chức vụ thành công' });
       loadPositions(); // Reload lại danh sách
     } catch (error) {
       toast({
         title: 'Lỗi',
-        description: 'Không thể xóa chức danh',
+        description: 'Không thể xóa chức vụ',
         variant: 'destructive',
       });
     } finally {
@@ -128,7 +128,7 @@ export default function PositionsTab() {
         <div className="flex justify-end">
           <Button onClick={openAdd} disabled={loading}>
             <Plus className="h-4 w-4 mr-2" />
-            Thêm chức danh
+            Thêm chức vụ
           </Button>
         </div>
         
@@ -141,7 +141,7 @@ export default function PositionsTab() {
             <TableHeader>
               <TableRow>
                 <TableHead>Mã</TableHead>
-                <TableHead>Tên chức danh</TableHead>
+                <TableHead>Tên chức vụ</TableHead>
                 <TableHead>Mô tả</TableHead>
                 <TableHead className="w-[120px] text-right">Thao tác</TableHead>
               </TableRow>
@@ -189,13 +189,13 @@ export default function PositionsTab() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? 'Chỉnh sửa' : 'Thêm mới'} chức danh</DialogTitle>
+            <DialogTitle>{editing ? 'Chỉnh sửa' : 'Thêm mới'} chức vụ</DialogTitle>
             <DialogDescription>Điền thông tin chi tiết bên dưới</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label>Mã chức danh</Label>
+              <Label>Mã chức vụ</Label>
               <Input
                 value={form.code}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
@@ -203,11 +203,11 @@ export default function PositionsTab() {
               />
             </div>
             <div>
-              <Label>Tên chức danh *</Label>
+              <Label>Tên chức vụ *</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Nhập tên chức danh"
+                placeholder="Nhập tên chức vụ"
               />
             </div>
             <div>

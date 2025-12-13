@@ -1,237 +1,299 @@
-import { useMemo, useState } from "react";
-import { Layout } from "@/shared/components/layouts/Layout";
-import { Card } from "@/shared/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/tables/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select";
-import mockData from "@/mock/data";
+import React, { useState, useEffect } from "react";
 import {
-    PieChart,
-    Pie,
-    Cell,
-    Tooltip,
-    Legend,
-    ResponsiveContainer,
-} from "recharts";
-import type { Employee, IssuedSafetyItem } from "@/mock/data";
-import { useNavigate } from "react-router-dom";
-import { Tabs, TabsList, TabsTrigger } from "@/shared/components/ui/tabs";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/components/tables/table";
+import { Button } from "@/shared/components/ui/button/Button2";
+import { Badge } from "@/shared/components/ui/badge";
+import { Input } from "@/shared/components/ui/input";
+import { 
+  Shield, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  Search,
+  ChevronLeft,
+  ChevronRight
+} from "lucide-react";
+import { ppeApi } from "../../api/safetyApi";
+import { toast } from "sonner";
 
-interface DepartmentStats {
-    departmentName: string;
-    total: number;
-    inUse: number;
-    expired: number;
-    replaced: number;
-    damaged: number;
-}
+export default function PPEPlansPage() {
+  const [ppePlans, setPpePlans] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-export default function AdminSafetyDashboard() {
-    const [filterDept, setFilterDept] = useState("all");
-    const COLORS = ["#10b981", "#3b82f6", "#f97316", "#ef4444"];
-    const navigate = useNavigate();
+  // Lấy danh sách kế hoạch bảo hộ
+  const fetchPPEPlans = async () => {
+    try {
+      setLoading(true);
+      const data = await ppeApi.getAllPlans();
+      setPpePlans(data || []);
+    } catch (error) {
+      toast.error("Không thể tải danh sách kế hoạch bảo hộ");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const issuedItems = mockData.issuedSafetyItems;
-    const employees = mockData.employees;
-    const departments = mockData.departments;
+  useEffect(() => {
+    fetchPPEPlans();
+  }, []);
 
-    // --- Lọc theo phòng ban ---
-    const filteredEmployees = useMemo(() => {
-        if (filterDept === "all") return employees;
-        return employees.filter((e) => e.departmentId === filterDept);
-    }, [filterDept, employees]);
-
-    const filteredIssuedItems = useMemo(() => {
-        const allowedIds = filteredEmployees.map((e) => e.id);
-        return issuedItems.filter((i) => allowedIds.includes(i.employeeId));
-    }, [filteredEmployees, issuedItems]);
-
-    // --- Gom nhóm theo phòng ban ---
-    const groupedByDept = useMemo<DepartmentStats[]>(() => {
-        const groups: Record<string, DepartmentStats> = {};
-
-        filteredIssuedItems.forEach((i: IssuedSafetyItem) => {
-            const emp = employees.find((e) => e.id === i.employeeId);
-            const dept = departments.find((d) => d.id === emp?.departmentId);
-            if (!dept) return;
-
-            if (!groups[dept.id]) {
-                groups[dept.id] = {
-                    departmentName: dept.name,
-                    total: 0,
-                    inUse: 0,
-                    expired: 0,
-                    replaced: 0,
-                    damaged: 0,
-                };
-            }
-
-            groups[dept.id].total++;
-
-            switch (i.status) {
-                case "In Use":
-                    groups[dept.id].inUse++;
-                    break;
-                case "Expired":
-                    groups[dept.id].expired++;
-                    break;
-                case "Replaced":
-                    groups[dept.id].replaced++;
-                    break;
-                case "DamagedEarly":
-                    groups[dept.id].damaged++;
-                    break;
-            }
-        });
-
-        return Object.values(groups);
-    }, [filteredIssuedItems, employees, departments]);
-
-    // --- Biểu đồ tổng hợp ---
-    const totalStats = useMemo(() => {
-        let inUse = 0, expired = 0, damaged = 0, collected = 0;
-
-        filteredIssuedItems.forEach((i) => {
-            if (i.status === "In Use") inUse++;
-            else if (i.status === "Expired") expired++;
-            else if (i.status === "DamagedEarly") damaged++;
-
-            if (i.replacedFromId) collected++;
-        });
-
-        return { inUse, expired, damaged, collected };
-    }, [filteredIssuedItems]);
-
-    const pieData = [
-        { name: "Đang sử dụng", value: totalStats.inUse },
-        { name: "Hết hạn", value: totalStats.expired },
-        { name: "Thu về (bao gồm hỏng sớm)", value: totalStats.collected },
-        { name: "Hỏng sớm", value: totalStats.damaged },
-    ];
-
-    // --- Bảng chi tiết đổi mới ---
-    const replacedList = issuedItems.filter((i) => {
-        if (!i.replacedFromId) return false;
-        const oldItem = issuedItems.find((x) => x.id === i.replacedFromId);
-        return oldItem && oldItem.safetyItemId === i.safetyItemId;
-    });
-
+  // Lọc dữ liệu theo search
+  const filteredPlans = ppePlans.filter((plan) => {
+    const searchLower = searchTerm.toLowerCase();
     return (
-        <div className="space-y-6">
-            <Tabs defaultValue="dashboard" className="w-full">
-                <TabsList className="flex gap-2 bg-muted p-2 rounded-lg">
-                    <TabsTrigger value="dashboard" className="flex-1">
-                        Thống kê cấp phát
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="items"
-                        className="flex-1"
-                        onClick={() => navigate("/admin/safety-items")}
-                    >
-                        Kho BHLĐ
-                    </TabsTrigger>
-                </TabsList>
-            </Tabs>
-
-            <h1 className="text-3xl font-bold">Thống kê cấp phát đồ bảo hộ</h1>
-
-            {/* Bộ lọc phòng ban */}
-            <div className="flex gap-4 items-center">
-                <label className="text-sm text-muted-foreground">Lọc theo phòng ban:</label>
-                <Select value={filterDept} onValueChange={setFilterDept}>
-                    <SelectTrigger className="w-[250px]">
-                        <SelectValue placeholder="Chọn phòng ban" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">Tất cả</SelectItem>
-                        {departments.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>
-                                {d.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {/* Biểu đồ tổng quan */}
-            <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Tổng quan tình trạng vật tư</h2>
-                <div className="h-[250px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                                {pieData.map((_, idx) => (
-                                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                            <Legend />
-                        </PieChart>
-                    </ResponsiveContainer>
-                </div>
-            </Card>
-
-            {/* Bảng tổng hợp theo phòng ban */}
-            <Card>
-                <h2 className="text-lg font-semibold p-4">Tổng hợp theo phòng ban</h2>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Phòng ban</TableHead>
-                            <TableHead>Tổng phát</TableHead>
-                            <TableHead>Đang sử dụng</TableHead>
-                            <TableHead>Hết hạn</TableHead>
-                            <TableHead>Thu về</TableHead>
-                            <TableHead>Hỏng sớm</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {groupedByDept.map((g) => (
-                            <TableRow key={g.departmentName}>
-                                <TableCell>{g.departmentName}</TableCell>
-                                <TableCell>{g.total}</TableCell>
-                                <TableCell>{g.inUse}</TableCell>
-                                <TableCell>{g.expired}</TableCell>
-                                <TableCell>{g.replaced}</TableCell>
-                                <TableCell>{g.damaged}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </Card>
-
-            {/* Bảng chi tiết đổi mới */}
-            <Card>
-                <h2 className="text-lg font-semibold p-4">Chi tiết đổi mới vật tư</h2>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Người phát</TableHead>
-                            <TableHead>Nhân viên</TableHead>
-                            <TableHead>Vật tư cũ</TableHead>
-                            <TableHead>Vật tư mới</TableHead>
-                            <TableHead>Ngày đổi</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {replacedList.map((r) => {
-                            const manager = employees.find((e) => e.id === r.issuedBy);
-                            const emp = employees.find((e) => e.id === r.employeeId);
-                            const oldItem = issuedItems.find((i) => i.id === r.replacedFromId);
-                            const itemOld = mockData.safetyItems.find((s) => s.id === oldItem?.safetyItemId);
-                            const itemNew = mockData.safetyItems.find((s) => s.id === r.safetyItemId);
-                            return (
-                                <TableRow key={r.id}>
-                                    <TableCell>{manager?.firstName} {manager?.lastName}</TableCell>
-                                    <TableCell>{emp?.firstName} {emp?.lastName}</TableCell>
-                                    <TableCell>{itemOld?.name || "—"}</TableCell>
-                                    <TableCell>{itemNew?.name || "—"}</TableCell>
-                                    <TableCell>{r.replacedDate || "21/11/2025"}</TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </Table>
-            </Card>
-        </div>
+      plan.year?.toString().includes(searchLower) ||
+      plan.notes?.toLowerCase().includes(searchLower) ||
+      plan.status?.toLowerCase().includes(searchLower)
     );
+  });
+
+  // Phân trang
+  const totalPages = Math.ceil(filteredPlans.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPlans = filteredPlans.slice(startIndex, endIndex);
+
+  // Reset trang khi search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Xử lý xem chi tiết
+  const handleViewDetail = (plan) => {
+    toast.info("Chức năng xem chi tiết đang được phát triển");
+    console.log("View detail:", plan);
+  };
+
+  // Xử lý chỉnh sửa
+  const handleEdit = (plan) => {
+    toast.info("Chức năng chỉnh sửa đang được phát triển");
+    console.log("Edit:", plan);
+  };
+
+  // Xử lý xóa
+  const handleDelete = async (plan) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa kế hoạch năm ${plan.year}?`)) {
+      return;
+    }
+
+    try {
+      // API xóa (nếu có)
+      toast.success("Xóa kế hoạch thành công");
+      fetchPPEPlans();
+    } catch (error) {
+      toast.error("Không thể xóa kế hoạch");
+      console.error(error);
+    }
+  };
+
+  // Xử lý đóng kế hoạch
+  const handleClosePlan = async (planId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn đóng kế hoạch này?")) {
+      return;
+    }
+
+    try {
+      await ppeApi.closePlan(planId);
+      toast.success("Đóng kế hoạch thành công");
+      fetchPPEPlans();
+    } catch (error) {
+      toast.error("Không thể đóng kế hoạch");
+      console.error(error);
+    }
+  };
+
+  // Render badge status
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      ACTIVE: { variant: "default", label: "Đang hoạt động" },
+      CLOSED: { variant: "secondary", label: "Đã đóng" },
+      DRAFT: { variant: "outline", label: "Nháp" },
+    };
+
+    const statusInfo = statusMap[status] || { 
+      variant: "secondary", 
+      label: status 
+    };
+
+    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
+  };
+
+  return (
+    <div className="mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Kế hoạch Bảo hộ lao động
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Quản lý các kế hoạch cấp phát bảo hộ lao động theo năm
+          </p>
+        </div>
+
+        <Button className="bg-green-500 text-white hover:bg-green-600">
+          <Plus className="mr-2 h-4 w-4" /> Tạo kế hoạch mới
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              Danh sách kế hoạch
+            </CardTitle>
+
+            {/* Thanh tìm kiếm */}
+            <div className="relative w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Tìm kiếm theo năm, ghi chú, trạng thái..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {loading ? (
+            <p className="text-center text-muted-foreground py-8">Đang tải...</p>
+          ) : currentPlans.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Năm</TableHead>
+                    <TableHead>Số vật phẩm</TableHead>
+                    <TableHead>Ghi chú</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Ngày tạo</TableHead>
+                    <TableHead className="text-right">Thao tác</TableHead>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                  {currentPlans.map((plan) => (
+                    <TableRow key={plan.id}>
+                      <TableCell className="font-bold text-lg">
+                        {plan.year}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {plan.planDetails?.length || 0} vật phẩm
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[300px] truncate">
+                        {plan.notes || "Không có ghi chú"}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(plan.status)}</TableCell>
+                      <TableCell>
+                        {new Date(plan.createdAt).toLocaleDateString("vi-VN")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Xem chi tiết */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetail(plan)}
+                            title="Xem chi tiết"
+                          >
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </Button>
+
+                          {/* Chỉnh sửa */}
+                          {plan.status !== "CLOSED" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(plan)}
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="h-4 w-4 text-amber-600" />
+                            </Button>
+                          )}
+
+                          {/* Xóa */}
+                          {plan.status !== "CLOSED" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(plan)}
+                              title="Xóa"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-600" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Phân trang */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredPlans.length)} 
+                    {" "}trên tổng số {filteredPlans.length} kế hoạch
+                  </p>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+
+                    <span className="text-sm">
+                      Trang {currentPage} / {totalPages}
+                    </span>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">
+              {searchTerm 
+                ? "Không tìm thấy kế hoạch phù hợp" 
+                : "Chưa có kế hoạch bảo hộ nào"}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

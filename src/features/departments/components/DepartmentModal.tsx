@@ -18,29 +18,11 @@ import {
 } from '@/shared/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { unitApi } from '@/features/departments/api/departmentApi';
+import { departmentTypeApi } from '@/features/departments/api/departmentTypeApi';
+import GenericSearchSelect from '@/features/employees/components/GenericSearchSelect';
+import { categoryConfigs } from '@/features/employees/components/CategoriesConfig';
 
-const emptyForm = { name: '', parent: '', type: 'Phòng', code: '' };
-
-// Map giá trị từ API sang giá trị hiển thị
-const TYPE_MAP = {
-    'PHONG': 'Phòng',
-    'BAN': 'Ban',
-    'PHAN_XUONG': 'Phân xưởng',
-    'KHO_CANG': 'Kho cảng',
-    // Fallback cho các giá trị đã có dấu
-    'Phòng': 'Phòng',
-    'Ban': 'Ban',
-    'Phân xưởng': 'Phân xưởng',
-    'Kho cảng': 'Kho cảng',
-};
-
-// Map ngược lại khi gửi lên API
-const TYPE_TO_API = {
-    'Phòng': 'PHONG',
-    'Ban': 'BAN',
-    'Phân xưởng': 'PHAN_XUONG',
-    'Kho cảng': 'KHO_CANG',
-};
+const emptyForm = { name: '', parent: '', departmentTypeId: '', code: '' };
 
 export function DepartmentFormModal({
     open,
@@ -52,20 +34,42 @@ export function DepartmentFormModal({
 }) {
     const [form, setForm] = useState(emptyForm);
     const [submitting, setSubmitting] = useState(false);
+    const [departmentTypes, setDepartmentTypes] = useState([]);
+    const [loadingTypes, setLoadingTypes] = useState(false);
 
     const isEditMode = !!editingDept;
+
+    // Load danh sách loại phòng ban
+    useEffect(() => {
+        if (open) {
+            fetchDepartmentTypes();
+        }
+    }, [open]);
+
+    const fetchDepartmentTypes = async () => {
+        try {
+            setLoadingTypes(true);
+            const data = await departmentTypeApi.getAll();
+            // Chỉ lấy các loại phòng ban đang active
+            const activeTypes = (data || []).filter(type => type.isActive);
+            setDepartmentTypes(activeTypes);
+        } catch (error) {
+            console.error('Error loading department types:', error);
+            onError({ title: 'Lỗi', description: 'Không thể tải danh sách loại phòng ban' });
+        } finally {
+            setLoadingTypes(false);
+        }
+    };
 
     // Reset form khi mở modal
     useEffect(() => {
         if (open) {
             if (editingDept) {
-                const apiType = (editingDept.type || 'PHONG').trim();
-                const displayType = TYPE_MAP[apiType] || 'Phòng';
-
+                console.log('Editing dept:', editingDept);
                 setForm({
                     name: editingDept.name || '',
                     parent: editingDept.parent || editingDept.parentId || '',
-                    type: displayType,
+                    departmentTypeId: editingDept.departmentType?.id ? String(editingDept.departmentType.id) : '',
                     code: editingDept.code || '',
                 });
             } else {
@@ -78,9 +82,16 @@ export function DepartmentFormModal({
         const name = (form.name || '').trim();
         const parentId = form.parent === 'none' || !form.parent ? null : Number(form.parent);
         const code = (form.code || '').trim();
+        const departmentTypeId = form.departmentTypeId ? Number(form.departmentTypeId) : null;
 
+        // Validation
         if (!name) {
             onError({ title: 'Lỗi', description: 'Vui lòng nhập tên phòng ban' });
+            return;
+        }
+
+        if (!departmentTypeId) {
+            onError({ title: 'Lỗi', description: 'Vui lòng chọn loại phòng ban' });
             return;
         }
 
@@ -90,15 +101,15 @@ export function DepartmentFormModal({
             return;
         }
 
-        // Kiểm tra trùng tên (chỉ khi thêm mới)
-        if (!isEditMode) {
+        // Kiểm tra trùng tên (chỉ khi thêm mới hoặc thay đổi tên)
+        if (!isEditMode || (editingDept && editingDept.name !== name)) {
             const exists = departments.some(
                 (d) =>
                     d.name.toLowerCase() === name.toLowerCase() &&
-                    (d.parentId || null) === (parentId ? String(parentId) : null)
+                    (!isEditMode || d.id !== editingDept.id)
             );
             if (exists) {
-                onError({ title: 'Lỗi', description: 'Phòng ban đã tồn tại' });
+                onError({ title: 'Lỗi', description: 'Tên phòng ban đã tồn tại' });
                 return;
             }
         }
@@ -106,29 +117,15 @@ export function DepartmentFormModal({
         try {
             setSubmitting(true);
 
-            const payload: {
-                id?: number;
-                company: { id: number };
-                name: string;
-                code?: string;
-                type: string;
-                parent?: { id: number };
-            } = {
-                company: { id: 2 },
+            const payload: any = {
+                company: { id: 2 }, // Hard-coded company ID
                 name,
-                type: TYPE_TO_API[form.type] || form.type,
+                code: code || undefined, // Chỉ gửi code nếu có giá trị
+                departmentType: { id: departmentTypeId },
+                parent: parentId ? { id: parentId } : null,
             };
 
-            // Chỉ thêm code nếu có giá trị
-            if (code) {
-                payload.code = code;
-            }
-
-            // Chỉ thêm parent khi có giá trị
-            if (parentId) {
-                payload.parent = { id: parentId };
-            }
-
+            // Nếu là edit mode, thêm id
             if (isEditMode) {
                 payload.id = Number(editingDept.id);
             }
@@ -147,11 +144,14 @@ export function DepartmentFormModal({
             onOpenChange(false);
             setForm(emptyForm);
         } catch (error) {
+            const errorMessage = error?.response?.data?.message ||
+                (isEditMode ? 'Không thể cập nhật phòng ban' : 'Không thể thêm phòng ban');
+
             onError({
                 title: 'Lỗi',
-                description: isEditMode ? 'Không thể cập nhật phòng ban' : 'Không thể thêm phòng ban'
+                description: errorMessage
             });
-            console.error(error);
+            console.error('Error:', error);
         } finally {
             setSubmitting(false);
         }
@@ -175,6 +175,7 @@ export function DepartmentFormModal({
                             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
                         />
                     </div>
+
                     <div>
                         <Label>Mã phòng ban</Label>
                         <Input
@@ -183,49 +184,54 @@ export function DepartmentFormModal({
                             onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))}
                         />
                     </div>
+
                     <div>
-                        <Label>Loại *</Label>
-                        <Select
-                            value={form.type}
-                            onValueChange={(v) => setForm((s) => ({ ...s, type: v }))}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Chọn loại phòng ban" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Phòng">Phòng</SelectItem>
-                                <SelectItem value="Ban">Ban</SelectItem>
-                                <SelectItem value="Phân xưởng">Phân xưởng</SelectItem>
-                                <SelectItem value="Kho cảng">Kho cảng</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Label>Loại phòng ban *</Label>
+                        <GenericSearchSelect
+                            api={categoryConfigs.departmentType.api}
+                            config={categoryConfigs.departmentType}
+                            value={form.departmentTypeId}
+                            onChange={(v) => setForm((s) => ({ ...s, departmentTypeId: v }))}
+                        />
+                        {departmentTypes.length === 0 && !loadingTypes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Chưa có loại phòng ban. Vui lòng thêm loại phòng ban trong phần Danh mục.
+                            </p>
+                        )}
                     </div>
+
                     <div>
-                        <Label>Phòng ban gốc (tùy chọn)</Label>
+                        <Label>Phòng ban gốc</Label>
                         <Select
                             value={form.parent || 'none'}
                             onValueChange={(v) => setForm((s) => ({ ...s, parent: v === 'none' ? '' : v }))}
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="Không chọn (là phòng ban gốc)" />
+                                <SelectValue placeholder="Chọn phòng ban gốc" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="none">Không chọn (phòng ban gốc)</SelectItem>
+                                <SelectItem value="none">
+                                    <span className="italic text-muted-foreground">Không có (phòng ban gốc)</span>
+                                </SelectItem>
                                 {departments
                                     .filter((d) => !isEditMode || d.id !== editingDept?.id)
                                     .map((d) => (
                                         <SelectItem key={d.id} value={d.id}>
-                                            {d.name}
+                                            <div className="flex flex-col">
+                                                <span>{d.name}</span>
+                                                <span className="text-xs text-muted-foreground">{d.code}</span>
+                                            </div>
                                         </SelectItem>
                                     ))}
                             </SelectContent>
                         </Select>
                     </div>
+
                     <div className="flex justify-end gap-2 pt-2">
                         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
                             Hủy
                         </Button>
-                        <Button onClick={handleSubmit} disabled={submitting}>
+                        <Button onClick={handleSubmit} disabled={submitting || loadingTypes}>
                             {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                             {isEditMode ? 'Lưu' : 'Thêm phòng ban'}
                         </Button>

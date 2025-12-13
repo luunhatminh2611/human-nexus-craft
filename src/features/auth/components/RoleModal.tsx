@@ -41,10 +41,11 @@ export default function RoleModal({
   // Fetch role từ API khi mở modal
   useEffect(() => {
     const fetchUserRole = async () => {
-      if (isOpen && userData?.user?.id) {
+      if (isOpen && userData?.userId) {
+
         try {
-          const userRoles = await authService.getUserRole(userData.user.id);
-          
+          const userRoles = await authService.getUserRole(userData.userId);
+
           if (userRoles && userRoles.length > 0) {
             setCurrentUserRole(userRoles[0]);
             setSelectedRoleId(userRoles[0].roleId);
@@ -71,7 +72,7 @@ export default function RoleModal({
       return;
     }
 
-    if (!userData?.user?.id) {
+    if (!userData?.userId) {
       setError('Không tìm thấy thông tin user');
       return;
     }
@@ -85,7 +86,7 @@ export default function RoleModal({
         // Cập nhật role hiện tại
         await authService.updateUserRole(currentUserRole.id, {
           id: currentUserRole.id,
-          userId: userData.user.id,
+          userId: userData.userId,
           roleId: selectedRoleId,
           isActive: true,
           createdAt: currentUserRole.createdAt,
@@ -95,7 +96,7 @@ export default function RoleModal({
         setSuccess('Cập nhật vai trò thành công!');
       } else {
         // Tạo mới user role
-        await authService.createUserRole(userData.user.id, selectedRoleId);
+        await authService.createUserRole(userData.userId, selectedRoleId);
         setSuccess('Tạo vai trò thành công!');
       }
 
@@ -106,9 +107,9 @@ export default function RoleModal({
       }, 1500);
     } catch (err: any) {
       console.error('Error managing role:', err);
-      const errorMessage = err.response?.data?.message || 
-                          err.message || 
-                          'Có lỗi xảy ra. Vui lòng thử lại.';
+      const errorMessage = err.response?.data?.message ||
+        err.message ||
+        'Có lỗi xảy ra. Vui lòng thử lại.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -127,8 +128,8 @@ export default function RoleModal({
           </DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? `Chọn vai trò cho nhân viên ${userData?.fullName}`
-              : `Cập nhật vai trò cho nhân viên ${userData?.fullName}`}
+              ? `Chọn vai trò cho nhân viên ${userData?.name}`
+              : `Cập nhật vai trò cho nhân viên ${userData?.name}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -151,7 +152,7 @@ export default function RoleModal({
               {ROLES.map((role) => {
                 const Icon = role.icon;
                 const isSelected = selectedRoleId === role.id;
-                
+
                 return (
                   <button
                     key={role.id}
@@ -160,8 +161,8 @@ export default function RoleModal({
                     disabled={loading}
                     className={`
                       flex items-center gap-3 p-4 rounded-lg border-2 transition-all
-                      ${isSelected 
-                        ? 'border-primary bg-primary/5' 
+                      ${isSelected
+                        ? 'border-primary bg-primary/5'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
                       }
                       ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

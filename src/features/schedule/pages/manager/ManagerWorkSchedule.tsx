@@ -50,7 +50,7 @@ type DaySchedule = {
 
 export default function ManagerWorkSchedule() {
   const { user } = useAuthStore();
-
+  
   const [selectedDept, setSelectedDept] = useState<string | number>("");
   const [userDepartmentId, setUserDepartmentId] = useState<string | number | null>(null);
   const [currentEmployeeId, setCurrentEmployeeId] = useState<string | number | null>(null);
@@ -142,11 +142,11 @@ export default function ManagerWorkSchedule() {
       }
 
       const employeeData = await employeeApi.getProfile(user?.userId);
-
+      
       if (employeeData?.id) {
-        const data = await employeeApi.getById(employeeData?.id);
-        const deptId = data?.departmentId
-        // const deptId = data?.department?.id;
+        const response = await employeeApi.getById(employeeData?.id);
+        const data = response?.data || response;
+        const deptId = data?.departmentId;
         setUserDepartmentId(deptId);
         setSelectedDept(deptId);
         setCurrentEmployeeId(data?.id);
@@ -181,7 +181,7 @@ export default function ManagerWorkSchedule() {
       const data = res;
       const employeeList = Array.isArray(data) ? data : [];
       setEmployees(employeeList);
-
+      
       console.log(`Fetched ${employeeList.length} employees ${departmentId ? `for department ${departmentId}` : ''}`);
     } catch (err) {
       console.error("Lỗi khi lấy employees", err);
@@ -190,14 +190,12 @@ export default function ManagerWorkSchedule() {
   };
 
   const fetchWorkSchedules = async () => {
-    console.log("đấ", userDepartmentId)
-
     try {
       setLoading(true);
       setError(null);
-
+      
       const deptId = selectedDept || userDepartmentId;
-
+      
       let res;
       if (deptId) {
         res = await workScheduleApi.getByDepartment(deptId);
@@ -213,7 +211,7 @@ export default function ManagerWorkSchedule() {
       const schedules = Array.isArray(raw) ? raw : [];
       setRawWorkSchedules(schedules);
       expandAllSchedules(schedules);
-
+      
       console.log(`Fetched ${schedules.length} schedules ${deptId ? `for department ${deptId}` : ''}`);
     } catch (err: any) {
       console.error("Lỗi khi lấy work schedule:", err);
@@ -425,7 +423,7 @@ export default function ManagerWorkSchedule() {
             }}
             className="bg-green-500 text-white hover:bg-green-300"
           >
-            <Plus className="w-4 h-4 mr-1" /> Thêm lịch công tác
+            <Plus className="w-4 h-4 mr-1" /> Tạo lịch công tác
           </Button>
         </div>
       </div>
@@ -511,21 +509,22 @@ export default function ManagerWorkSchedule() {
                             const isOwner = isScheduleOwner(s);
                             const isForCurrentManager = isScheduleForCurrentManager(s);
                             const isConfirmed = s.status === "CONFIRMED";
-
+                            
                             // Logic hiển thị:
                             // 1. Nếu trưởng phòng tạo lịch → có thể sửa/xóa (isOwner = true)
                             // 2. Nếu lịch được gán cho trưởng phòng (không phải họ tạo) → có thể xác nhận
                             // 3. Nếu lịch của nhân viên khác (không phải trưởng phòng tạo) → chỉ xem
-
+                            
                             return (
                               <div
                                 key={s.instanceId}
-                                className={`p-1.5 rounded-md text-xs group relative ${isOwner
-                                    ? "bg-blue-100 cursor-pointer hover:bg-blue-200"
+                                className={`p-1.5 rounded-md text-xs group relative ${
+                                  isOwner 
+                                    ? "bg-blue-100 cursor-pointer hover:bg-blue-200" 
                                     : isForCurrentManager
-                                      ? "bg-yellow-50 cursor-default"
-                                      : "bg-gray-100 cursor-default"
-                                  } transition-all`}
+                                    ? "bg-yellow-50 cursor-default"
+                                    : "bg-gray-100 cursor-default"
+                                } transition-all`}
                                 onClick={() => {
                                   if (isOwner) {
                                     handleEdit(s);
@@ -542,7 +541,7 @@ export default function ManagerWorkSchedule() {
                                 <div className="flex items-center gap-1 mt-0.5">
                                   {getStatusBadge(s.status)}
                                 </div>
-
+                                
                                 {/* ✅ Hiển thị nút xóa nếu trưởng phòng tạo lịch này */}
                                 {isOwner && (
                                   <Trash2
@@ -554,7 +553,7 @@ export default function ManagerWorkSchedule() {
                                     }}
                                   />
                                 )}
-
+                                
                                 {/* ✅ Hiển thị nút xác nhận chỉ khi:
                                      - Lịch được gán cho chính trưởng phòng (isForCurrentManager)
                                      - Không phải trưởng phòng tạo (giám đốc tạo)

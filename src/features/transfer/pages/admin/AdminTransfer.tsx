@@ -42,18 +42,11 @@ export default function TransferAdminPage() {
   const fetchTransfers = async () => {
     try {
       setIsLoading(true);
-      console.log("Fetching transfers for admin with params:", {
-        page,
-        limit: pageSize,
-        keyword: searchTerm,
-        status: 'GIAM_DOC_CHO_KY'
-      });
 
       const data = await transferApi.getAll({
         page: page,
         limit: pageSize,
-        keyword: searchTerm || '',
-        status: 'GIAM_DOC_CHO_KY' // Chỉ lấy các quyết định chờ giám đốc ký
+        status: "GIAM_DOC_CHO_KY" // Chỉ lấy các quyết định chờ giám đốc ký
       });
 
       console.log("Transfers response:", data);
@@ -92,9 +85,20 @@ export default function TransferAdminPage() {
   };
 
   const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'TRUONG_PHONG_CHO_KY': { label: 'Đã tạo', className: 'bg-yellow-100 text-yellow-800' },
+      'DA_TAO': { label: 'Đã tạo', className: 'bg-yellow-100 text-yellow-800' },
+      'GIAM_DOC_CHO_KY': { label: 'Chờ giám đốc ký', className: 'bg-blue-100 text-blue-800' },
+      'CHO_TIEP_NHAN': { label: 'Chờ tiếp nhận', className: 'bg-purple-100 text-purple-800' },
+      'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
+      'SUCCEEDED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
+    };
+
+    const config = statusConfig[status] || { label: status, className: '' };
+
     return (
-      <Badge className="bg-blue-100 text-blue-800">
-        Chờ giám đốc ký
+      <Badge className={config.className}>
+        {config.label}
       </Badge>
     );
   };

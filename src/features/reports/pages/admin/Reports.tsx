@@ -26,7 +26,7 @@ const initialColumns: Column[] = [
   { id: "dateOfBirth", label: "Ngày sinh", visible: true },
   { id: "address", label: "Địa chỉ", visible: true },
   { id: "joinDate", label: "Ngày bắt đầu", visible: true },
-  { id: "position", label: "Chức danh", visible: true },
+  { id: "position", label: "Chức vụ", visible: true },
   { id: "department", label: "Phòng ban", visible: true },
   { id: "grade", label: "Bậc lương", visible: true },
   { id: "netSalary", label: "Lương thực lĩnh", visible: true },

@@ -271,7 +271,7 @@ export default function DepartmentList() {
               />
             </div>
             <div>
-              <Label>Phòng ban cha (tùy chọn)</Label>
+              <Label>Phòng ban gốc (Không chọn để đặt phòng ban là phòng ban gốc)</Label>
               <Select
                 value={form.parentId || "none"}
                 onValueChange={(v) =>
@@ -282,7 +282,7 @@ export default function DepartmentList() {
                   <SelectValue placeholder="Không chọn (là phòng ban cha)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Không chọn (phòng ban gốc)</SelectItem>
+                  <SelectItem value="none">Chọn phòng ban</SelectItem>
                   {departments.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
                       {d.name}

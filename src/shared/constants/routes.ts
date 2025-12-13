@@ -37,9 +37,10 @@ export const ROUTES = {
   EMPLOYEE_CAREER_PATH: '/employee/career-path',
   EMPLOYEE_WORK_SCHEDULE: '/employee/work-schedule',
   EMPLOYEE_TRANSFER: '/employee/transfer',
-
+  EMPLOYEE_TRAINING: '/employee/training/:id',
   TRAINING_DETAIL: '/training/:id',
   LEAVE_REQUESTS: '/user/leave-requests',
+  TRANSFER_DETAIL: '/transfer/detail/:id',
   ROOT: '/',
   NOT_FOUND: '*',
 };

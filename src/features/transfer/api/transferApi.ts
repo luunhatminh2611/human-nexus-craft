@@ -17,6 +17,19 @@ export const transferApi = {
         }
     },
 
+    getByEmployeeId: async (employeeId: number | string, params?) => {
+        try {
+            const response = await api.get(`/transfer/employee/${employeeId}`, {
+                page: params?.page || 0,
+                limit: params?.limit || 1000,
+            });
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy lịch sử điều chuyển của nhân viên:", error);
+            throw error;
+        }
+    },
+
     update: async (data: FormData | any) => {
         try {
             const isFormData = data instanceof FormData;
@@ -89,17 +102,33 @@ export const transferApi = {
         }
     },
 
-    updateStatus: async (data) => {
-        const response = await fetch('/api/transfer/history', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-        return await response.json();
+    updateHistoryStatus: async (data) => {
+        try {
+            const response = await api.put('/transfer/history', data);
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái lịch sử:", error);
+            throw error;
+        }
     },
 
     getFileUrl: (fileName) => {
         if (!fileName) return null;
         return `${import.meta.env.VITE_API_BASE_URL}/file/${fileName}`;
+    },
+
+    downloadFile: async (fileKey: string) => {
+        try {
+            const response = await api.get('/file', {
+                fileKey: fileKey,
+            }, {
+                responseType: 'blob', // Quan trọng: yêu cầu response dạng blob
+            });
+
+            return response.data; // Trả về blob
+        } catch (error) {
+            console.error("Lỗi khi tải file:", error);
+            throw error;
+        }
     },
 };

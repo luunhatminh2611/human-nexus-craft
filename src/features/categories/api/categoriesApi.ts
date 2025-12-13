@@ -465,7 +465,7 @@ export const specialtyApi = {
       const response = await api.get("/specialty");
       return response.data.data;
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách chuyên môn:", error);
+      console.error("Lỗi khi lấy danh sách chuyên ngành:", error);
       throw error;
     }
   },
@@ -475,7 +475,7 @@ export const specialtyApi = {
       const response = await api.get(`/specialty/${id}`);
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi lấy chuyên môn:", error);
+      console.error("Lỗi khi lấy chuyên ngành:", error);
       throw error;
     }
   },
@@ -492,7 +492,7 @@ export const specialtyApi = {
       });
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi tạo chuyên môn:", error);
+      console.error("Lỗi khi tạo chuyên ngành:", error);
       throw error;
     }
   },
@@ -509,7 +509,7 @@ export const specialtyApi = {
       });
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi cập nhật chuyên môn:", error);
+      console.error("Lỗi khi cập nhật chuyên ngành:", error);
       throw error;
     }
   },
@@ -519,7 +519,7 @@ export const specialtyApi = {
       const response = await api.delete(`/specialty/${id}`);
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi xóa chuyên môn:", error);
+      console.error("Lỗi khi xóa chuyên ngành:", error);
       throw error;
     }
   },
