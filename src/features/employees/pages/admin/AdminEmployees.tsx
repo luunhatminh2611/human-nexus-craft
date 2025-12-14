@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Plus, ChevronLeft, ChevronRight, Edit, Trash2, Shield } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import EmployeeTable from '@/features/employees/components/EmployeeTable';
+import UserTable from '@/features/employees/components/UserTable';
 import { employeeApi } from '../../api/employeeApi';
 import { userApi } from '../../api/userApi';
 import EmployeeModal from '../../components/modal/EmployeeModal';
@@ -39,10 +40,6 @@ export default function Employees() {
   // Role modal states
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [selectedUserData, setSelectedUserData] = useState(null);
-
-  // Pagination states for users
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Fetch employees
   const { data: employees = [], isLoading: isLoadingEmployees, error: employeesError } = useQuery({
@@ -101,17 +98,6 @@ export default function Employees() {
     });
   }, [users, searchTerm]);
 
-  // Pagination calculations for users
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
-  // Reset to page 1 when search term changes
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
   const handleOpenCreateModal = () => {
     setModalMode('create');
     setSelectedEmployeeId(null);
@@ -169,10 +155,28 @@ export default function Employees() {
     }
   };
 
+  const handleToggleUserStatus = async (user: any) => {
+    const action = user.status === 'Active' ? 'vô hiệu hóa' : 'kích hoạt';
+    if (confirm(`Bạn có chắc chắn muốn ${action} tài khoản "${user.username}" không?`)) {
+      try {
+        await userApi.toggleStatus(user.id, user.status);
+        alert(`${action.charAt(0).toUpperCase() + action.slice(1)} tài khoản thành công`);
+        window.location.reload();
+      } catch (error) {
+        console.error('Error toggling user status:', error);
+        alert(`Lỗi khi ${action} tài khoản`);
+      }
+    }
+  };
+
   // Role modal handlers
   const handleOpenRoleModal = (user: any) => {
-    console.log("âdsa", user)
-    setSelectedUserData(user);
+    // Thêm userId để RoleModal có thể sử dụng
+    const userData = {
+      ...user,
+      userId: user.id
+    };
+    setSelectedUserData(userData);
     setIsRoleModalOpen(true);
   };
 
@@ -279,7 +283,7 @@ export default function Employees() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm kiếm theo username, email"
+                  placeholder="Tìm kiếm theo tên đăng nhập, email, họ tên"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -295,127 +299,13 @@ export default function Employees() {
 
           {/* Users Table */}
           <Card>
-            <div className="">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className='font-normal text-muted-foreground text-sm'>
-                    <tr className="border-b">
-                      <th className="text-left p-4">Tên đăng nhập</th>
-                      <th className="text-left p-4">Email</th>
-                      <th className="text-left p-4">Điện thoại</th>
-                      <th className="text-left p-4">Trạng thái</th>
-                      <th className="text-center p-4">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedUsers.map((user) => (
-                      <tr key={user.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">{user.username}</td>
-                        <td className="p-4">{user.email}</td>
-                        <td className="p-4">{user.phone}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded text-sm ${user.status === "Active" ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                            {user.status ? 'Hoạt động' : 'Không hoạt động'}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center justify-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenRoleModal(user)}
-                              className="hover:bg-blue-50"
-                              title="Phân quyền"
-                            >
-                              <Shield className="h-4 w-4 text-blue-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenEditUserModal(user.id)}
-                              className="hover:bg-gray-100"
-                              title="Chỉnh sửa"
-                            >
-                              <Edit className="h-4 w-4 text-gray-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="hover:bg-red-50"
-                              title="Xóa"
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {filteredUsers.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Không tìm thấy tài khoản nào
-                  </div>
-                )}
-              </div>
-
-              {/* Pagination Controls */}
-              {filteredUsers.length > 0 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredUsers.length)} trong tổng số {filteredUsers.length} tài khoản
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={itemsPerPage.toString()}
-                      onValueChange={(value) => {
-                        setItemsPerPage(Number(value));
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5 / trang</SelectItem>
-                        <SelectItem value="10">10 / trang</SelectItem>
-                        <SelectItem value="20">20 / trang</SelectItem>
-                        <SelectItem value="50">50 / trang</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      
-                      <span className="px-4 py-2 text-sm">
-                        Trang {currentPage} / {totalPages}
-                      </span>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserTable
+              users={filteredUsers}
+              onEdit={handleOpenEditUserModal}
+              onDelete={handleDeleteUser}
+              onManageRole={handleOpenRoleModal}
+              onToggleStatus={handleToggleUserStatus}
+            />
           </Card>
         </TabsContent>
       </Tabs>

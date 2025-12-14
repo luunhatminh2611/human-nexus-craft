@@ -1,7 +1,7 @@
 // components/catalog/EthnicityTab.tsx
 import { useState, useEffect } from 'react';
 import { CardContent } from '@/shared/components/ui/card';
-import Button from '@/shared/components/ui/button/Button';
+import { Button } from '@/shared/components/ui/button/Button2';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';

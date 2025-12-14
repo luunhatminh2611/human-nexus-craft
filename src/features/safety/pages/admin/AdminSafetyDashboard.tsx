@@ -16,25 +16,37 @@ import {
 import { Button } from "@/shared/components/ui/button/Button2";
 import { Badge } from "@/shared/components/ui/badge";
 import { Input } from "@/shared/components/ui/input";
-import { 
-  Shield, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Shield,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
   Search,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
 import { ppeApi } from "../../api/safetyApi";
 import { toast } from "sonner";
+import PPEPlanModal from "../../components/PPEmodal";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/features/employees/hooks/useAuth";
 
 export default function PPEPlansPage() {
   const [ppePlans, setPpePlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
+
   const itemsPerPage = 10;
+  const navigate = useNavigate();
+  
+  // Lấy thông tin user để phân quyền
+  const { user } = useAuthStore();
+  const isAdmin = user?.roles === 'ADMIN';
 
   // Lấy danh sách kế hoạch bảo hộ
   const fetchPPEPlans = async () => {
@@ -77,18 +89,32 @@ export default function PPEPlansPage() {
 
   // Xử lý xem chi tiết
   const handleViewDetail = (plan) => {
-    toast.info("Chức năng xem chi tiết đang được phát triển");
-    console.log("View detail:", plan);
+    // Admin: điều hướng đến /ppe/plans/:id
+    // Manager: điều hướng đến /manager/ppe/plans/:id
+    if (isAdmin) {
+      navigate(`/ppe/plans/${plan.id}`);
+    } else {
+      navigate(`/manager/ppe/plans/${plan.id}`);
+    }
   };
 
-  // Xử lý chỉnh sửa
+  // Xử lý chỉnh sửa (chỉ Admin)
   const handleEdit = (plan) => {
-    toast.info("Chức năng chỉnh sửa đang được phát triển");
-    console.log("Edit:", plan);
+    if (!isAdmin) {
+      toast.error("Bạn không có quyền chỉnh sửa");
+      return;
+    }
+    setEditingPlan(plan);
+    setIsModalOpen(true);
   };
 
-  // Xử lý xóa
+  // Xử lý xóa (chỉ Admin)
   const handleDelete = async (plan) => {
+    if (!isAdmin) {
+      toast.error("Bạn không có quyền xóa");
+      return;
+    }
+
     if (!window.confirm(`Bạn có chắc chắn muốn xóa kế hoạch năm ${plan.year}?`)) {
       return;
     }
@@ -103,8 +129,13 @@ export default function PPEPlansPage() {
     }
   };
 
-  // Xử lý đóng kế hoạch
+  // Xử lý đóng kế hoạch (chỉ Admin)
   const handleClosePlan = async (planId) => {
+    if (!isAdmin) {
+      toast.error("Bạn không có quyền đóng kế hoạch");
+      return;
+    }
+
     if (!window.confirm("Bạn có chắc chắn muốn đóng kế hoạch này?")) {
       return;
     }
@@ -127,9 +158,9 @@ export default function PPEPlansPage() {
       DRAFT: { variant: "outline", label: "Nháp" },
     };
 
-    const statusInfo = statusMap[status] || { 
-      variant: "secondary", 
-      label: status 
+    const statusInfo = statusMap[status] || {
+      variant: "secondary",
+      label: status
     };
 
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
@@ -147,9 +178,18 @@ export default function PPEPlansPage() {
           </p>
         </div>
 
-        <Button className="bg-green-500 text-white hover:bg-green-600">
-          <Plus className="mr-2 h-4 w-4" /> Tạo kế hoạch mới
-        </Button>
+        {/* Nút tạo kế hoạch chỉ hiển thị với Admin */}
+        {isAdmin && (
+          <Button 
+            className="bg-green-500 text-white hover:bg-green-600" 
+            onClick={() => {
+              setEditingPlan(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Tạo kế hoạch mới
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -211,7 +251,7 @@ export default function PPEPlansPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {/* Xem chi tiết */}
+                          {/* Xem chi tiết - Hiển thị cho cả Admin và Manager */}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -221,8 +261,8 @@ export default function PPEPlansPage() {
                             <Eye className="h-4 w-4 text-blue-600" />
                           </Button>
 
-                          {/* Chỉnh sửa */}
-                          {plan.status !== "CLOSED" && (
+                          {/* Chỉnh sửa - Chỉ hiển thị với Admin */}
+                          {isAdmin && plan.status !== "CLOSED" && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -233,8 +273,8 @@ export default function PPEPlansPage() {
                             </Button>
                           )}
 
-                          {/* Xóa */}
-                          {plan.status !== "CLOSED" && (
+                          {/* Xóa - Chỉ hiển thị với Admin */}
+                          {isAdmin && plan.status !== "CLOSED" && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -255,7 +295,7 @@ export default function PPEPlansPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <p className="text-sm text-muted-foreground">
-                    Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredPlans.length)} 
+                    Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredPlans.length)}
                     {" "}trên tổng số {filteredPlans.length} kế hoạch
                   </p>
 
@@ -287,13 +327,26 @@ export default function PPEPlansPage() {
             </>
           ) : (
             <p className="text-center text-muted-foreground py-8">
-              {searchTerm 
-                ? "Không tìm thấy kế hoạch phù hợp" 
+              {searchTerm
+                ? "Không tìm thấy kế hoạch phù hợp"
                 : "Chưa có kế hoạch bảo hộ nào"}
             </p>
           )}
         </CardContent>
       </Card>
+
+      {/* Modal chỉ hiển thị cho Admin */}
+      {isAdmin && (
+        <PPEPlanModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingPlan(null);
+          }}
+          onSuccess={fetchPPEPlans}
+          editData={editingPlan}
+        />
+      )}
     </div>
   );
 }

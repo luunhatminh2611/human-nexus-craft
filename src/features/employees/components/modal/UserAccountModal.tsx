@@ -133,10 +133,6 @@ export default function UserAccountModal({
             setError('Vui lòng nhập số điện thoại');
             return false;
         }
-        if (!formData.employeeCode.trim()) {
-            setError('Vui lòng nhập mã nhân viên');
-            return false;
-        }
         return true;
     };
 
@@ -166,14 +162,11 @@ export default function UserAccountModal({
                     window.location.reload();
                 }, 1500);
             } else {
-                // // Gọi API cập nhật tài khoản
-                // await userApi.update(userId, {
-                //   fullName: formData.fullName,
-                //   email: formData.email,
-                //   phone: formData.phone,
-                //   role: formData.role,
-                //   ...(formData.password && { password: formData.password }),
-                // });
+                await userApi.update(userId, {
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    phone: formData.phone,
+                });
                 setSuccess('Cập nhật tài khoản thành công!');
                 setTimeout(() => {
                     onClose();

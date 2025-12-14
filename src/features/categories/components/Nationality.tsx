@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { CardContent } from '@/shared/components/ui/card';
-import Button from '@/shared/components/ui/button/Button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import {
@@ -14,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { nationalityApi } from '@/features/categories/api/categoriesApi';
+import { Button } from '@/shared/components/ui/button/Button2';
 
 export default function NationalityTab() {
   const { toast } = useToast();

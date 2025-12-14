@@ -49,6 +49,16 @@ export const trainingApi = {
         }
     },
 
+    getEmployeeCoursesAdmin: async (employeeId) => {
+        try {
+            const response = await api.get(`/admin/training-courses/employee/${employeeId}`);
+            return response.data.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách khóa đào tạo của nhân viên:", error);
+            throw error;
+        }
+    },
+
     getById: async (id) => {
         try {
             const response = await api.get(`/manager/training-courses/${id}`);

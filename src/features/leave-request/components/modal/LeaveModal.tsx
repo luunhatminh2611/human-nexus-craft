@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,11 +7,20 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/shared/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/input";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Label } from "@/shared/components/ui/label";
 import { Button } from "@/shared/components/ui/button/Button2";
 import { Upload, X, FileText } from "lucide-react";
+import { userApi } from "../../../employees/api/userApi";
+import { toast } from "sonner";
 
 export default function LeaveRequestModal({
   isOpen,
@@ -26,7 +35,31 @@ export default function LeaveRequestModal({
   resetForm,
   isEdit = false,
   currentFileName = null,
+  approverUserId,
+  setApproverUserId,
 }) {
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const data = await userApi.getAll();
+      setUsers(data || []);
+    } catch (error) {
+      toast.error("Không thể tải danh sách người duyệt");
+      console.error(error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-[600px]">
@@ -91,11 +124,30 @@ export default function LeaveRequestModal({
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="approver">Người duyệt *</Label>
+              <Select
+                value={approverUserId ? String(approverUserId) : ""}
+                onValueChange={setApproverUserId}
+                disabled={loadingUsers}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingUsers ? "Đang tải..." : "Chọn người duyệt"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={String(user.id)}>
+                      {user.fullName} ({user.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="file">
                 File đính kèm (không bắt buộc)
               </Label>
 
-              {/* Hiển thị file hiện tại nếu đang edit và chưa chọn file mới */}
               {isEdit && currentFileName && !selectedFile && (
                 <div className="flex items-center gap-2 p-3 bg-muted rounded-md mb-2">
                   <FileText className="h-4 w-4 text-muted-foreground" />

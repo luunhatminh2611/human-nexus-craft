@@ -41,11 +41,11 @@ export default function RoleModal({
   // Fetch role từ API khi mở modal
   useEffect(() => {
     const fetchUserRole = async () => {
-      if (isOpen && userData?.userId) {
+      const userId = userData?.userId || userData?.id;
 
+      if (isOpen && userId) {
         try {
-          const userRoles = await authService.getUserRole(userData.userId);
-
+          const userRoles = await authService.getUserRole(userId);
           if (userRoles && userRoles.length > 0) {
             setCurrentUserRole(userRoles[0]);
             setSelectedRoleId(userRoles[0].roleId);
@@ -72,7 +72,9 @@ export default function RoleModal({
       return;
     }
 
-    if (!userData?.userId) {
+    const userId = userData?.userId || userData?.id;
+
+    if (!userId) {
       setError('Không tìm thấy thông tin user');
       return;
     }
@@ -86,7 +88,7 @@ export default function RoleModal({
         // Cập nhật role hiện tại
         await authService.updateUserRole(currentUserRole.id, {
           id: currentUserRole.id,
-          userId: userData.userId,
+          userId: userId,
           roleId: selectedRoleId,
           isActive: true,
           createdAt: currentUserRole.createdAt,
@@ -96,7 +98,7 @@ export default function RoleModal({
         setSuccess('Cập nhật vai trò thành công!');
       } else {
         // Tạo mới user role
-        await authService.createUserRole(userData.userId, selectedRoleId);
+        await authService.createUserRole(userId, selectedRoleId);
         setSuccess('Tạo vai trò thành công!');
       }
 
@@ -128,7 +130,7 @@ export default function RoleModal({
           </DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? `Chọn vai trò cho nhân viên ${userData?.name}`
+              ? `Chọn vai trò cho nhân viên ${userData?.fullName}`
               : `Cập nhật vai trò cho nhân viên ${userData?.name}`}
           </DialogDescription>
         </DialogHeader>

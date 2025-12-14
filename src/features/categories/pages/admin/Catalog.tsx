@@ -14,6 +14,7 @@ import PoliticalTheoriesTab from '@/features/categories/components/PoliticalTheo
 import LanguageLevelsTab from '@/features/categories/components/LanguageLevel';
 import Nationality from '@/features/categories/components/Nationality';
 import DepartmentTypesTab from '@/features/categories/components/DepartmentType';
+import PPEItemsTab from '../../components/PPEItems';
 
 export default function Catalog() {
   const [activeTab, setActiveTab] = useState('jobTitles');
@@ -21,7 +22,7 @@ export default function Catalog() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Danh mục đào tạo & chức vụ</h1>
+        <h1 className="text-3xl font-bold">Danh mục hệ thống</h1>
         <p className="text-muted-foreground">Quản lý các danh mục trong hệ thống</p>
       </div>
 
@@ -89,6 +90,10 @@ export default function Catalog() {
 
             <TabsContent value="departmentTypes">
               <DepartmentTypesTab />
+            </TabsContent>
+
+            <TabsContent value="ppe">
+              <PPEItemsTab />
             </TabsContent>
           </Tabs>
         </CardHeader>

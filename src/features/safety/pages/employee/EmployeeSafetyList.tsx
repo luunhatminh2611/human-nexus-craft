@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
-import { Layout } from "@/shared/components/layouts/Layout";
-import { Card } from "@/shared/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Button } from '@/shared/components/ui/button/Button2';
+import { Badge } from '@/shared/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -8,184 +9,450 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/shared/components/tables/table";
-import { Badge } from "@/shared/components/ui/badge";
-import Button from "@/shared/components/ui/button/Button";
+} from '@/shared/components/tables/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/shared/components/ui/dialog";
-import { Textarea } from "@/shared/components/ui/textarea";
-import { useAuthStore } from "@/features/auth";
-import mockData, { IssuedSafetyItem } from "@/mock/data";
+  Shield,
+  Package,
+  CheckCircle,
+  Clock,
+  History,
+  Calendar,
+  User,
+  AlertCircle,
+} from 'lucide-react';
+import { ppeApi } from '../../api/safetyApi';
+import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 
-export default function EmployeeSafetyList() {
-  const { employeeId } = useAuthStore();
-  const employee = mockData.employees.find((e) => e.id === employeeId);
+export default function EmployeePPEPage() {
+  const [myDistributions, setMyDistributions] = useState<any[]>([]);
+  const [myPPEItems, setMyPPEItems] = useState<any[]>([]);
+  const [distributionHistory, setDistributionHistory] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const [issuedItems, setIssuedItems] = useState<IssuedSafetyItem[]>(
-    mockData.issuedSafetyItems.filter((i) => i.employeeId === employeeId)
-  );
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<IssuedSafetyItem | null>(null);
-  const [reason, setReason] = useState("");
+  const fetchAllData = async () => {
+    try {
+      setIsLoading(true);
+      const [distributions, items, history] = await Promise.all([
+        ppeApi.getMyDistributions(),
+        ppeApi.getMyPPEItems(),
+        ppeApi.getDistributionHistory(),
+      ]);
 
-  const getItemName = (id: string) =>
-    mockData.safetyItems.find((i) => i.id === id)?.name || id;
-
-  const getStatusBadge = (status: IssuedSafetyItem["status"]) => {
-    const colorMap: Record<IssuedSafetyItem["status"], string> = {
-      "In Use": "bg-green-500 text-white",
-      "Expiring Soon": "bg-yellow-400 text-black",
-      "Expired": "bg-red-500 text-white",
-      "Replaced": "bg-gray-300 text-black",
-      "DamagedEarly": "bg-orange-500 text-white",
-    };
-
-    const label = {
-      "In Use": "Đang sử dụng",
-      "Expiring Soon": "Sắp hết hạn",
-      "Expired": "Đã hết hạn",
-      "Replaced": "Đã thay thế",
-      "DamagedEarly": "Yêu cầu đổi (đang chờ duyệt)",
-    }[status];
-
-    return (
-      <span className={`px-2 py-1 rounded text-xs font-medium ${colorMap[status]}`}>
-        {label}
-      </span>
-    );
+      setMyDistributions(distributions || []);
+      setMyPPEItems(items || []);
+      setDistributionHistory(history || []);
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu:', error);
+      toast.error('Không thể tải thông tin bảo hộ lao động');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRequestChange = (item: IssuedSafetyItem) => {
-    setSelectedItem(item);
-    setReason("");
-    setOpenModal(true);
-  };
-
-  const confirmRequestChange = () => {
-    if (!reason.trim()) {
-      alert("Vui lòng nhập lý do yêu cầu đổi.");
+  const handleConfirmReceipt = async (distributionItemId: number) => {
+    if (!window.confirm('Bạn xác nhận đã nhận được vật phẩm bảo hộ này?')) {
       return;
     }
 
-    if (selectedItem) {
-      setIssuedItems((prev) =>
-        prev.map((i) =>
-          i.id === selectedItem.id
-            ? {
-                ...i,
-                status: "DamagedEarly",
-                note: `Yêu cầu đổi: ${reason}`,
-                requestDate: new Date().toISOString().split("T")[0],
-              }
-            : i
-        )
-      );
+    try {
+      setIsProcessing(true);
+      await ppeApi.confirmReceipt(distributionItemId);
+      toast.success('Xác nhận nhận bảo hộ thành công');
+      fetchAllData();
+    } catch (error) {
+      console.error('Lỗi khi xác nhận:', error);
+      toast.error('Không thể xác nhận nhận bảo hộ');
+    } finally {
+      setIsProcessing(false);
     }
-
-    setOpenModal(false);
-    setSelectedItem(null);
-    alert("Yêu cầu đổi vật tư đã được gửi đến quản lý.");
   };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getItemStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { label: string; className: string }> = {
+      DELIVERED: { label: 'Chờ xác nhận', className: 'bg-yellow-100 text-yellow-800' },
+      CONFIRMED: { label: 'Đã xác nhận', className: 'bg-green-100 text-green-800' },
+      REJECTED: { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
+    };
+
+    const config = statusConfig[status] || {
+      label: status,
+      className: 'bg-gray-100 text-gray-800',
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  // Thống kê
+  const totalItems = myPPEItems.length;
+  const confirmedItems = myPPEItems.filter((item) => item.status === 'CONFIRMED').length;
+  const pendingItems = myPPEItems.filter((item) => item.status === 'DELIVERED').length;
+  const totalDistributions = distributionHistory.length;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Đang tải thông tin...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Đồ bảo hộ cá nhân</h1>
-        <p className="text-muted-foreground">
-          Danh sách vật tư bảo hộ mà bạn đã được cấp.
+        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+          <Shield className="h-8 w-8 text-blue-600" />
+          Bảo hộ lao động của tôi
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          Quản lý và xác nhận các vật phẩm bảo hộ lao động được cấp phát
         </p>
       </div>
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tên vật tư</TableHead>
-              <TableHead>Ngày cấp</TableHead>
-              <TableHead>Hạn sử dụng</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {issuedItems.length > 0 ? (
-              issuedItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{getItemName(item.safetyItemId)}</TableCell>
-                  <TableCell>{item.issueDate}</TableCell>
-                  <TableCell>{item.expireDate}</TableCell>
-                  <TableCell>{getStatusBadge(item.status)}</TableCell>
-                  <TableCell className="text-right">
-                    {["In Use", "Expiring Soon"].includes(item.status) && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRequestChange(item)}
-                      >
-                        Yêu cầu đổi
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground py-6"
-                >
-                  Bạn chưa được cấp vật tư nào.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {employee && (
-        <div className="text-sm text-muted-foreground">
-          Hiển thị {issuedItems.length} vật tư của {employee.firstName}{" "}
-          {employee.lastName}
-        </div>
-      )}
-
-      {/* Modal nhập lý do yêu cầu đổi */}
-      <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Yêu cầu đổi vật tư</DialogTitle>
-          </DialogHeader>
-          <p>
-            Bạn đang yêu cầu đổi vật tư:{" "}
-            <strong>
-              {selectedItem ? getItemName(selectedItem.safetyItemId) : ""}
-            </strong>
-          </p>
-          <div className="mt-3">
-            <label className="block text-sm font-medium mb-1">
-              Lý do yêu cầu đổi
-            </label>
-            <Textarea
-              placeholder="Ví dụ: Làm rách trong quá trình làm việc, bị mất, hoặc không sử dụng được..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={4}
-            />
+      {/* Thống kê tổng quan */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-blue-100 rounded-lg">
+              <Package className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Tổng vật phẩm</p>
+              <p className="text-2xl font-bold">{totalItems}</p>
+            </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenModal(false)}>
-              Hủy
-            </Button>
-            <Button onClick={confirmRequestChange}>Gửi yêu cầu</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-green-100 rounded-lg">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Đã xác nhận</p>
+              <p className="text-2xl font-bold">{confirmedItems}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-yellow-100 rounded-lg">
+              <AlertCircle className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Chờ xác nhận</p>
+              <p className="text-2xl font-bold">{pendingItems}</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-purple-100 rounded-lg">
+              <History className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Lần nhận</p>
+              <p className="text-2xl font-bold">{totalDistributions}</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs defaultValue="pending" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Chờ xác nhận ({pendingItems})
+          </TabsTrigger>
+          <TabsTrigger value="confirmed" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Đã xác nhận ({confirmedItems})
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Lịch sử nhận ({totalDistributions})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Chờ xác nhận */}
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+                Vật phẩm chờ xác nhận
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {myDistributions.length > 0 ? (
+                <div className="space-y-4">
+                  {myDistributions.map((distribution) => {
+                    const pendingItemsInDist = distribution.items?.filter(
+                      (item: any) => item.status === 'DELIVERED'
+                    );
+
+                    if (!pendingItemsInDist || pendingItemsInDist.length === 0) return null;
+
+                    return (
+                      <div
+                        key={distribution.id}
+                        className="border rounded-lg p-4 bg-yellow-50"
+                      >
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b">
+                          <div className="flex items-center gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                Mã phân phối
+                              </p>
+                              <p className="font-semibold">#{distribution.id}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Ngày phát
+                              </p>
+                              <p className="text-sm font-medium">
+                                {formatDate(distribution.distributionDate)}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge className="bg-yellow-100 text-yellow-800">
+                            {pendingItemsInDist.length} vật phẩm chờ xác nhận
+                          </Badge>
+                        </div>
+
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>STT</TableHead>
+                              <TableHead>Tên vật phẩm</TableHead>
+                              <TableHead>Kích cỡ</TableHead>
+                              <TableHead className="text-center">Số lượng</TableHead>
+                              <TableHead>Trạng thái</TableHead>
+                              <TableHead className="text-right">Thao tác</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {pendingItemsInDist.map((item: any, index: number) => (
+                              <TableRow key={item.id}>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell className="font-medium">
+                                  {item.ppeItemName}
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {item.ppeItemSize}
+                                </TableCell>
+                                <TableCell className="text-center font-semibold">
+                                  {item.quantity}
+                                </TableCell>
+                                <TableCell>{getItemStatusBadge(item.status)}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleConfirmReceipt(item.id)}
+                                    disabled={isProcessing}
+                                    className="bg-green-500 hover:bg-green-600 text-white"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Xác nhận đã nhận
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Không có vật phẩm nào chờ xác nhận</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Đã xác nhận */}
+        <TabsContent value="confirmed">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-green-600" />
+                Vật phẩm bảo hộ hiện có
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {myPPEItems.filter((item) => item.status === 'CONFIRMED').length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>STT</TableHead>
+                      <TableHead>Tên vật phẩm</TableHead>
+                      <TableHead>Kích cỡ</TableHead>
+                      <TableHead className="text-center">Số lượng</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead>Ngày xác nhận</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {myPPEItems
+                      .filter((item) => item.status === 'CONFIRMED')
+                      .map((item, index) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell className="font-medium">
+                            {item.ppeItemName}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {item.ppeItemSize}
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">
+                            {item.quantity}
+                          </TableCell>
+                          <TableCell>{getItemStatusBadge(item.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle className="h-4 w-4" />
+                              {formatDate(item.confirmedAt)}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Chưa có vật phẩm bảo hộ nào được xác nhận</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Lịch sử */}
+        <TabsContent value="history">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5 text-purple-600" />
+                Lịch sử nhận bảo hộ
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {distributionHistory.length > 0 ? (
+                <div className="space-y-4">
+                  {distributionHistory.map((distribution) => (
+                    <div
+                      key={distribution.id}
+                      className="border rounded-lg p-4 bg-gray-50"
+                    >
+                      <div className="grid grid-cols-3 gap-4 mb-4 pb-3 border-b">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Mã phân phối
+                          </p>
+                          <p className="font-semibold">#{distribution.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Ngày phát
+                          </p>
+                          <p className="text-sm font-medium">
+                            {formatDate(distribution.distributionDate)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Số vật phẩm
+                          </p>
+                          <Badge variant="outline">
+                            {distribution.items?.length || 0} vật phẩm
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>STT</TableHead>
+                            <TableHead>Tên vật phẩm</TableHead>
+                            <TableHead>Kích cỡ</TableHead>
+                            <TableHead className="text-center">Số lượng</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                            <TableHead>Ngày xác nhận</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {distribution.items?.map((item: any, index: number) => (
+                            <TableRow key={item.id}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell className="font-medium">
+                                {item.ppeItemName}
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {item.ppeItemSize}
+                              </TableCell>
+                              <TableCell className="text-center font-semibold">
+                                {item.quantity}
+                              </TableCell>
+                              <TableCell>{getItemStatusBadge(item.status)}</TableCell>
+                              <TableCell>
+                                {item.confirmedAt ? (
+                                  <div className="flex items-center gap-1 text-green-600">
+                                    <CheckCircle className="h-4 w-4" />
+                                    {formatDate(item.confirmedAt)}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <Clock className="h-4 w-4" />
+                                    Chưa xác nhận
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <History className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Chưa có lịch sử nhận bảo hộ</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

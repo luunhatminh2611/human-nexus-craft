@@ -1,7 +1,6 @@
 // components/catalog/DegreesTab.tsx
 import { useState, useEffect } from 'react';
 import { CardContent } from '@/shared/components/ui/card';
-import Button from '@/shared/components/ui/button/Button';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
@@ -16,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { degreeApi } from '@/features/categories/api/categoriesApi';
+import { Button } from '@/shared/components/ui/button/Button2';
 
 export default function DegreesTab() {
   const { toast } = useToast();

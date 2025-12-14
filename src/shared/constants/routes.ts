@@ -9,6 +9,7 @@ export const ROUTES = {
   ADMIN_PROFILE: '/admin/profile',
   ADMIN_PROFILE_ID: '/admin/profile/:id',
   ADMIN_SAFETY_ITEMS: '/admin/safety-items',
+  ADMIN_SAFETY_DETAIL: '/ppe/plans/:id',
   ADMIN_SAFETY_DASHBOARD: '/admin/safety-dashboard',
   ADMIN_DEPARTMENTS: '/admin/departments',
   ADMIN_CATALOG: '/admin/catalog',
@@ -29,6 +30,8 @@ export const ROUTES = {
   MANAGER_WORK_SCHEDULE: '/manager/work-schedule',
   MANAGER_TRANSFER: '/manager/transfer',
   MANAGER_TRAINING: '/manager/learning',
+  MANAGER_PPE_DETAILS: '/manager/ppe/plans/:id',
+
   EMPLOYEE_PROFILE: '/employee/profile',
   EMPLOYEE_PAYROLL: '/employee/payroll',
   EMPLOYEE_LEARNING: '/employee/learning',

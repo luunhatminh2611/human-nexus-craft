@@ -14,6 +14,8 @@ import EmployeeTransferPage from '@/features/transfer/pages/employee/EmployeeTra
 import TransferAdminPage from '@/features/transfer/pages/admin/AdminTransfer';
 import TrainingManagerPage from '@/features/training/pages/manager/ManagerTraining';
 import EmployeeTrainingDetailPage from '@/features/training/pages/EmployeeTrainingDetail';
+import PPEPlanDetailPage from '@/features/safety/pages/admin/SafetyDetail';
+import ManagerPPEPlanDetailPage from '@/features/safety/pages/manager/ManagerPPEPlanDetailPage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -102,7 +104,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_LEAVE_REQUESTS.slice(1), element: <AdminLeaveRequest /> },
       { path: ROUTES.ADMIN_REPORTS.slice(1), element: <Reports /> },
       { path: ROUTES.ADMIN_TRANSFER.slice(1), element: <TransferAdminPage /> },
-
+      { path: ROUTES.ADMIN_SAFETY_DETAIL.slice(1), element: <PPEPlanDetailPage /> },
       // Manager Routes
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },
@@ -115,6 +117,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.MANAGER_WORK_SCHEDULE.slice(1), element: <ManagerWorkSchedule /> },
       { path: ROUTES.MANAGER_LEAVE_REQUESTS.slice(1), element: <LeaveRequestManager /> },
       { path: ROUTES.MANAGER_TRANSFER.slice(1), element: <TransferManagerPage /> },
+      { path: ROUTES.MANAGER_PPE_DETAILS.slice(1), element: <ManagerPPEPlanDetailPage /> },
 
       // Employee Routes
       { path: ROUTES.EMPLOYEE_PROFILE.slice(1), element: <EmployeeProfile /> },
@@ -126,7 +129,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.EMPLOYEE_WORK_SCHEDULE.slice(1), element: <EmployeeWorkSchedule /> },
       { path: ROUTES.EMPLOYEE_TRANSFER.slice(1), element: <EmployeeTransferPage /> },
       { path: ROUTES.EMPLOYEE_TRAINING.slice(1), element: <EmployeeTrainingDetailPage /> },
-      
+
       // Shared Training Detail
       { path: ROUTES.TRAINING_DETAIL.slice(1), element: <TrainingDetail /> },
       { path: ROUTES.LEAVE_REQUESTS.slice(1), element: <LeaveRequest /> },

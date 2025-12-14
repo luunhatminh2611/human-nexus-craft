@@ -20,14 +20,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button/Button2";
 import { Badge } from "@/shared/components/ui/badge";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
-import { Textarea } from "@/shared/components/ui/textarea";
-import { FileText, Download, Plus, Upload, X, Edit } from "lucide-react";
+import { FileText, Download, Plus, Edit, Trash2 } from "lucide-react";
 import { leaveRequestApi } from "../../api/leaveRequestApi";
 import { toast } from "sonner";
 import { useAuthStore } from "@/features/employees/hooks/useAuth";
@@ -40,6 +36,9 @@ export default function LeaveRequest() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [editingLeave, setEditingLeave] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [leaveToDelete, setLeaveToDelete] = useState(null);
+  const [approverUserId, setApproverUserId] = useState("");
 
   const { user } = useAuthStore();
   const [formData, setFormData] = useState({
@@ -71,6 +70,7 @@ export default function LeaveRequest() {
       endDate: leave.endDate,
       reason: leave.reason,
     });
+    setApproverUserId(leave.approverUserId || "");
     setSelectedFile(null);
     setIsEditModalOpen(true);
   };
@@ -83,6 +83,11 @@ export default function LeaveRequest() {
       return;
     }
 
+    if (!approverUserId) {
+      toast.error("Vui lòng chọn người duyệt");
+      return;
+    }
+
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
       toast.error("Ngày bắt đầu phải trước ngày kết thúc");
       return;
@@ -90,7 +95,11 @@ export default function LeaveRequest() {
 
     try {
       setLoading(true);
-      await leaveRequestApi.update(editingLeave.id, formData, selectedFile);
+      const dataToUpdate = {
+        ...formData,
+        approverUserId,
+      };
+      await leaveRequestApi.update(editingLeave.id, dataToUpdate, selectedFile);
       toast.success("Cập nhật đơn nghỉ phép thành công");
       setIsEditModalOpen(false);
       setEditingLeave(null);
@@ -98,6 +107,29 @@ export default function LeaveRequest() {
       fetchLeaveRequests();
     } catch (error) {
       toast.error("Không thể cập nhật đơn nghỉ phép");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (leave) => {
+    setLeaveToDelete(leave);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!leaveToDelete) return;
+
+    try {
+      setLoading(true);
+      await leaveRequestApi.delete(leaveToDelete.id);
+      toast.success("Xóa đơn nghỉ phép thành công");
+      setDeleteConfirmOpen(false);
+      setLeaveToDelete(null);
+      fetchLeaveRequests();
+    } catch (error) {
+      toast.error("Không thể xóa đơn nghỉ phép");
       console.error(error);
     } finally {
       setLoading(false);
@@ -139,6 +171,11 @@ export default function LeaveRequest() {
       return;
     }
 
+    if (!approverUserId) {
+      toast.error("Vui lòng chọn người duyệt");
+      return;
+    }
+
     if (new Date(formData.startDate) > new Date(formData.endDate)) {
       toast.error("Ngày bắt đầu phải trước ngày kết thúc");
       return;
@@ -146,8 +183,11 @@ export default function LeaveRequest() {
 
     try {
       setLoading(true);
-      // Pass file như tham số thứ 2
-      await leaveRequestApi.create(formData, selectedFile);
+      const dataToSubmit = {
+        ...formData,
+        approverUserId,
+      };
+      await leaveRequestApi.create(dataToSubmit, selectedFile);
       toast.success("Tạo đơn nghỉ phép thành công");
       setIsModalOpen(false);
       resetForm();
@@ -169,6 +209,7 @@ export default function LeaveRequest() {
       reason: "",
     });
     setSelectedFile(null);
+    setApproverUserId("");
   };
 
   // Render badge status
@@ -186,16 +227,13 @@ export default function LeaveRequest() {
 
   const downloadBinaryFile = (binaryString, fileName, fileType) => {
     try {
-      // Convert binary string thành Uint8Array
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // Tạo blob
       const blob = new Blob([bytes], { type: fileType || 'application/octet-stream' });
 
-      // Download
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -218,7 +256,6 @@ export default function LeaveRequest() {
 
     if (leave.attachmentBase64) {
       try {
-        // Backend trả raw binary string, KHÔNG phải base64
         downloadBinaryFile(leave.attachmentBase64, leave.fileName, leave.fileType);
         toast.success("Đang tải xuống file...");
       } catch (error) {
@@ -283,6 +320,8 @@ export default function LeaveRequest() {
         resetForm={resetForm}
         isEdit={false}
         currentFileName={null}
+        approverUserId={approverUserId}
+        setApproverUserId={setApproverUserId}
       />
 
       <Card>
@@ -305,7 +344,7 @@ export default function LeaveRequest() {
                   <TableHead>Thời gian nghỉ</TableHead>
                   <TableHead>Lý do</TableHead>
                   <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
+                  <TableHead className="text-center">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -328,20 +367,8 @@ export default function LeaveRequest() {
                       {leave.reason || "Không ghi rõ"}
                     </TableCell>
                     <TableCell>{getStatusBadge(leave.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {['PENDING', 'REJECTED'].includes(leave.status) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(leave)}
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-
-                        {/* Nút download */}
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
                         {leave.fileName ? (
                           <Button
                             variant="ghost"
@@ -355,6 +382,27 @@ export default function LeaveRequest() {
                           <span className="text-muted-foreground text-sm">
                             Không có file
                           </span>
+                        )}
+                        {['PENDING', 'REJECTED'].includes(leave.status) && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(leave)}
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(leave)}
+                              title="Xóa"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -383,7 +431,40 @@ export default function LeaveRequest() {
         resetForm={resetForm}
         isEdit={true}
         currentFileName={editingLeave?.fileName}
+        approverUserId={approverUserId}
+        setApproverUserId={setApproverUserId}
       />
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa</DialogTitle>
+            <DialogDescription>
+              Bạn có chắc chắn muốn xóa đơn nghỉ phép "{leaveToDelete?.title}"?
+              Hành động này không thể hoàn tác.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                setLeaveToDelete(null);
+              }}
+              disabled={loading}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={loading}
+            >
+              {loading ? "Đang xóa..." : "Xóa"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

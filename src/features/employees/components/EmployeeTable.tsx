@@ -95,6 +95,7 @@ export default function EmployeeTable({
     {
       key: 'actions',
       header: 'Thao tác',
+      className: 'flex justify-center',
       render: (employee) => (
         <div className="flex gap-1">
           {onView && (
