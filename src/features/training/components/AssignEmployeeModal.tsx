@@ -10,16 +10,18 @@ import { Button } from '@/shared/components/ui/button/Button2';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Input } from '@/shared/components/ui/input';
 import { Search, Users, UserCheck } from 'lucide-react';
-import { employeeApi } from '@/features/employees/api/employeeApi'; // Adjust path as needed
+import { employeeApi } from '@/features/employees/api/employeeApi';
 import { trainingApi } from '../api/trainingApi';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
+
+/* ================= TYPES ================= */
 
 interface Employee {
-  id: number;
-  code: string;
-  name: string;
-  email: string;
-  departmentName?: string;
-  positionName?: string;
+  employeeId: number;
+  fullName: string;
+  email?: string;
+  position?: string;
+  status: 'ASSIGNED' | 'UNASSIGNED';
 }
 
 interface AssignEmployeesModalProps {
@@ -28,6 +30,8 @@ interface AssignEmployeesModalProps {
   courseId: string | number;
   onSuccess: () => void;
 }
+
+/* ================= COMPONENT ================= */
 
 export default function AssignEmployeesModal({
   isOpen,
@@ -42,6 +46,10 @@ export default function AssignEmployeesModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectAll, setSelectAll] = useState(false);
 
+  const { user } = useAuthStore();
+
+  /* ================= FETCH ================= */
+
   useEffect(() => {
     if (isOpen) {
       fetchEmployees();
@@ -51,12 +59,25 @@ export default function AssignEmployeesModal({
   const fetchEmployees = async () => {
     try {
       setIsLoading(true);
-      // Assuming employeeApi has a getAll method
-      const response = await employeeApi.getAll();
-      
-      // Adjust based on your API response structure
-      const employeeList = response.items || response.data || response;
-      setEmployees(employeeList);
+
+      if (!user?.employeeId) return;
+
+      // 1. Lấy departmentId của user
+      const profileRes = await employeeApi.getById(user.employeeId);
+      const departmentId = profileRes.data?.departmentId;
+      if (!departmentId) return;
+
+      // 2. Lấy danh sách nhân viên + trạng thái training
+      const res = await trainingApi.getEmployeesWithTrainingStatus(
+        courseId,
+        departmentId
+      );
+
+      const list: Employee[] = Array.isArray(res.data)
+        ? res.data
+        : [];
+
+      setEmployees(list);
     } catch (error) {
       console.error('Lỗi khi tải danh sách nhân viên:', error);
       alert('Không thể tải danh sách nhân viên');
@@ -65,33 +86,27 @@ export default function AssignEmployeesModal({
     }
   };
 
-  const filteredEmployees = employees.filter((emp) => {
-    const keyword = searchKeyword.toLowerCase();
-    return (
-      emp.name?.toLowerCase().includes(keyword) ||
-      emp.code?.toLowerCase().includes(keyword) ||
-      emp.email?.toLowerCase().includes(keyword) ||
-      emp.departmentName?.toLowerCase().includes(keyword)
+  /* ================= HANDLERS ================= */
+
+  const handleToggleEmployee = (employeeId: number) => {
+    setSelectedEmployees((prev) =>
+      prev.includes(employeeId)
+        ? prev.filter((id) => id !== employeeId)
+        : [...prev, employeeId]
     );
-  });
+  };
 
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedEmployees([]);
     } else {
-      setSelectedEmployees(filteredEmployees.map((emp) => emp.id));
+      const selectableIds = employees
+        .filter((e) => e.status === 'UNASSIGNED')
+        .map((e) => e.employeeId);
+
+      setSelectedEmployees(selectableIds);
     }
     setSelectAll(!selectAll);
-  };
-
-  const handleToggleEmployee = (employeeId: number) => {
-    setSelectedEmployees((prev) => {
-      if (prev.includes(employeeId)) {
-        return prev.filter((id) => id !== employeeId);
-      } else {
-        return [...prev, employeeId];
-      }
-    });
   };
 
   const handleSubmit = async () => {
@@ -102,7 +117,7 @@ export default function AssignEmployeesModal({
 
     if (
       !confirm(
-        `Bạn có chắc chắn muốn giao khóa học này cho ${selectedEmployees.length} nhân viên?`
+        `Bạn có chắc chắn muốn giao khóa học cho ${selectedEmployees.length} nhân viên?`
       )
     ) {
       return;
@@ -114,6 +129,7 @@ export default function AssignEmployeesModal({
         courseId: Number(courseId),
         employeeIds: selectedEmployees,
       });
+
       alert('Giao khóa học thành công');
       onSuccess();
       handleClose();
@@ -132,14 +148,18 @@ export default function AssignEmployeesModal({
     onClose();
   };
 
+  /* ================= SELECT ALL STATE ================= */
+
   useEffect(() => {
-    if (filteredEmployees.length > 0) {
-      const allSelected = filteredEmployees.every((emp) =>
-        selectedEmployees.includes(emp.id)
-      );
-      setSelectAll(allSelected);
-    }
-  }, [selectedEmployees, filteredEmployees]);
+    const selectable = employees.filter((e) => e.status === 'UNASSIGNED');
+    const allSelected =
+      selectable.length > 0 &&
+      selectable.every((e) => selectedEmployees.includes(e.employeeId));
+
+    setSelectAll(allSelected);
+  }, [employees, selectedEmployees]);
+
+  /* ================= UI ================= */
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -151,13 +171,13 @@ export default function AssignEmployeesModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Search */}
           <div className="mb-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm nhân viên theo tên, mã, email, phòng ban..."
+                placeholder="Tìm kiếm theo tên..."
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 className="pl-10"
@@ -165,72 +185,78 @@ export default function AssignEmployeesModal({
             </div>
           </div>
 
-          {/* Select All */}
+          {/* Select all */}
           <div className="flex items-center justify-between mb-3 pb-3 border-b">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={selectAll}
                 onCheckedChange={handleSelectAll}
-                disabled={isLoading || filteredEmployees.length === 0}
+                disabled={isLoading || employees.length === 0}
               />
-              <label className="text-sm font-medium cursor-pointer">
-                Chọn tất cả ({filteredEmployees.length} nhân viên)
-              </label>
+              <span className="text-sm font-medium">
+                Chọn tất cả
+              </span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Đã chọn: <span className="font-semibold">{selectedEmployees.length}</span>
-            </div>
+            <span className="text-sm text-muted-foreground">
+              Đã chọn: {selectedEmployees.length}
+            </span>
           </div>
 
-          {/* Employee List */}
+          {/* List */}
           <div className="flex-1 overflow-y-auto border rounded-lg">
             {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                  <p className="text-sm text-muted-foreground">Đang tải...</p>
-                </div>
-              </div>
-            ) : filteredEmployees.length === 0 ? (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-muted-foreground">Không tìm thấy nhân viên</p>
-              </div>
+              <p className="p-4 text-center text-muted-foreground">Đang tải...</p>
+            ) : employees.length === 0 ? (
+              <p className="p-4 text-center text-muted-foreground">
+                Không có nhân viên
+              </p>
             ) : (
               <div className="divide-y">
-                {filteredEmployees.map((employee) => (
-                  <div
-                    key={employee.id}
-                    className="p-3 hover:bg-muted/50 cursor-pointer flex items-start gap-3"
-                    onClick={() => handleToggleEmployee(employee.id)}
-                  >
-                    <Checkbox
-                      checked={selectedEmployees.includes(employee.id)}
-                      onCheckedChange={() => handleToggleEmployee(employee.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{employee.name}</p>
-                        <span className="text-xs text-muted-foreground">
-                          ({employee.code})
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{employee.email}</p>
-                      <div className="flex gap-2 mt-1">
-                        {employee.departmentName && (
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                            {employee.departmentName}
-                          </span>
-                        )}
-                        {employee.positionName && (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
-                            {employee.positionName}
-                          </span>
-                        )}
+                {employees.map((employee) => {
+                  const disabled = employee.status === 'ASSIGNED';
+
+                  return (
+                    <div
+                      key={employee.employeeId}
+                      className={`p-3 flex gap-3 ${
+                        disabled
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'cursor-pointer hover:bg-muted/50'
+                      }`}
+                      onClick={() => {
+                        if (!disabled) {
+                          handleToggleEmployee(employee.employeeId);
+                        }
+                      }}
+                    >
+                      <Checkbox
+                        checked={selectedEmployees.includes(employee.employeeId)}
+                        disabled={disabled}
+                        onClick={(e) => e.stopPropagation()}
+                        onCheckedChange={() =>
+                          handleToggleEmployee(employee.employeeId)
+                        }
+                      />
+
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{employee.fullName}</p>
+                          {disabled && (
+                            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded">
+                              Đã giao
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {employee.email || '—'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {employee.position}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -246,9 +272,7 @@ export default function AssignEmployeesModal({
             className="bg-blue-500 hover:bg-blue-600"
           >
             <UserCheck className="h-4 w-4 mr-2" />
-            {isSubmitting
-              ? 'Đang giao...'
-              : `Giao cho ${selectedEmployees.length} nhân viên`}
+            Giao khóa học
           </Button>
         </DialogFooter>
       </DialogContent>

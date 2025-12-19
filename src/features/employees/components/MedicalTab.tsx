@@ -431,7 +431,6 @@ export default function MedicalTab({ userData }) {
               </p>
               {canManage && (
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={() => {
                     setSelectedCheckup(null);

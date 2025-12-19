@@ -1,4 +1,9 @@
 import api from '@/lib/axios';
+import axios from 'axios';
+
+type UpdateEmployeeListRequest = {
+  payload: any[];
+};
 
 export const employeeApi = {
   // Lấy danh sách tất cả nhân viên
@@ -54,6 +59,16 @@ export const employeeApi = {
     }
   },
 
+  updateList: async (data: UpdateEmployeeListRequest) => {
+    try {
+      const response = await api.put('/employee', data);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật danh sách nhân viên:", error);
+      throw error;
+    }
+  },
+
   // Cập nhật thông tin nhân viên
   update: async (id: number, payload) => {
     try {
@@ -103,7 +118,7 @@ export const employeeApi = {
   // Lọc nhân viên theo trạng thái
   getByStatus: async (status: 'Đang làm việc' | 'Nghỉ việc' | 'Tạm nghỉ') => {
     try {
-      const response = await api.get('/api/employee', {
+      const response = await api.get('/employee', {
         params: { status }
       });
       return response.data;
@@ -111,7 +126,32 @@ export const employeeApi = {
       console.error("Lỗi khi lấy nhân viên theo trạng thái:", error);
       throw error;
     }
-  }
+  },
+
+  importExcel: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post('/employee/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Import thất bại');
+      }
+      throw error;
+    }
+  },
+
+  // 🔽 EXPORT
+  exportExcel: async (ids: number[]) => {
+    return api.post('/employee/export',
+      { ids },
+      { responseType: 'blob' }
+    );
+  },
 };
 
 export default employeeApi;

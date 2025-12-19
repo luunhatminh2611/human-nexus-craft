@@ -284,13 +284,22 @@ function ProfileContent() {
 
       {/* Tabs */}
       <Tabs defaultValue="info" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="info">Sơ yếu lý lịch</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-14">
+          <TabsTrigger value="info">Thông tin nhân sự</TabsTrigger>
+          <TabsTrigger value="1">Quyết định</TabsTrigger>
+          <TabsTrigger value="2">Bằng cấp</TabsTrigger>
+          <TabsTrigger value="3">Quan hệ gia đình</TabsTrigger>
+          <TabsTrigger value="contracts">Hợp đồng</TabsTrigger>
+          <TabsTrigger value="4">Xuất cảnh nước ngoài</TabsTrigger>
+          <TabsTrigger value="5">Nghỉ phép, theo dõi phép</TabsTrigger>
+          <TabsTrigger value="6">Bảo hiểm xã hội</TabsTrigger>
+          <TabsTrigger value="7">Hồ sơ</TabsTrigger>
           <TabsTrigger value="medical">Y tế</TabsTrigger>
           <TabsTrigger value="training">Đào tạo</TabsTrigger>
           <TabsTrigger value="kpi">KPI</TabsTrigger>
           <TabsTrigger value="salary">Lương</TabsTrigger>
-          <TabsTrigger value="contracts">Hợp đồng</TabsTrigger>
+          <TabsTrigger value="8">Khác</TabsTrigger>
+
           <TabsTrigger value="leaves">Đơn nghỉ phép</TabsTrigger>
         </TabsList>
 
@@ -324,8 +333,32 @@ function ProfileContent() {
           <LeavesTab userData={employeeData} />
         </TabsContent>
 
+        <TabsContent value="1" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="2" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="3" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="4" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="5" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="6" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="7" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
+        <TabsContent value="8" className="space-y-4">
+          <ContractsTab />
+        </TabsContent>
         <TabsContent value="contracts" className="space-y-4">
-          <ContractsTab userData={employeeData} />
+          <ContractsTab  />
         </TabsContent>
       </Tabs>
 

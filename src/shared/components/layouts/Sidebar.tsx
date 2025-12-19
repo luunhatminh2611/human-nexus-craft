@@ -1,22 +1,49 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import clsx from 'clsx';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import logo from '@/assets/images/download.png';
 import type { SidebarProps } from './types';
 import { Button } from '@/shared/components/ui/button/Button2';
 
 export const Sidebar = memo(({ sidebarOpen, navigationItems, onNavigate }: SidebarProps) => {
   const location = useLocation();
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const isActive = (path: string) => {
-    // Exact match for root paths
     if (path === '/') {
       return location.pathname === '/';
     }
-
-    // For other paths, check if current path starts with the item path
-    // This handles nested routes like /admin/profile/123
     return location.pathname.startsWith(path);
+  };
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems(prev =>
+      prev.includes(label)
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  const handleMainItemClick = (item: any) => {
+    // Click vào text/icon sẽ navigate
+    if (item.path) {
+      onNavigate(item.path);
+    }
+  };
+
+  const handleChevronClick = (item: any, e: React.MouseEvent) => {
+    // Click vào chevron sẽ toggle submenu
+    e.stopPropagation();
+    if (!sidebarOpen) return;
+    toggleExpand(item.label);
+  };
+
+  const handleSubmenuClick = (submenuItem: any) => {
+    // Submenu chỉ điều hướng đến trang
+    if (submenuItem.path) {
+      onNavigate(submenuItem.path);
+    }
   };
 
   return (
@@ -44,24 +71,69 @@ export const Sidebar = memo(({ sidebarOpen, navigationItems, onNavigate }: Sideb
       <nav className={clsx("flex-1 space-y-1", sidebarOpen ? "p-4" : "p-3")}>
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const active = isActive(item.path);
+          const active = item.path ? isActive(item.path) : false;
+          const hasSubmenu = item.submenu && item.submenu.length > 0;
+          const isExpanded = expandedItems.includes(item.label);
 
           return (
-            <Button
-              key={item.path}
-              variant="ghost"
-              className={clsx(
-                'w-full gap-3 text-left transition-colors',
-                sidebarOpen ? 'justify-start px-3 ' : 'justify-center px-2 py-2',
-                active && 'bg-green-500 text-white',
-                'hover:bg-green-500 hover:text-white'
+            <div key={item.label || item.path}>
+              {/* Main navigation button */}
+              <Button
+                variant="ghost"
+                className={clsx(
+                  'w-full gap-3 text-left transition-colors',
+                  sidebarOpen ? 'justify-between px-3' : 'justify-center px-2 py-2',
+                  active && 'bg-green-500 text-white',
+                  'hover:bg-green-500 hover:text-white'
+                )}
+                size={sidebarOpen ? "sm" : null}
+                onClick={() => handleMainItemClick(item)}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </div>
+                {sidebarOpen && hasSubmenu && (
+                  <button
+                    className="shrink-0 p-1 hover:bg-white/20 rounded transition-colors"
+                    onClick={(e) => handleChevronClick(item, e)}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              </Button>
+
+              {/* Submenu items */}
+              {sidebarOpen && hasSubmenu && isExpanded && (
+                <div className="ml-4 mt-1 space-y-1">
+                  {item.submenu.map((subItem: any) => {
+                    const SubIcon = subItem.icon;
+                    const subActive = subItem.path ? isActive(subItem.path) : false;
+                    
+                    return (
+                      <Button
+                        key={subItem.label}
+                        variant="ghost"
+                        className={clsx(
+                          'w-full gap-3 text-left transition-colors justify-start px-3',
+                          subActive && 'bg-green-400 text-white',
+                          'hover:bg-green-400 hover:text-white text-sm'
+                        )}
+                        size="sm"
+                        onClick={() => handleSubmenuClick(subItem)}
+                      >
+                        <SubIcon className="h-4 w-4 shrink-0" />
+                        <span>{subItem.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
               )}
-              size={sidebarOpen ? "sm" : null}
-              onClick={() => onNavigate(item.path)}
-            >
-              <Icon className="h-5 w-5" />
-              {sidebarOpen && <span>{item.label}</span>}
-            </Button>
+            </div>
           );
         })}
       </nav>

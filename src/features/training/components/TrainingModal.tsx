@@ -40,16 +40,18 @@ export default function TrainingModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [departmentName, setDepartmentName] = useState('');
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     location: '',
-    courseType: '', // 'YEARLY', 'QUARTERLY', 'MONTHLY'
-    year: 0, // Năm áp dụng
-    quarter: 0, // Quý áp dụng (nếu courseType = QUARTERLY)
-    month: 0, // Tháng áp dụng (nếu courseType = MONTHLY)
+    courseType: '',
+    year: 0,
+    quarter: 0,
+    month: 0,
     departmentId: currentDepartmentId || null,
+    startDate: '',
+    endDate: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,14 +88,14 @@ export default function TrainingModal({
     try {
       setIsFetching(true);
       const response = await trainingApi.getById(trainingId);
-      
+
       console.log("Response from API:", response); // Debug log
-      
+
       // API trả về dạng {success: true, data: {...}}
       const data = response.data || response;
-      
+
       console.log("Actual data:", data); // Debug log
-      
+
       setFormData({
         title: data.title || '',
         description: data.description || '',
@@ -103,8 +105,10 @@ export default function TrainingModal({
         quarter: Number(data.quarter) || 0,
         month: Number(data.month) || 0,
         departmentId: data.departmentId || currentDepartmentId || null,
+        startDate: data.startDate || '',
+        endDate: data.endDate || '',
       });
-      
+
       console.log("Form data set successfully"); // Debug log
     } catch (err) {
       console.error("Lỗi khi lấy thông tin khóa đào tạo:", err);
@@ -124,6 +128,8 @@ export default function TrainingModal({
       quarter: 0,
       month: 0,
       departmentId: currentDepartmentId || null,
+      startDate: '',
+      endDate: '',
     });
     setErrors({});
   };
@@ -142,6 +148,22 @@ export default function TrainingModal({
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.startDate) {
+      newErrors.startDate = 'Vui lòng chọn ngày bắt đầu';
+    }
+
+    if (!formData.endDate) {
+      newErrors.endDate = 'Vui lòng chọn ngày kết thúc';
+    }
+
+    if (
+      formData.startDate &&
+      formData.endDate &&
+      new Date(formData.endDate) < new Date(formData.startDate)
+    ) {
+      newErrors.endDate = 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu';
+    }
 
     if (!formData.title?.trim()) {
       newErrors.title = 'Vui lòng nhập tên khóa đào tạo';
@@ -191,15 +213,17 @@ export default function TrainingModal({
       setIsLoading(true);
 
       // Xây dựng submitData
-      const submitData: any = {
+      const submitData = {
         title: formData.title,
         description: formData.description,
-        location: formData.location,
         courseType: formData.courseType,
-        departmentId: formData.departmentId,
         year: formData.year,
         quarter: formData.courseType === 'QUARTERLY' ? formData.quarter : 0,
         month: formData.courseType === 'MONTHLY' ? formData.month : 0,
+        departmentId: formData.departmentId,
+        location: formData.location,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
       };
 
       if (mode === 'create') {
@@ -238,7 +262,7 @@ export default function TrainingModal({
             {mode === 'create' ? 'Tạo khóa đào tạo mới' : 'Cập nhật khóa đào tạo'}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create' 
+            {mode === 'create'
               ? 'Điền đầy đủ thông tin để tạo khóa đào tạo mới'
               : 'Cập nhật thông tin khóa đào tạo'
             }
@@ -314,6 +338,40 @@ export default function TrainingModal({
                     onChange={(e) => handleChange('location', e.target.value)}
                     placeholder="Nhập địa điểm tổ chức"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="startDate">
+                    Ngày bắt đầu <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => handleChange('startDate', e.target.value)}
+                    className={errors.startDate ? 'border-red-500' : ''}
+                  />
+                  {errors.startDate && (
+                    <p className="text-sm text-red-500">{errors.startDate}</p>
+                  )}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="endDate">
+                    Ngày kết thúc <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => handleChange('endDate', e.target.value)}
+                    className={errors.endDate ? 'border-red-500' : ''}
+                  />
+                  {errors.endDate && (
+                    <p className="text-sm text-red-500">{errors.endDate}</p>
+                  )}
                 </div>
               </div>
 
@@ -430,8 +488,8 @@ export default function TrainingModal({
                 disabled={isLoading || isFetching}
                 className="bg-green-500 text-white hover:bg-green-600"
               >
-                {isLoading 
-                  ? (mode === 'create' ? 'Đang tạo...' : 'Đang cập nhật...') 
+                {isLoading
+                  ? (mode === 'create' ? 'Đang tạo...' : 'Đang cập nhật...')
                   : (mode === 'create' ? 'Tạo mới' : 'Cập nhật')
                 }
               </Button>

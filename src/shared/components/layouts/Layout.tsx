@@ -29,23 +29,22 @@ export function Layout() {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
-      <Sidebar
+      {/* <Sidebar
         sidebarOpen={sidebarOpen}
         navigationItems={navigationItems}
         onNavigate={handleNavigate}
-      />
+      /> */}
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-x-hidden">
         {/* Header */}
         <Header
-          sidebarOpen={sidebarOpen}
           role={user?.roles}
-          onToggleSidebar={handleToggleSidebar}
+          navigationItems={navigationItems}
           onNavigate={handleNavigate}
           onLogout={handleLogout}
         />
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-10">
           <Outlet />
         </main>
       </div>

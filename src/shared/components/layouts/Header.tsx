@@ -2,11 +2,12 @@ import { memo, useEffect, useState } from 'react';
 import {
   LogOut,
   User,
-  Menu,
-  PanelLeftClose,
+  ChevronDown,
   Phone,
   Mail,
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import clsx from 'clsx';
 import type { HeaderProps } from './types';
 import { Dropdown } from '../ui/dropdown/Dropdown';
 import { DropdownItem } from '../ui/dropdown/DropdownItem';
@@ -15,13 +16,24 @@ import authService from '@/features/auth/api/authApi';
 import logoHeader from '@/assets/icons/log_ct_001.png';
 import { Button } from '../ui/button/Button2';
 
-export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, onLogout }: HeaderProps) => {
+interface HeaderWithNavProps extends HeaderProps {
+  navigationItems: any[];
+}
 
+export const Header = memo(({
+  role,
+  navigationItems = [],
+  onNavigate,
+  onLogout
+}: HeaderWithNavProps) => {
+  const location = useLocation();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [usersDetail, setUsersDetail] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const { user, logout } = useAuthStore();
+
   const handleLogout = async () => {
     const result = await logout();
     window.location.href = "/";
@@ -31,15 +43,9 @@ export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, on
     try {
       setLoading(true);
       const data = await authService.getUserDetail();
-
       setUsersDetail(data);
-
     } catch (error) {
-      ({
-        title: "Lỗi tải người dùng",
-        description: "Không thể tải người dùng.",
-        variant: "destructive",
-      });
+      console.error("Lỗi tải người dùng");
     } finally {
       setLoading(false);
     }
@@ -49,55 +55,132 @@ export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, on
     fetchUserDetail();
   }, []);
 
-  return (
-    <header className="h-auto border-b bg-[#1a8649] backdrop-blur flex items-center justify-between px-6">
-      <Button
-        variant="ghost"
-        onClick={onToggleSidebar}
-        className='text-white'
-      >
-        {sidebarOpen ? <PanelLeftClose /> : <Menu />}
-      </Button>
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname.startsWith(path);
+  };
 
-      <div className="flex items-center gap-3 text-primary-foreground py-4">
-        <img src={logoHeader} alt="Logo" className="w-14 h-14 sm:w-20 sm:h-20" />
-        <span className="flex flex-col gap-1 text-white">
-          <div className="text-base sm:text-2xl font-bold text-center">
-            PHẦN MỀM QUẢN LÝ NHÂN SỰ
-          </div>
-          <div className="text-base sm:text-xs font-bold text-center">
-            CÔNG TY THAN UÔNG BÍ - TKV
-          </div>
-          <div className="flex flex-col sm:flex-row items-center sm:items-end sm:justify-center gap-2 sm:gap-4 text-white text-sm sm:text-xs sm:text-center font-medium">
-            <div className="flex items-center gap-2">
-              <Phone className="w-4 h-4 text-white" />
-              <span>Hotline: 02033.854491</span>
+  const handleMainItemClick = (item: any) => {
+    if (item.submenu && item.submenu.length > 0) {
+      setOpenDropdown(openDropdown === item.label ? null : item.label);
+    } else if (item.path) {
+      onNavigate(item.path);
+      setOpenDropdown(null);
+    }
+  };
+
+  const handleSubmenuClick = (submenuItem: any) => {
+    if (submenuItem.path) {
+      onNavigate(submenuItem.path);
+    }
+    setOpenDropdown(null);
+  };
+
+  return (
+    <header className="bg-[#1a8649] border-b">
+      {/* Top bar with logo and contact info */}
+      <div className="flex items-center justify-center px-6 py-3 border-b border-green-600">
+        {/* Logo and company name */}
+        <div className="flex items-center gap-3 text-white">
+          <img src={logoHeader} alt="Logo" className="w-14 h-14" />
+          <div className="flex flex-col justify-center items-center gap-1">
+            <span className="text-xl font-bold">PHẦN MỀM QUẢN LÝ NHÂN SỰ</span>
+            <span className="text-sm font-bold">CÔNG TY THAN UÔNG BÍ - TKV</span>
+            <div className="flex items-center gap-6 text-white text-base font-medium">
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                <span>Hotline: 02033.854491</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>Email: ctythanub@gmail.com</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-white" />
-              <span>Email: ctythanub@gmail.com</span>
-            </div>
           </div>
-        </span>
+
+        </div>
+        {/* User account */}
+
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="text-lg font-bold text-white">
-          Xin chào, <span className="font-medium text-white">{usersDetail?.fullName}</span>
-        </span>
+      {/* Navigation bar */}
+      <nav className="flex items-center px-6 py-2 gap-1">
+        {navigationItems.map((item) => {
+          // const Icon = item.icon;
+          const active = item.path ? isActive(item.path) : false;
+          const hasSubmenu = item.submenu && item.submenu.length > 0;
+          const isDropdownOpen = openDropdown === item.label;
 
-        <div className="relative">
+          return (
+            <div key={item.label} className="relative">
+              <button
+                onClick={() => handleMainItemClick(item)}
+                className={clsx(
+                  'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm font-medium',
+                  active
+                    ? 'bg-white text-green-600'
+                    : 'text-white hover:bg-green-600'
+                )}
+              >
+                {/* <Icon className="h-4 w-4" /> */}
+                <span>{item.label}</span>
+                {hasSubmenu && (
+                  <ChevronDown
+                    className={clsx(
+                      'h-4 w-4 transition-transform',
+                      isDropdownOpen && 'rotate-180'
+                    )}
+                  />
+                )}
+              </button>
+
+              {/* Submenu dropdown */}
+              {hasSubmenu && isDropdownOpen && (
+                <div className="absolute left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
+                  {item.submenu.map((subItem: any) => {
+                    const SubIcon = subItem.icon;
+                    const subActive = subItem.path ? isActive(subItem.path) : false;
+
+                    return (
+                      <button
+                        key={subItem.label}
+                        onClick={() => handleSubmenuClick(subItem)}
+                        className={clsx(
+                          'w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors text-left',
+                          subActive
+                            ? 'bg-green-100 text-green-600 font-medium'
+                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        )}
+                      >
+                        <SubIcon className="h-4 w-4" />
+                        <span>{subItem.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <div className="ml-auto flex items-center gap-3">
           <Button
             variant="ghost"
             onClick={() => setIsAccountOpen((v) => !v)}
-            className="dropdown-toggle text-white"
+            className="text-white"
           >
-            <User className="h-7 w-7" />
+            <User className="h-6 w-6" />
           </Button>
 
-          <Dropdown isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} className="w-48">
-            <div className="px-3 py-2 text-sm font-bold text-muted-foreground">Tài khoản</div>
+          <Dropdown
+            isOpen={isAccountOpen}
+            onClose={() => setIsAccountOpen(false)}
+            className="w-48"
+          >
+            <div className="px-3 py-2 text-sm font-bold text-muted-foreground">
+              Tài khoản
+            </div>
             <div className="border-t border-gray-200 dark:border-gray-800" />
+
             <DropdownItem
               onClick={() => {
                 setIsAccountOpen(false);
@@ -110,6 +193,7 @@ export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, on
               <User className="mr-2 h-4 w-4" />
               Hồ sơ cá nhân
             </DropdownItem>
+
             <DropdownItem
               onClick={handleLogout}
               className="text-destructive flex items-center gap-2"
@@ -119,8 +203,8 @@ export const Header = memo(({ sidebarOpen, role, onToggleSidebar, onNavigate, on
             </DropdownItem>
           </Dropdown>
         </div>
-      </div>
-    </header>
+      </nav>
+    </header >
   );
 });
 

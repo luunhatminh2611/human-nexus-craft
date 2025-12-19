@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -24,23 +24,71 @@ import {
 import { Button } from "@/shared/components/ui/button/Button2";
 import { Badge } from "@/shared/components/ui/badge";
 import { FileText, Download, Plus, Edit, Trash2 } from "lucide-react";
-import { leaveRequestApi } from "../../api/leaveRequestApi";
 import { toast } from "sonner";
 import { useAuthStore } from "@/features/employees/hooks/useAuth";
 import LeaveRequestModal from "../../components/modal/LeaveModal";
 
+/* ================= MOCK DATA ================= */
+
+const MOCK_LEAVE_REQUESTS = [
+  {
+    id: 1,
+    title: "Nghỉ phép năm",
+    startDate: "2025-01-10",
+    endDate: "2025-01-12",
+    reason: "Nghỉ du lịch cùng gia đình",
+    status: "PENDING",
+    createBy: "Nguyễn Văn A",
+    approverUserId: "2",
+    fileName: "don_nghi_phep.pdf",
+    fileType: "application/pdf",
+    attachmentBase64: "MockBinaryData",
+  },
+  {
+    id: 2,
+    title: "Nghỉ ốm",
+    startDate: "2025-01-05",
+    endDate: "2025-01-06",
+    reason: "Sốt cao",
+    status: "APPROVED",
+    createBy: "Nguyễn Văn A",
+    approverUserId: "3",
+    fileName: null,
+    fileType: null,
+    attachmentBase64: null,
+  },
+  {
+    id: 3,
+    title: "Nghỉ việc riêng",
+    startDate: "2025-01-20",
+    endDate: "2025-01-20",
+    reason: "Giải quyết việc cá nhân",
+    status: "REJECTED",
+    createBy: "Nguyễn Văn A",
+    approverUserId: "2",
+    fileName: null,
+    fileType: null,
+    attachmentBase64: null,
+  },
+];
+
 export default function LeaveRequest() {
-  const [leaveRequests, setLeaveRequests] = useState([]);
+  const { user } = useAuthStore();
+
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [editingLeave, setEditingLeave] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const [editingLeave, setEditingLeave] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [leaveToDelete, setLeaveToDelete] = useState(null);
+  const [leaveToDelete, setLeaveToDelete] = useState<any>(null);
+
   const [approverUserId, setApproverUserId] = useState("");
 
-  const { user } = useAuthStore();
   const [formData, setFormData] = useState({
     title: "",
     startDate: "",
@@ -48,159 +96,18 @@ export default function LeaveRequest() {
     reason: "",
   });
 
-  // Lấy danh sách đơn nghỉ phép
-  const fetchLeaveRequests = async () => {
-    try {
-      setLoading(true);
-      const data = await leaveRequestApi.getAll();
-      setLeaveRequests(data || []);
-    } catch (error) {
-      toast.error("Không thể tải danh sách đơn nghỉ phép");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEdit = (leave) => {
-    setEditingLeave(leave);
-    setFormData({
-      title: leave.title,
-      startDate: leave.startDate,
-      endDate: leave.endDate,
-      reason: leave.reason,
-    });
-    setApproverUserId(leave.approverUserId || "");
-    setSelectedFile(null);
-    setIsEditModalOpen(true);
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.title || !formData.startDate || !formData.endDate || !formData.reason) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
-      return;
-    }
-
-    if (!approverUserId) {
-      toast.error("Vui lòng chọn người duyệt");
-      return;
-    }
-
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      toast.error("Ngày bắt đầu phải trước ngày kết thúc");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const dataToUpdate = {
-        ...formData,
-        approverUserId,
-      };
-      await leaveRequestApi.update(editingLeave.id, dataToUpdate, selectedFile);
-      toast.success("Cập nhật đơn nghỉ phép thành công");
-      setIsEditModalOpen(false);
-      setEditingLeave(null);
-      resetForm();
-      fetchLeaveRequests();
-    } catch (error) {
-      toast.error("Không thể cập nhật đơn nghỉ phép");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteClick = (leave) => {
-    setLeaveToDelete(leave);
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!leaveToDelete) return;
-
-    try {
-      setLoading(true);
-      await leaveRequestApi.delete(leaveToDelete.id);
-      toast.success("Xóa đơn nghỉ phép thành công");
-      setDeleteConfirmOpen(false);
-      setLeaveToDelete(null);
-      fetchLeaveRequests();
-    } catch (error) {
-      toast.error("Không thể xóa đơn nghỉ phép");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  /* ================= LOAD MOCK ================= */
 
   useEffect(() => {
-    fetchLeaveRequests();
+    setLoading(true);
+    setTimeout(() => {
+      setLeaveRequests(MOCK_LEAVE_REQUESTS);
+      setLoading(false);
+    }, 500);
   }, []);
 
-  // Xử lý thay đổi form
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  /* ================= COMMON ================= */
 
-  // Xử lý chọn file
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  // Xóa file đã chọn
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-  };
-
-  // Xử lý submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.title || !formData.startDate || !formData.endDate || !formData.reason) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
-      return;
-    }
-
-    if (!approverUserId) {
-      toast.error("Vui lòng chọn người duyệt");
-      return;
-    }
-
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      toast.error("Ngày bắt đầu phải trước ngày kết thúc");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const dataToSubmit = {
-        ...formData,
-        approverUserId,
-      };
-      await leaveRequestApi.create(dataToSubmit, selectedFile);
-      toast.success("Tạo đơn nghỉ phép thành công");
-      setIsModalOpen(false);
-      resetForm();
-      fetchLeaveRequests();
-    } catch (error) {
-      toast.error(error);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Reset form
   const resetForm = () => {
     setFormData({
       title: "",
@@ -212,97 +119,153 @@ export default function LeaveRequest() {
     setApproverUserId("");
   };
 
-  // Render badge status
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      APPROVED: { variant: "default", label: "Đã duyệt" },
-      PENDING: { variant: "secondary", label: "Chờ duyệt" },
-      REJECTED: { variant: "destructive", label: "Từ chối" },
-    };
-
-    const statusInfo = statusMap[status] || { variant: "secondary", label: status };
-
-    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const downloadBinaryFile = (binaryString, fileName, fileType) => {
-    try {
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFile(e.target.files?.[0] || null);
+  };
 
-      const blob = new Blob([bytes], { type: fileType || 'application/octet-stream' });
+  const handleRemoveFile = () => setSelectedFile(null);
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download error:', error);
-      throw error;
+  /* ================= CREATE ================= */
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title || !formData.startDate || !formData.endDate || !formData.reason) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
     }
+
+    if (!approverUserId) {
+      toast.error("Vui lòng chọn người duyệt");
+      return;
+    }
+
+    if (new Date(formData.startDate) > new Date(formData.endDate)) {
+      toast.error("Ngày bắt đầu phải trước ngày kết thúc");
+      return;
+    }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      setLeaveRequests((prev) => [
+        {
+          id: Date.now(),
+          ...formData,
+          status: "PENDING",
+          createBy: user?.fullName || "Nhân viên",
+          approverUserId,
+          fileName: selectedFile?.name || null,
+          fileType: selectedFile?.type || null,
+          attachmentBase64: selectedFile ? "MockBinaryData" : null,
+        },
+        ...prev,
+      ]);
+
+      toast.success("Tạo đơn nghỉ phép thành công");
+      setIsModalOpen(false);
+      resetForm();
+      setLoading(false);
+    }, 500);
   };
 
-  const handleDownload = (leave) => {
+  /* ================= EDIT ================= */
+
+  const handleEdit = (leave: any) => {
+    setEditingLeave(leave);
+    setFormData({
+      title: leave.title,
+      startDate: leave.startDate,
+      endDate: leave.endDate,
+      reason: leave.reason,
+    });
+    setApproverUserId(leave.approverUserId);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setLoading(true);
+
+    setTimeout(() => {
+      setLeaveRequests((prev) =>
+        prev.map((item) =>
+          item.id === editingLeave.id
+            ? {
+                ...item,
+                ...formData,
+                approverUserId,
+                fileName: selectedFile?.name || item.fileName,
+              }
+            : item
+        )
+      );
+
+      toast.success("Cập nhật đơn nghỉ phép thành công");
+      setIsEditModalOpen(false);
+      setEditingLeave(null);
+      resetForm();
+      setLoading(false);
+    }, 500);
+  };
+
+  /* ================= DELETE ================= */
+
+  const handleDeleteClick = (leave: any) => {
+    setLeaveToDelete(leave);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setLeaveRequests((prev) => prev.filter((l) => l.id !== leaveToDelete.id));
+      toast.success("Xóa đơn nghỉ phép thành công");
+      setDeleteConfirmOpen(false);
+      setLeaveToDelete(null);
+      setLoading(false);
+    }, 400);
+  };
+
+  /* ================= DOWNLOAD MOCK ================= */
+
+  const handleDownload = (leave: any) => {
     if (!leave.fileName) {
       toast.error("Không có file đính kèm");
       return;
     }
-
-    if (leave.attachmentBase64) {
-      try {
-        downloadBinaryFile(leave.attachmentBase64, leave.fileName, leave.fileType);
-        toast.success("Đang tải xuống file...");
-      } catch (error) {
-        toast.error("Không thể tải file");
-        console.error(error);
-      }
-    } else {
-      handleDownloadFromAPI(leave.id);
-    }
+    toast.success(`Mock tải file: ${leave.fileName}`);
   };
 
-  const handleDownloadFromAPI = async (leaveId) => {
-    try {
-      const response = await leaveRequestApi.getByUser(user?.userId);
-      const leaveDetail = response.find(item => item.id === leaveId);
+  /* ================= UI ================= */
 
-      if (!leaveDetail) {
-        toast.error("Không tìm thấy đơn nghỉ phép");
-        return;
-      }
-
-      const binaryData = leaveDetail.attachmentBase64;
-
-      if (!binaryData) {
-        toast.error("File không tồn tại");
-        return;
-      }
-
-      downloadBinaryFile(binaryData, leaveDetail.fileName, leaveDetail.fileType);
-      toast.success("Đang tải xuống file...");
-    } catch (error) {
-      toast.error("Không thể tải file");
-      console.error(error);
-    }
+  const getStatusBadge = (status: string) => {
+    const map: any = {
+      APPROVED: { variant: "default", label: "Đã duyệt" },
+      PENDING: { variant: "secondary", label: "Chờ duyệt" },
+      REJECTED: { variant: "destructive", label: "Từ chối" },
+    };
+    const s = map[status];
+    return <Badge variant={s.variant}>{s.label}</Badge>;
   };
 
   return (
     <div className="mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Đơn xin nghỉ phép</h1>
+          <h1 className="text-3xl font-bold">Đơn xin nghỉ phép</h1>
           <p className="text-muted-foreground mt-2">
             Quản lý các đơn xin nghỉ phép của bạn
           </p>
         </div>
 
-        <Button onClick={() => setIsModalOpen(true)} className="bg-green-500 text-white hover:bg-green-600">
+        <Button onClick={() => setIsModalOpen(true)} className="bg-green-500 text-white">
           <Plus className="mr-2 h-4 w-4" /> Tạo đơn mới
         </Button>
       </div>
@@ -333,88 +296,56 @@ export default function LeaveRequest() {
         </CardHeader>
 
         <CardContent>
-          {loading ? (
-            <p className="text-center text-muted-foreground py-8">Đang tải...</p>
-          ) : leaveRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tiêu đề</TableHead>
-                  <TableHead>Người nộp</TableHead>
-                  <TableHead>Thời gian nghỉ</TableHead>
-                  <TableHead>Lý do</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-center">Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tiêu đề</TableHead>
+                <TableHead>Người nộp</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Lý do</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead className="text-center">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
 
-              <TableBody>
-                {leaveRequests.map((leave) => (
-                  <TableRow key={leave.id}>
-                    <TableCell className="font-medium">
-                      {leave.title || "Đơn nghỉ phép"}
-                    </TableCell>
-                    <TableCell>{leave.createBy || "N/A"}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{new Date(leave.startDate).toLocaleDateString("vi-VN")}</div>
-                        <div className="text-muted-foreground">
-                          đến {new Date(leave.endDate).toLocaleDateString("vi-VN")}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[250px] truncate">
-                      {leave.reason || "Không ghi rõ"}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(leave.status)}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {leave.fileName ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(leave)}
-                            title="Tải xuống file"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            Không có file
-                          </span>
-                        )}
-                        {['PENDING', 'REJECTED'].includes(leave.status) && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEdit(leave)}
-                              title="Chỉnh sửa"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteClick(leave)}
-                              title="Xóa"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              Bạn chưa có đơn nghỉ phép nào.
-            </p>
-          )}
+            <TableBody>
+              {leaveRequests.map((leave) => (
+                <TableRow key={leave.id}>
+                  <TableCell>{leave.title}</TableCell>
+                  <TableCell>{leave.createBy}</TableCell>
+                  <TableCell>
+                    {leave.startDate} → {leave.endDate}
+                  </TableCell>
+                  <TableCell className="truncate max-w-[250px]">
+                    {leave.reason}
+                  </TableCell>
+                  <TableCell>{getStatusBadge(leave.status)}</TableCell>
+                  <TableCell className="text-center space-x-2">
+                    {leave.fileName && (
+                      <Button size="sm" variant="ghost" onClick={() => handleDownload(leave)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {["PENDING", "REJECTED"].includes(leave.status) && (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(leave)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600"
+                          onClick={() => handleDeleteClick(leave)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -429,7 +360,7 @@ export default function LeaveRequest() {
         handleRemoveFile={handleRemoveFile}
         handleSubmit={handleEditSubmit}
         resetForm={resetForm}
-        isEdit={true}
+        isEdit
         currentFileName={editingLeave?.fileName}
         approverUserId={approverUserId}
         setApproverUserId={setApproverUserId}
@@ -440,27 +371,15 @@ export default function LeaveRequest() {
           <DialogHeader>
             <DialogTitle>Xác nhận xóa</DialogTitle>
             <DialogDescription>
-              Bạn có chắc chắn muốn xóa đơn nghỉ phép "{leaveToDelete?.title}"?
-              Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa đơn "{leaveToDelete?.title}"?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeleteConfirmOpen(false);
-                setLeaveToDelete(null);
-              }}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
               Hủy
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-              disabled={loading}
-            >
-              {loading ? "Đang xóa..." : "Xóa"}
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Xóa
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -14,6 +14,8 @@ import { useToast } from '@/shared/hooks/use-toast';
 import { useDrag, useDrop } from 'react-dnd';
 import { Plus, Minus, Trash2, List, Grip, DollarSign } from 'lucide-react';
 import mockData from '@/mock/data';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 interface SalaryItem {
   id: string;
@@ -320,126 +322,128 @@ export function SalaryTabWithDragDrop({ employee }: { employee: Employee | null 
   const salaryInfo = calculateTotalSalary();
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Salary Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-primary" />
-            Tổng quan
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2 pb-4 border-b">
-            <h3 className="font-semibold text-lg">
-              {currentEmployee.firstName} {currentEmployee.lastName}
-            </h3>
-            <Badge variant="outline">{currentEmployee.grade}</Badge>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Lương cơ bản</span>
-                <span className="font-medium">{formatCurrency(salaryInfo.baseSalary)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tổng thu nhập</span>
-                <span className="font-semibold text-success">
-                  {formatCurrency(salaryInfo.totalEarnings)}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tổng khấu trừ</span>
-                <span className="font-semibold text-destructive">
-                  {formatCurrency(salaryInfo.totalDeductions)}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <div className="flex justify-between text-lg font-bold">
-                <span>Thực lĩnh</span>
-                <span className="text-primary">{formatCurrency(salaryInfo.netSalary)}</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Available Salary Items */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <List className="h-5 w-5 text-primary" />
-            Danh sách khoản mục
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto">
-            {availableItems.map((item) => (
-              <DraggableSalaryItem key={item.id} item={item} />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Salary Structure */}
-      <div className="space-y-6">
-        {/* Default Structure */}
+    <DndProvider backend={HTML5Backend}>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Salary Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>Cơ cấu lương mặc định ({currentEmployee.grade})</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary" />
+              Tổng quan
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2 pb-4 border-b">
+              <h3 className="font-semibold text-lg">
+                {currentEmployee.firstName} {currentEmployee.lastName}
+              </h3>
+              <Badge variant="outline">{currentEmployee.grade}</Badge>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Lương cơ bản</span>
+                  <span className="font-medium">{formatCurrency(salaryInfo.baseSalary)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tổng thu nhập</span>
+                  <span className="font-semibold text-success">
+                    {formatCurrency(salaryInfo.totalEarnings)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tổng khấu trừ</span>
+                  <span className="font-semibold text-destructive">
+                    {formatCurrency(salaryInfo.totalDeductions)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Thực lĩnh</span>
+                  <span className="text-primary">{formatCurrency(salaryInfo.netSalary)}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Available Salary Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <List className="h-5 w-5 text-primary" />
+              Danh sách khoản mục
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Khoản mục</TableHead>
-                  <TableHead className="text-right">Giá trị</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {defaultItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {item.type === 'EARNING' ? (
-                          <Plus className="h-4 w-4 text-success" />
-                        ) : (
-                          <Minus className="h-4 w-4 text-destructive" />
-                        )}
-                        <span className="text-sm">{item.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-sm">
-                      {item.method === 'FIXED'
-                        ? formatCurrency(item.value)
-                        : item.method === 'PERCENT_BASE'
-                          ? `${item.value}%`
-                          : 'Công thức'}
-                    </TableCell>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+              {availableItems.map((item) => (
+                <DraggableSalaryItem key={item.id} item={item} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Salary Structure */}
+        <div className="space-y-6">
+          {/* Default Structure */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Cơ cấu lương mặc định ({currentEmployee.grade})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Khoản mục</TableHead>
+                    <TableHead className="text-right">Giá trị</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {defaultItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {item.type === 'EARNING' ? (
+                            <Plus className="h-4 w-4 text-success" />
+                          ) : (
+                            <Minus className="h-4 w-4 text-destructive" />
+                          )}
+                          <span className="text-sm">{item.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {item.method === 'FIXED'
+                          ? formatCurrency(item.value)
+                          : item.method === 'PERCENT_BASE'
+                            ? `${item.value}%`
+                            : 'Công thức'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-        {/* Custom Items Drop Zone */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Khoản mục bổ sung</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CustomSalaryDropZone
-              items={customItems}
-              onDrop={handleDropItem}
-              onRemove={handleRemoveItem}
-            />
-          </CardContent>
-        </Card>
+          {/* Custom Items Drop Zone */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Khoản mục bổ sung</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CustomSalaryDropZone
+                items={customItems}
+                onDrop={handleDropItem}
+                onRemove={handleRemoveItem}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </DndProvider>
   );
 }

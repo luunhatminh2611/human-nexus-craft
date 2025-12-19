@@ -179,4 +179,19 @@ export const trainingApi = {
             throw error;
         }
     },
+
+    getEmployeesWithTrainingStatus: async (courseId, departmentId) => {
+        try {
+            const response = await api.get(
+                `/manager/training-courses/${courseId}/departments/${departmentId}/employees`
+            );
+            return response.data;
+        } catch (error) {
+            console.error(
+                "Lỗi khi lấy danh sách nhân viên theo trạng thái khóa đào tạo:",
+                error
+            );
+            throw error;
+        }
+    },
 };

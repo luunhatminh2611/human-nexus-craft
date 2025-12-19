@@ -18,6 +18,13 @@ export const ROUTES = {
   ADMIN_LEAVE_REQUESTS: '/admin/leave-requests',
   ADMIN_REPORTS: '/admin/reports',
   ADMIN_TRANSFER: '/admin/transfer',
+  ADMIN_HEALTH_MANAGEMENT: '/admin/employees/health',
+  ADMIN_TRAINING_MANAGEMENT: '/admin/employees/training',
+  ADMIN_KPI_MANAGEMENT: '/admin/employees/kpi',
+  ADMIN_SALARY_MANAGEMENT: '/admin/employees/salary',
+  ADMIN_WORK_HISTORY: '/admin/employees/work-history',
+  ADMIN_CONTRACT_MANAGEMENT: '/admin/employees/contract',
+  ADMIN_LEAVE_MANAGEMENT: '/admin/employees/leave-requests',
 
   MANAGER_DASHBOARD: '/manager/dashboard',
   MANAGER_EMPLOYEES: '/manager/employees',

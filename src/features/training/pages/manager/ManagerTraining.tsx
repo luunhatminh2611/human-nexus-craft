@@ -67,11 +67,11 @@ export default function TrainingManagerPage() {
       }
 
       if (user?.employeeId) {
-        const data = await employeeApi.getById(user?.employeeId);
+        const response = await employeeApi.getById(user?.employeeId);
 
-        const deptId = data?.departmentId;
+        const deptId = response?.data?.departmentId;
         setUserDepartmentId(deptId);
-        setCurrentEmployeeId(data?.id);
+        setCurrentEmployeeId(response?.data?.id);
       } else {
         console.warn("Employee không có department");
       }

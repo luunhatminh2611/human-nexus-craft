@@ -1,9 +1,11 @@
+import { LucideIcon } from "lucide-react";
 import { ElementType } from "react";
 
 export interface NavigationItem {
   label: string;
-  icon: ElementType;
+  // icon: ElementType;
   path: string;
+  submenu?: SubMenuItem[];
 }
 
 export interface SidebarProps {
@@ -13,9 +15,13 @@ export interface SidebarProps {
 }
 
 export interface HeaderProps {
-  sidebarOpen: boolean;
   role: string;
-  onToggleSidebar: () => void;
   onNavigate: (path: string) => void;
   onLogout: () => void;
+}
+
+export interface SubMenuItem {
+  label: string;
+  icon: LucideIcon;
+  path?: string;
 }

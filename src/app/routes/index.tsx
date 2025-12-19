@@ -16,6 +16,7 @@ import TrainingManagerPage from '@/features/training/pages/manager/ManagerTraini
 import EmployeeTrainingDetailPage from '@/features/training/pages/EmployeeTrainingDetail';
 import PPEPlanDetailPage from '@/features/safety/pages/admin/SafetyDetail';
 import ManagerPPEPlanDetailPage from '@/features/safety/pages/manager/ManagerPPEPlanDetailPage';
+import AdminLeaveRequestMockPage from '@/features/leave-request/pages/admin/LeaveRequestMock';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -101,7 +102,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_CATALOG.slice(1), element: <AdminCatalog /> },
       { path: ROUTES.ADMIN_MEDICAL_RECORDS.slice(1), element: <AdminMedicalRecords /> },
       { path: ROUTES.ADMIN_WORK_SCHEDULE.slice(1), element: <WorkScheduleManagement /> },
-      { path: ROUTES.ADMIN_LEAVE_REQUESTS.slice(1), element: <AdminLeaveRequest /> },
+      { path: ROUTES.ADMIN_LEAVE_REQUESTS.slice(1), element: <AdminLeaveRequestMockPage /> },
       { path: ROUTES.ADMIN_REPORTS.slice(1), element: <Reports /> },
       { path: ROUTES.ADMIN_TRANSFER.slice(1), element: <TransferAdminPage /> },
       { path: ROUTES.ADMIN_SAFETY_DETAIL.slice(1), element: <PPEPlanDetailPage /> },
