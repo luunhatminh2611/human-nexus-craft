@@ -84,8 +84,8 @@ export const Header = memo(({
         <div className="flex items-center gap-3 text-white">
           <img src={logoHeader} alt="Logo" className="w-14 h-14" />
           <div className="flex flex-col justify-center items-center gap-1">
-            <span className="text-xl font-bold">PHẦN MỀM QUẢN LÝ NHÂN SỰ</span>
-            <span className="text-sm font-bold">CÔNG TY THAN UÔNG BÍ - TKV</span>
+            <span className="text-2xl font-bold">PHẦN MỀM QUẢN LÝ NHÂN SỰ</span>
+            <span className="text-base font-bold">CÔNG TY THAN UÔNG BÍ - TKV</span>
             <div className="flex items-center gap-6 text-white text-base font-medium">
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4" />

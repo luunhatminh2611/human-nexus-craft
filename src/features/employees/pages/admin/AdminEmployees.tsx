@@ -675,82 +675,195 @@ export default function Employees() {
                         </TabsList>
                       </Tabs>
 
-                      <div className="mt-4">
-                        {/* Thông tin */}
+                      <div className="mt-6">
+                        {/* Sub Navigation Pills - Thông tin */}
                         {mainTab === 'info' && (
-                          <Tabs value={subTab} onValueChange={setSubTab}>
-                            <TabsList className="flex flex-wrap gap-2">
-                              <TabsTrigger value="info">Thông tin nhân sự</TabsTrigger>
-                              <TabsTrigger value="family">Quan hệ gia đình</TabsTrigger>
-                              <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
-                              <TabsTrigger value="other">Khác</TabsTrigger>
-                            </TabsList>
-                          </Tabs>
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
+                              <Button2
+                                variant={subTab === 'info' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('info')}
+                                className={subTab === 'info' ? '' : 'hover:bg-background'}
+                              >
+                                Thông tin nhân sự
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'family' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('family')}
+                                className={subTab === 'family' ? '' : 'hover:bg-background'}
+                              >
+                                Quan hệ gia đình
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'profile' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('profile')}
+                                className={subTab === 'profile' ? '' : 'hover:bg-background'}
+                              >
+                                Hồ sơ
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'other' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('other')}
+                                className={subTab === 'other' ? '' : 'hover:bg-background'}
+                              >
+                                Khác
+                              </Button2>
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                              {subTab === 'info' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
+                              {subTab === 'family' && <div>Nội dung Quan hệ gia đình</div>}
+                              {subTab === 'profile' && <div>Nội dung Hồ sơ</div>}
+                              {subTab === 'other' && <div>Nội dung Khác</div>}
+                            </div>
+                          </div>
                         )}
 
-                        {/* Nghiệp vụ */}
+                        {/* Sub Navigation Pills - Nghiệp vụ */}
                         {mainTab === 'business' && (
-                          <Tabs value={subTab} onValueChange={setSubTab}>
-                            <TabsList className="flex flex-wrap gap-2">
-                              <TabsTrigger value="decision">Quyết định</TabsTrigger>
-                              <TabsTrigger value="contracts">Hợp đồng</TabsTrigger>
-                              <TabsTrigger value="leaves">Nghỉ phép</TabsTrigger>
-                              <TabsTrigger value="abroad">Xuất cảnh</TabsTrigger>
-                            </TabsList>
-                          </Tabs>
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
+                              <Button2
+                                variant={subTab === 'decision' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('decision')}
+                                className={subTab === 'decision' ? '' : 'hover:bg-background'}
+                              >
+                                Quyết định
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'contracts' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('contracts')}
+                                className={subTab === 'contracts' ? '' : 'hover:bg-background'}
+                              >
+                                Hợp đồng
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'leaves' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('leaves')}
+                                className={subTab === 'leaves' ? '' : 'hover:bg-background'}
+                              >
+                                Nghỉ phép
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'abroad' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('abroad')}
+                                className={subTab === 'abroad' ? '' : 'hover:bg-background'}
+                              >
+                                Xuất cảnh
+                              </Button2>
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                              {subTab === 'decision' && <div>Nội dung Quyết định</div>}
+                              {subTab === 'contracts' && <ContractsTab />}
+                              {subTab === 'leaves' && (
+                                <LeavesTab userData={employeeDetailData} />
+                              )}
+                              {subTab === 'abroad' && <div>Nội dung Xuất cảnh</div>}
+                            </div>
+                          </div>
                         )}
 
-                        {/* Chuyên môn */}
+                        {/* Sub Navigation Pills - Chuyên môn */}
                         {mainTab === 'skill' && (
-                          <Tabs value={subTab} onValueChange={setSubTab}>
-                            <TabsList className="flex gap-2">
-                              <TabsTrigger value="degree">Bằng cấp</TabsTrigger>
-                              <TabsTrigger value="training">Đào tạo</TabsTrigger>
-                              <TabsTrigger value="kpi">KPI</TabsTrigger>
-                            </TabsList>
-                          </Tabs>
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
+                              <Button2
+                                variant={subTab === 'degree' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('degree')}
+                                className={subTab === 'degree' ? '' : 'hover:bg-background'}
+                              >
+                                Bằng cấp
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'training' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('training')}
+                                className={subTab === 'training' ? '' : 'hover:bg-background'}
+                              >
+                                Đào tạo
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'kpi' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('kpi')}
+                                className={subTab === 'kpi' ? '' : 'hover:bg-background'}
+                              >
+                                KPI
+                              </Button2>
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                              {subTab === 'degree' && <div>Nội dung Bằng cấp</div>}
+                              {subTab === 'training' && (
+                                <TrainingTab userData={employeeDetailData} />
+                              )}
+                              {subTab === 'kpi' && (
+                                <KpiTab userData={employeeDetailData} />
+                              )}
+                            </div>
+                          </div>
                         )}
 
-                        {/* Chế độ */}
+                        {/* Sub Navigation Pills - Chế độ */}
                         {mainTab === 'benefit' && (
-                          <Tabs value={subTab} onValueChange={setSubTab}>
-                            <TabsList className="flex gap-2">
-                              <TabsTrigger value="salary">Lương</TabsTrigger>
-                              <TabsTrigger value="insurance">Bảo hiểm</TabsTrigger>
-                              <TabsTrigger value="medical">Y tế</TabsTrigger>
-                            </TabsList>
-                          </Tabs>
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
+                              <Button2
+                                variant={subTab === 'salary' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('salary')}
+                                className={subTab === 'salary' ? '' : 'hover:bg-background'}
+                              >
+                                Lương
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'insurance' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('insurance')}
+                                className={subTab === 'insurance' ? '' : 'hover:bg-background'}
+                              >
+                                Bảo hiểm
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'medical' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('medical')}
+                                className={subTab === 'medical' ? '' : 'hover:bg-background'}
+                              >
+                                Y tế
+                              </Button2>
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                              {subTab === 'salary' && (
+                                <SalaryTabWithDragDrop employee={employeeDetailData} />
+                              )}
+                              {subTab === 'insurance' && <div>Nội dung Bảo hiểm</div>}
+                              {subTab === 'medical' && (
+                                <MedicalTab userData={employeeDetailData} />
+                              )}
+                            </div>
+                          </div>
                         )}
-                        <div className="mt-6">
-                          {subTab === 'info' && (
-                            <InfoTab
-                              userData={employeeDetailData}
-                              employeeId={selectedEmployeeId}
-                            />
-                          )}
-
-                          {subTab === 'medical' && (
-                            <MedicalTab userData={employeeDetailData} />
-                          )}
-
-                          {subTab === 'training' && (
-                            <TrainingTab userData={employeeDetailData} />
-                          )}
-
-                          {subTab === 'kpi' && (
-                            <KpiTab userData={employeeDetailData} />
-                          )}
-
-                          {subTab === 'salary' && (
-                            <SalaryTabWithDragDrop employee={employeeDetailData} />
-                          )}
-
-                          {subTab === 'contracts' && <ContractsTab />}
-
-                          {subTab === 'leaves' && (
-                            <LeavesTab userData={employeeDetailData} />
-                          )}
-                        </div>
                       </div>
                     </div>
                   ) : (

@@ -17,6 +17,8 @@ import EmployeeTrainingDetailPage from '@/features/training/pages/EmployeeTraini
 import PPEPlanDetailPage from '@/features/safety/pages/admin/SafetyDetail';
 import ManagerPPEPlanDetailPage from '@/features/safety/pages/manager/ManagerPPEPlanDetailPage';
 import AdminLeaveRequestMockPage from '@/features/leave-request/pages/admin/LeaveRequestMock';
+import DegreeHRPage from '@/features/degree/pages/DegreeHRPage';
+import DegreeEmployeePage from '@/features/degree/pages/DegreeEmployeePage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -106,6 +108,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_REPORTS.slice(1), element: <Reports /> },
       { path: ROUTES.ADMIN_TRANSFER.slice(1), element: <TransferAdminPage /> },
       { path: ROUTES.ADMIN_SAFETY_DETAIL.slice(1), element: <PPEPlanDetailPage /> },
+      { path: ROUTES.ADMIN_DEGREE_MANAGEMENT.slice(1), element: <DegreeHRPage /> },
       // Manager Routes
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },
@@ -134,6 +137,7 @@ export const router = createBrowserRouter([
       // Shared Training Detail
       { path: ROUTES.TRAINING_DETAIL.slice(1), element: <TrainingDetail /> },
       { path: ROUTES.LEAVE_REQUESTS.slice(1), element: <LeaveRequest /> },
+      { path: ROUTES.DEGREE_MANAGEMENT.slice(1), element: <DegreeEmployeePage /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]

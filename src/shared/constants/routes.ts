@@ -25,6 +25,7 @@ export const ROUTES = {
   ADMIN_WORK_HISTORY: '/admin/employees/work-history',
   ADMIN_CONTRACT_MANAGEMENT: '/admin/employees/contract',
   ADMIN_LEAVE_MANAGEMENT: '/admin/employees/leave-requests',
+  ADMIN_DEGREE_MANAGEMENT: '/admin/employees/degree',
 
   MANAGER_DASHBOARD: '/manager/dashboard',
   MANAGER_EMPLOYEES: '/manager/employees',
@@ -51,6 +52,7 @@ export const ROUTES = {
   TRAINING_DETAIL: '/training/:id',
   LEAVE_REQUESTS: '/user/leave-requests',
   TRANSFER_DETAIL: '/transfer/detail/:id',
+  DEGREE_MANAGEMENT: '/degree/management',
   ROOT: '/',
   NOT_FOUND: '*',
 };

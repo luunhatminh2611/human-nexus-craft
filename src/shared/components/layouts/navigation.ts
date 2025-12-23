@@ -66,7 +66,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
       submenu: [
         { label: 'Sơ đồ tổ chức', icon: Network, path: '/admin/org-chart' },
         { label: 'Nhân viên', icon: Users, path: '/admin/employees' },
-        { label: 'Bằng cấp', icon: School, path: '/admin/degree' },
+        { label: 'Bằng cấp', icon: School, path: '/admin/employees/degree' },
         { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
         // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
         { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
