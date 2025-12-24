@@ -134,7 +134,7 @@ export default function DegreeEmployeePage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: 'Đã duyệt', className: 'bg-green-100 text-green-800' },
+      'APPROVED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
       'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
       'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-800' },
     };
@@ -222,7 +222,7 @@ export default function DegreeEmployeePage() {
           <div className="text-2xl font-bold mt-1 text-yellow-600">{stats.pending}</div>
         </Card>
         <Card className="p-4 border-green-200 bg-green-50">
-          <div className="text-sm text-muted-foreground">Đã duyệt</div>
+          <div className="text-sm text-muted-foreground">Hoàn thành</div>
           <div className="text-2xl font-bold mt-1 text-green-600">{stats.approved}</div>
         </Card>
         <Card className="p-4 border-red-200 bg-red-50">
@@ -263,7 +263,7 @@ export default function DegreeEmployeePage() {
             <SelectContent>
               <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
               <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+              <SelectItem value="APPROVED">Hoàn thành</SelectItem>
               <SelectItem value="REJECTED">Từ chối</SelectItem>
               <SelectItem value="EXPIRED">Hết hạn</SelectItem>
             </SelectContent>

@@ -40,6 +40,18 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
   if (role === 'EMPLOYEE') {
     return [
       { label: 'Hồ sơ', path: '/employee/profile' },
+      {
+        label: 'Nhân sự',
+        path: '/admin/employees',
+        submenu: [
+          { label: 'Bằng cấp', icon: School, path: '/degree/management' },
+          { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
+          { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
+          { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/admin/social-insurance' },
+          { label: 'Hồ sơ', icon: FolderClosed, path: '/admin/file' },
+          { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
+        ]
+      },
       { label: 'Đào tạo', path: '/employee/learning' },
       { label: 'BHLĐ được cấp', path: '/employee/safety' },
       { label: 'Lịch điều động', path: '/employee/transfer' },
@@ -49,6 +61,19 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
   } else if (role === 'MANAGER') {
     return [
       { label: 'Hồ sơ', path: '/employee/profile' },
+      {
+        label: 'Nhân sự',
+        path: '/admin/employees',
+        submenu: [
+          { label: 'Bằng cấp', icon: School, path: '/degree/management' },
+          { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
+          // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
+          { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
+          { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/admin/social-insurance' },
+          { label: 'Hồ sơ', icon: FolderClosed, path: '/admin/file' },
+          { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
+        ]
+      },
       { label: 'Đào tạo', path: '/manager/learning' },
       { label: 'Quản lý điều động', path: '/manager/transfer' },
       { label: 'Phân phát BHLĐ', path: '/admin/safety-dashboard' },
@@ -80,9 +105,9 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         // { label: 'Nghỉ phép', icon: FileText, path: '/admin/employees/leave-requests' }
       ]
     },
-    { 
-      label: 'Quyết định', 
-      path: '/admin/transfer' ,
+    {
+      label: 'Quyết định',
+      path: '/admin/transfer',
       submenu: [
         { label: 'Khen thưởng', icon: PartyPopper, path: '/admin/reward' },
         { label: 'Kỷ luật', icon: ShieldAlert, path: '/admin/discipline' },
@@ -103,8 +128,8 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Lịch công tác', icon: History, path: '/admin/work-schedule' },
       ]
     },
-    { 
-      label: 'Tuyển dụng & Đào tạo', 
+    {
+      label: 'Tuyển dụng & Đào tạo',
       path: '/admin/training',
       submenu: [
         { label: 'Tuyển dụng', icon: Send, path: '/admin/recruitment' },
@@ -116,8 +141,8 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
     { label: 'Lương & Phúc lợi', path: '/admin/salary' },
     { label: 'Bảo hộ lao động', path: '/admin/safety-dashboard' },
     { label: 'Báo cáo', path: '/admin/reports' },
-    { 
-      label: 'Hệ thống', 
+    {
+      label: 'Hệ thống',
       path: '/admin/catalog',
       submenu: [
         { label: 'Danh mục', icon: Briefcase, path: '/admin/catalog' },

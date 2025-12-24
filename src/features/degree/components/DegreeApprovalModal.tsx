@@ -114,7 +114,7 @@ export default function DegreeApprovalModal({
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: 'Đã duyệt', className: 'bg-green-100 text-green-800' },
+      'APPROVED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
       'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
       'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-800' },
     };

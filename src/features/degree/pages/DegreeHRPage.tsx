@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, AlertCircle, FileText } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, AlertCircle, FileText, Plus, Edit } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -21,6 +21,7 @@ import {
 } from '@/shared/components/tables/table';
 import { mockDegrees, type Degree, calculateStatistics } from '../../../mock/degree';
 import DegreeApprovalModal from '../components/DegreeApprovalModal';
+import DegreeFormModal from '../components/DegreeFormModal';
 
 export default function DegreeHRPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,37 +33,41 @@ export default function DegreeHRPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [refreshKey, setRefreshKey] = useState(0); // Key để force refresh
+
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
 
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
   const [selectedDegreeId, setSelectedDegreeId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDegrees();
-  }, [page, pageSize, searchTerm, typeFilter, statusFilter, departmentFilter]);
+  }, [page, pageSize, searchTerm, typeFilter, statusFilter, departmentFilter, refreshKey]);
 
   const fetchDegrees = async () => {
     setIsLoading(true);
-    
+
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     let filtered = [...mockDegrees];
-    
+
     // Lọc theo type
     if (typeFilter !== 'ALL') {
       filtered = filtered.filter(d => d.type === typeFilter);
     }
-    
+
     // Lọc theo status
     if (statusFilter !== 'ALL') {
       filtered = filtered.filter(d => d.status === statusFilter);
     }
-    
+
     // Lọc theo department
     if (departmentFilter !== 'ALL') {
       filtered = filtered.filter(d => d.department === departmentFilter);
     }
-    
+
     // Tìm kiếm
     if (searchTerm) {
       filtered = filtered.filter(d =>
@@ -71,15 +76,30 @@ export default function DegreeHRPage() {
         d.institution.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     setTotalItems(filtered.length);
-    
+
     // Pagination
     const start = page * pageSize;
     const end = start + pageSize;
     setDegrees(filtered.slice(start, end));
-    
+
     setIsLoading(false);
+  };
+
+  const handleOpenFormModal = (degree?: Degree) => {
+    setSelectedDegree(degree || null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedDegree(null);
+  };
+
+  const handleFormSuccess = () => {
+    setRefreshKey(prev => prev + 1); // Force refresh bằng cách thay đổi key
+    handleCloseFormModal();
   };
 
   const handleOpenApprovalModal = (id: string) => {
@@ -93,14 +113,14 @@ export default function DegreeHRPage() {
   };
 
   const handleApprovalSuccess = () => {
-    fetchDegrees();
+    setRefreshKey(prev => prev + 1); // Force refresh
     handleCloseApprovalModal();
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: 'Đã duyệt', className: 'bg-green-100 text-green-800' },
+      'APPROVED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
       'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
       'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-800' },
     };
@@ -133,11 +153,11 @@ export default function DegreeHRPage() {
 
   const getExpiryWarning = (degree: Degree) => {
     if (!degree.expiryDate) return null;
-    
+
     const now = new Date();
     const expiryDate = new Date(degree.expiryDate);
     const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysUntilExpiry <= 30 && daysUntilExpiry > 0) {
       return (
         <div className="flex items-center gap-1 text-orange-600 text-xs">
@@ -146,7 +166,7 @@ export default function DegreeHRPage() {
         </div>
       );
     }
-    
+
     return null;
   };
 
@@ -167,6 +187,10 @@ export default function DegreeHRPage() {
             Phê duyệt và quản lý bằng cấp của tất cả nhân viên
           </p>
         </div>
+        <Button onClick={() => handleOpenFormModal()}>
+          <Plus className="h-4 w-4 mr-2" />
+          Thêm bằng cấp
+        </Button>
       </div>
 
       {/* Statistics */}
@@ -180,7 +204,7 @@ export default function DegreeHRPage() {
           <div className="text-2xl font-bold mt-1 text-yellow-600">{stats.pending}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Đã duyệt</div>
+          <div className="text-sm text-muted-foreground">Hoàn thành</div>
           <div className="text-2xl font-bold mt-1 text-green-600">{stats.approved}</div>
         </Card>
         <Card className="p-4">
@@ -205,7 +229,7 @@ export default function DegreeHRPage() {
               className="pl-10"
             />
           </div>
-          
+
           <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Phòng ban" />
@@ -237,7 +261,7 @@ export default function DegreeHRPage() {
             <SelectContent>
               <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
               <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
+              <SelectItem value="APPROVED">Hoàn thành</SelectItem>
               <SelectItem value="REJECTED">Từ chối</SelectItem>
               <SelectItem value="EXPIRED">Hết hạn</SelectItem>
             </SelectContent>
@@ -258,7 +282,7 @@ export default function DegreeHRPage() {
                 <TableHead>Ngày nộp</TableHead>
                 <TableHead>Ngày hết hạn</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
+                <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -326,7 +350,15 @@ export default function DegreeHRPage() {
                       {getStatusBadge(degree.status)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenFormModal(degree)}
+                          title="Chỉnh sửa"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -419,6 +451,13 @@ export default function DegreeHRPage() {
         onClose={handleCloseApprovalModal}
         degreeId={selectedDegreeId}
         onSuccess={handleApprovalSuccess}
+      />
+
+      <DegreeFormModal
+        isOpen={isFormModalOpen}
+        onClose={handleCloseFormModal}
+        degree={selectedDegree}
+        onSuccess={handleFormSuccess}
       />
     </div>
   );
