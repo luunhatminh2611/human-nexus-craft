@@ -18,6 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import { employeeApi } from '../../api/employeeApi';
 import { unitApi } from '../../../departments/api/departmentApi';
 import {
@@ -30,6 +32,7 @@ import {
   politicalTheoryApi,
   languageLevelApi,
   nationalityApi,
+  laborContractTypeApi,
 } from '../../../categories/api/categoriesApi';
 import { toast } from '@/shared/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -56,18 +59,56 @@ export default function EmployeeModal({
     cccdNumber: '',
     cccdDate: '',
     cccdPlace: '',
+    // Địa chỉ
     contactAddress: '',
+    birthPlace: '',
+    nativePlace: '',
+    homeTown: '',
+    permanentAddress: '',
+    // Công việc
     positionId: '',
     departmentId: '',
+    laborContractTypeId: '',
+    currentJobDetail: '',
+    // Thông tin cá nhân
     ethnicity: '',
-    wardId: '',
-    provinceCityId: '',
-    specialtyId: '',
-    educationLevelId: '',
-    politicalTheoryId: '',
-    languageLevelId: '',
     religion: '',
     nationalityId: '',
+    policyFamilyId: '',
+    // Địa chỉ hành chính
+    wardId: '',
+    provinceCityId: '',
+    // Trình độ
+    specialtyId: '',
+    educationLevelId: '',
+    educationDetail: '',
+    politicalTheoryId: '',
+    languageLevelId: '',
+    culturalLevelId: '',
+    professionalLevelId: '',
+    itLevelId: '',
+    // Đào tạo
+    trainingInstitutionId: '',
+    trainingMajorId: '',
+    trainingTypeId: '',
+    // BHXH
+    socialInsuranceNumber: '',
+    socialInsuranceStartDate: '',
+    socialInsuranceJobId: '',
+    // Đảng, Đoàn, Quân đội
+    partyJoinDate: '',
+    partyOfficialDate: '',
+    youthUnionJoinDate: '',
+    militaryJoinDate: '',
+    militaryEndDate: '',
+    militaryRankId: '',
+    // Thông tin khác
+    title: '',
+    isWoundedSoldier: false,
+    cardNumber: '',
+    endDate: '',
+    documentReturnDate: '',
+    note: '',
     user: null as any,
   });
 
@@ -116,6 +157,11 @@ export default function EmployeeModal({
     queryFn: () => nationalityApi.getAll(),
   });
 
+  const { data: laborContractTypes, isLoading: loadingLaborContractTypes } = useQuery({
+    queryKey: ['laborContractTypes'],
+    queryFn: () => laborContractTypeApi.getAll(),
+  });
+
   // Fetch employee data for edit mode
   const { data: employee } = useQuery({
     queryKey: ['employee', employeeId],
@@ -135,23 +181,59 @@ export default function EmployeeModal({
         startDate: employeeData.startDate || '',
         gender: employeeData.gender || 'NAM',
         status: employeeData.status || 'Đang làm việc',
-        // Các trường mới
+        // Thông tin CCCD
         cccdNumber: employeeData.cccdNumber || '',
         cccdDate: employeeData.cccdDate || '',
-        cccdPlace: employeeData.cccdPalce || '', // Lưu ý: API trả về "cccdPalce" (có thể là typo)
+        cccdPlace: employeeData.cccdPalce || '',
+        // Địa chỉ
         contactAddress: employeeData.contactAddress || '',
-        // IDs từ response
+        birthPlace: employeeData.birthPlace || '',
+        nativePlace: employeeData.nativePlace || '',
+        homeTown: employeeData.homeTown || '',
+        permanentAddress: employeeData.permanentAddress || '',
+        // Công việc
         positionId: employeeData.positionId?.toString() || '',
         departmentId: employeeData.departmentId?.toString() || '',
+        laborContractTypeId: employeeData.laborContractTypeId?.toString() || '',
+        currentJobDetail: employeeData.currentJobDetail || '',
+        // Thông tin cá nhân
         ethnicity: employeeData.ethnicity || '',
-        wardId: employeeData.wardId?.toString() || '',
-        provinceCityId: employeeData.provinceCityId?.toString() || '',
-        specialtyId: employeeData.specialtyId?.toString() || '',
-        educationLevelId: employeeData.educationLevelId?.toString() || '',
-        politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
-        languageLevelId: employeeData.languageLevelId?.toString() || '',
         religion: employeeData.religion || '',
         nationalityId: employeeData.nationalityId?.toString() || '',
+        policyFamilyId: employeeData.policyFamilyId?.toString() || '',
+        // Địa chỉ hành chính
+        wardId: employeeData.wardId?.toString() || '',
+        provinceCityId: employeeData.provinceCityId?.toString() || '',
+        // Trình độ
+        specialtyId: employeeData.specialtyId?.toString() || '',
+        educationLevelId: employeeData.educationLevelId?.toString() || '',
+        educationDetail: employeeData.educationDetail || '',
+        politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
+        languageLevelId: employeeData.languageLevelId?.toString() || '',
+        culturalLevelId: employeeData.culturalLevelId?.toString() || '',
+        professionalLevelId: employeeData.professionalLevelId?.toString() || '',
+        itLevelId: employeeData.itLevelId?.toString() || '',
+        trainingInstitutionId: employeeData.trainingInstitutionId?.toString() || '',
+        trainingMajorId: employeeData.trainingMajorId?.toString() || '',
+        trainingTypeId: employeeData.trainingTypeId?.toString() || '',
+        // BHXH
+        socialInsuranceNumber: employeeData.socialInsuranceNumber || '',
+        socialInsuranceStartDate: employeeData.socialInsuranceStartDate || '',
+        socialInsuranceJobId: employeeData.socialInsuranceJobId?.toString() || '',
+        // Đảng, Đoàn, Quân đội
+        partyJoinDate: employeeData.partyJoinDate || '',
+        partyOfficialDate: employeeData.partyOfficialDate || '',
+        youthUnionJoinDate: employeeData.youthUnionJoinDate || '',
+        militaryJoinDate: employeeData.militaryJoinDate || '',
+        militaryEndDate: employeeData.militaryEndDate || '',
+        militaryRankId: employeeData.militaryRankId?.toString() || '',
+        // Thông tin khác
+        title: employeeData.title || '',
+        isWoundedSoldier: employeeData.isWoundedSoldier || false,
+        cardNumber: employeeData.cardNumber || '',
+        endDate: employeeData.endDate || '',
+        documentReturnDate: employeeData.documentReturnDate || '',
+        note: employeeData.note || '',
         user: employeeData.userId ? { id: employeeData.userId } : null,
       });
     } else if (mode === 'create') {
@@ -167,22 +249,50 @@ export default function EmployeeModal({
         cccdDate: '',
         cccdPlace: '',
         contactAddress: '',
+        birthPlace: '',
+        nativePlace: '',
+        homeTown: '',
+        permanentAddress: '',
         positionId: '',
         departmentId: '',
+        laborContractTypeId: '',
+        currentJobDetail: '',
         ethnicity: '',
+        religion: '',
+        nationalityId: '',
+        policyFamilyId: '',
         wardId: '',
         provinceCityId: '',
         specialtyId: '',
         educationLevelId: '',
+        educationDetail: '',
         politicalTheoryId: '',
         languageLevelId: '',
-        religion: '',
-        nationalityId: '',
+        culturalLevelId: '',
+        professionalLevelId: '',
+        itLevelId: '',
+        trainingInstitutionId: '',
+        trainingMajorId: '',
+        trainingTypeId: '',
+        socialInsuranceNumber: '',
+        socialInsuranceStartDate: '',
+        socialInsuranceJobId: '',
+        partyJoinDate: '',
+        partyOfficialDate: '',
+        youthUnionJoinDate: '',
+        militaryJoinDate: '',
+        militaryEndDate: '',
+        militaryRankId: '',
+        title: '',
+        isWoundedSoldier: false,
+        cardNumber: '',
+        endDate: '',
+        documentReturnDate: '',
+        note: '',
         user: null,
       });
     }
   }, [isOpen, mode, employee]);
-
 
   const mapEmployeeToPayload = (formData, mode) => {
     return {
@@ -195,17 +305,49 @@ export default function EmployeeModal({
       gender: formData.gender,
       status: formData.status,
 
-      // Thông tin cá nhân
+      // Thông tin CCCD
       cccdNumber: formData.cccdNumber || null,
       cccdDate: formData.cccdDate || null,
       cccdPlace: formData.cccdPlace || null,
+
+      // Địa chỉ
       contactAddress: formData.contactAddress || null,
+      birthPlace: formData.birthPlace || null,
+      nativePlace: formData.nativePlace || null,
+      homeTown: formData.homeTown || null,
+      permanentAddress: formData.permanentAddress || null,
+
+      // Thông tin cá nhân
       ethnicity: formData.ethnicity || null,
       religion: formData.religion || null,
+
+      // Công việc
+      currentJobDetail: formData.currentJobDetail || null,
+
+      // BHXH
+      socialInsuranceNumber: formData.socialInsuranceNumber || null,
+      socialInsuranceStartDate: formData.socialInsuranceStartDate || null,
+
+      // Đảng, Đoàn, Quân đội
+      partyJoinDate: formData.partyJoinDate || null,
+      partyOfficialDate: formData.partyOfficialDate || null,
+      youthUnionJoinDate: formData.youthUnionJoinDate || null,
+      militaryJoinDate: formData.militaryJoinDate || null,
+      militaryEndDate: formData.militaryEndDate || null,
+
+      // Thông tin khác
+      title: formData.title || null,
+      isWoundedSoldier: formData.isWoundedSoldier,
+      cardNumber: formData.cardNumber || null,
+      endDate: formData.endDate || null,
+      documentReturnDate: formData.documentReturnDate || null,
+      note: formData.note || null,
+      educationDetail: formData.educationDetail || null,
 
       // Object references (backend REQUIRE objects)
       department: formData.departmentId ? { id: Number(formData.departmentId) } : null,
       position: formData.positionId ? { id: Number(formData.positionId) } : null,
+      laborContractType: formData.laborContractTypeId ? { id: Number(formData.laborContractTypeId) } : null,
       ward: formData.wardId ? { id: Number(formData.wardId) } : null,
       provinceCity: formData.provinceCityId ? { id: Number(formData.provinceCityId) } : null,
       specialty: formData.specialtyId ? { id: Number(formData.specialtyId) } : null,
@@ -213,6 +355,15 @@ export default function EmployeeModal({
       politicalTheory: formData.politicalTheoryId ? { id: Number(formData.politicalTheoryId) } : null,
       languageLevel: formData.languageLevelId ? { id: Number(formData.languageLevelId) } : null,
       nationality: formData.nationalityId ? { id: Number(formData.nationalityId) } : null,
+      culturalLevel: formData.culturalLevelId ? { id: Number(formData.culturalLevelId) } : null,
+      professionalLevel: formData.professionalLevelId ? { id: Number(formData.professionalLevelId) } : null,
+      itLevel: formData.itLevelId ? { id: Number(formData.itLevelId) } : null,
+      trainingInstitution: formData.trainingInstitutionId ? { id: Number(formData.trainingInstitutionId) } : null,
+      trainingMajor: formData.trainingMajorId ? { id: Number(formData.trainingMajorId) } : null,
+      trainingType: formData.trainingTypeId ? { id: Number(formData.trainingTypeId) } : null,
+      militaryRank: formData.militaryRankId ? { id: Number(formData.militaryRankId) } : null,
+      policyFamily: formData.policyFamilyId ? { id: Number(formData.policyFamilyId) } : null,
+      socialInsuranceJob: formData.socialInsuranceJobId ? { id: Number(formData.socialInsuranceJobId) } : null,
 
       ...(mode === "edit" && formData.user && {
         user: { id: formData.user.id }
@@ -293,7 +444,7 @@ export default function EmployeeModal({
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -304,11 +455,12 @@ export default function EmployeeModal({
   const isLoading = createMutation.isPending || updateMutation.isPending;
   const isCategoriesLoading = loadingDegrees || loadingEthnicities ||
     loadingWards || loadingProvinceCities || loadingSpecialties ||
-    loadingPoliticalTheories || loadingLanguageLevels || loadingDepartments || loadingNationalities;
+    loadingPoliticalTheories || loadingLanguageLevels || loadingDepartments ||
+    loadingNationalities || loadingLaborContractTypes;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === 'create' ? 'Thêm nhân viên mới' : 'Cập nhật thông tin nhân viên'}
@@ -330,7 +482,7 @@ export default function EmployeeModal({
             <div className="space-y-6 py-4">
               {/* Thông tin cơ bản */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Thông tin cơ bản</h3>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin cơ bản</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="code">
@@ -389,32 +541,12 @@ export default function EmployeeModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cccdNumber">CCCD/CMND</Label>
+                    <Label htmlFor="birthPlace">Nơi sinh</Label>
                     <Input
-                      id="cccdNumber"
-                      value={formData.cccdNumber}
-                      onChange={(e) => handleChange('cccdNumber', e.target.value)}
-                      placeholder="Nhập số CCCD/CMND"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cccdDate">Ngày cấp</Label>
-                    <Input
-                      id="cccdDate"
-                      type="date"
-                      value={formData.cccdDate}
-                      onChange={(e) => handleChange('cccdDate', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cccdPlace">Nơi cấp</Label>
-                    <Input
-                      id="cccdPlace"
-                      value={formData.cccdPlace}
-                      onChange={(e) => handleChange('cccdPlace', e.target.value)}
-                      placeholder="Nhập nơi cấp"
+                      id="birthPlace"
+                      value={formData.birthPlace}
+                      onChange={(e) => handleChange('birthPlace', e.target.value)}
+                      placeholder="Nhập nơi sinh"
                     />
                   </div>
 
@@ -447,12 +579,58 @@ export default function EmployeeModal({
                       placeholder="Nhập tôn giáo"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="policyFamilyId">Gia đình chính sách</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.policyFamily.api}
+                      config={categoryConfigs.policyFamily}
+                      value={formData.policyFamilyId?.toString()}
+                      onChange={(v) => handleChange("policyFamilyId", String(v))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin CCCD */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin CCCD/CMND</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cccdNumber">Số CCCD/CMND</Label>
+                    <Input
+                      id="cccdNumber"
+                      value={formData.cccdNumber}
+                      onChange={(e) => handleChange('cccdNumber', e.target.value)}
+                      placeholder="Nhập số CCCD/CMND"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cccdDate">Ngày cấp</Label>
+                    <Input
+                      id="cccdDate"
+                      type="date"
+                      value={formData.cccdDate}
+                      onChange={(e) => handleChange('cccdDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cccdPlace">Nơi cấp</Label>
+                    <Input
+                      id="cccdPlace"
+                      value={formData.cccdPlace}
+                      onChange={(e) => handleChange('cccdPlace', e.target.value)}
+                      placeholder="Nhập nơi cấp"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Thông tin địa chỉ */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Thông tin địa chỉ</h3>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin địa chỉ</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="provinceCityId">Tỉnh/Thành phố</Label>
@@ -474,13 +652,43 @@ export default function EmployeeModal({
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="contactAddress">Địa chỉ cụ thể</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="contactAddress">Địa chỉ liên hệ</Label>
                     <Input
                       id="contactAddress"
                       value={formData.contactAddress}
                       onChange={(e) => handleChange('contactAddress', e.target.value)}
-                      placeholder="Nhập địa chỉ chi tiết"
+                      placeholder="Nhập địa chỉ liên hệ"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="permanentAddress">Hộ khẩu thường trú</Label>
+                    <Input
+                      id="permanentAddress"
+                      value={formData.permanentAddress}
+                      onChange={(e) => handleChange('permanentAddress', e.target.value)}
+                      placeholder="Nhập địa chỉ hộ khẩu"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nativePlace">Nguyên quán</Label>
+                    <Input
+                      id="nativePlace"
+                      value={formData.nativePlace}
+                      onChange={(e) => handleChange('nativePlace', e.target.value)}
+                      placeholder="Nhập nguyên quán"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="homeTown">Quê quán</Label>
+                    <Input
+                      id="homeTown"
+                      value={formData.homeTown}
+                      onChange={(e) => handleChange('homeTown', e.target.value)}
+                      placeholder="Nhập quê quán"
                     />
                   </div>
                 </div>
@@ -488,7 +696,7 @@ export default function EmployeeModal({
 
               {/* Thông tin công việc */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Thông tin công việc</h3>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin công việc</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="startDate">
@@ -500,6 +708,16 @@ export default function EmployeeModal({
                       value={formData.startDate}
                       onChange={(e) => handleChange('startDate', e.target.value)}
                       required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="endDate">Ngày kết thúc</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => handleChange('endDate', e.target.value)}
                     />
                   </div>
 
@@ -526,12 +744,73 @@ export default function EmployeeModal({
                       onChange={(v) => handleChange("positionId", String(v))}
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="laborContractTypeId">Loại hợp đồng lao động</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.laborContractType.api}
+                      config={categoryConfigs.laborContractType}
+                      value={formData.laborContractTypeId?.toString()}
+                      onChange={(v) => handleChange("laborContractTypeId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="currentJobDetail">Công việc cụ thể đang làm</Label>
+                    <Input
+                      id="currentJobDetail"
+                      value={formData.currentJobDetail}
+                      onChange={(e) => handleChange('currentJobDetail', e.target.value)}
+                      placeholder="Nhập công việc cụ thể"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Danh hiệu</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleChange('title', e.target.value)}
+                      placeholder="Nhập danh hiệu"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cardNumber">Số thẻ từ</Label>
+                    <Input
+                      id="cardNumber"
+                      value={formData.cardNumber}
+                      onChange={(e) => handleChange('cardNumber', e.target.value)}
+                      placeholder="Nhập số thẻ từ"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="documentReturnDate">Ngày trả hồ sơ</Label>
+                    <Input
+                      id="documentReturnDate"
+                      type="date"
+                      value={formData.documentReturnDate}
+                      onChange={(e) => handleChange('documentReturnDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2 flex items-center gap-2 pt-6">
+                    <Checkbox
+                      id="isWoundedSoldier"
+                      checked={formData.isWoundedSoldier}
+                      onCheckedChange={(checked) => handleChange('isWoundedSoldier', checked)}
+                    />
+                    <Label htmlFor="isWoundedSoldier" className="cursor-pointer">
+                      Thương binh
+                    </Label>
+                  </div>
                 </div>
               </div>
 
               {/* Trình độ & chuyên môn */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Trình độ & Chuyên ngành</h3>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Trình độ & Chuyên môn</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="educationLevelId">Bậc học</Label>
@@ -544,12 +823,52 @@ export default function EmployeeModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="specialtyId">Chuyên ngành</Label>
+                    <Label htmlFor="educationDetail">Trình độ cụ thể</Label>
+                    <Input
+                      id="educationDetail"
+                      value={formData.educationDetail}
+                      onChange={(e) => handleChange('educationDetail', e.target.value)}
+                      placeholder="Nhập trình độ cụ thể"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="culturalLevelId">Trình độ văn hóa</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.culturalLevel.api}
+                      config={categoryConfigs.culturalLevel}
+                      value={formData.culturalLevelId?.toString()}
+                      onChange={(v) => handleChange("culturalLevelId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="professionalLevelId">Trình độ chuyên môn</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.professionalLevel.api}
+                      config={categoryConfigs.professionalLevel}
+                      value={formData.professionalLevelId?.toString()}
+                      onChange={(v) => handleChange("professionalLevelId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="specialtyId">Nghề nghiệp</Label>
                     <GenericSearchSelect
                       api={categoryConfigs.specialty.api}
                       config={categoryConfigs.specialty}
                       value={formData.specialtyId?.toString()}
                       onChange={(v) => handleChange("specialtyId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="itLevelId">Trình độ tin học</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.itLevel.api}
+                      config={categoryConfigs.itLevel}
+                      value={formData.itLevelId?.toString()}
+                      onChange={(v) => handleChange("itLevelId", String(v))}
                     />
                   </div>
 
@@ -572,6 +891,158 @@ export default function EmployeeModal({
                       onChange={(v) => handleChange("politicalTheoryId", String(v))}
                     />
                   </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin đào tạo</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="trainingInstitutionId">Trường đào tạo</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.trainingInstitution.api}
+                      config={categoryConfigs.trainingInstitution}
+                      value={formData.trainingInstitutionId?.toString()}
+                      onChange={(v) => handleChange("trainingInstitutionId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trainingMajorId">Ngành đào tạo</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.trainingMajor.api}
+                      config={categoryConfigs.trainingMajor}
+                      value={formData.trainingMajorId?.toString()}
+                      onChange={(v) => handleChange("trainingMajorId", String(v))}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="trainingTypeId">Hình thức đào tạo</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.trainingType.api}
+                      config={categoryConfigs.trainingType}
+                      value={formData.trainingTypeId?.toString()}
+                      onChange={(v) => handleChange("trainingTypeId", String(v))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin BHXH */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin Bảo hiểm xã hội</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="socialInsuranceNumber">Số sổ BHXH</Label>
+                    <Input
+                      id="socialInsuranceNumber"
+                      value={formData.socialInsuranceNumber}
+                      onChange={(e) => handleChange('socialInsuranceNumber', e.target.value)}
+                      placeholder="Nhập số sổ BHXH"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="socialInsuranceStartDate">Ngày tham gia BHXH</Label>
+                    <Input
+                      id="socialInsuranceStartDate"
+                      type="date"
+                      value={formData.socialInsuranceStartDate}
+                      onChange={(e) => handleChange('socialInsuranceStartDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="socialInsuranceJobId">Công việc BHXH</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.socialInsuranceJob.api}
+                      config={categoryConfigs.socialInsuranceJob}
+                      value={formData.socialInsuranceJobId?.toString()}
+                      onChange={(v) => handleChange("socialInsuranceJobId", String(v))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Thông tin Đảng, Đoàn, Quân đội */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin Đảng, Đoàn, Quân đội</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="partyJoinDate">Ngày vào Đảng</Label>
+                    <Input
+                      id="partyJoinDate"
+                      type="date"
+                      value={formData.partyJoinDate}
+                      onChange={(e) => handleChange('partyJoinDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="partyOfficialDate">Ngày chính thức kết nạp Đảng</Label>
+                    <Input
+                      id="partyOfficialDate"
+                      type="date"
+                      value={formData.partyOfficialDate}
+                      onChange={(e) => handleChange('partyOfficialDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="youthUnionJoinDate">Ngày vào Đoàn</Label>
+                    <Input
+                      id="youthUnionJoinDate"
+                      type="date"
+                      value={formData.youthUnionJoinDate}
+                      onChange={(e) => handleChange('youthUnionJoinDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="militaryJoinDate">Ngày nhập ngũ</Label>
+                    <Input
+                      id="militaryJoinDate"
+                      type="date"
+                      value={formData.militaryJoinDate}
+                      onChange={(e) => handleChange('militaryJoinDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="militaryEndDate">Ngày xuất ngũ</Label>
+                    <Input
+                      id="militaryEndDate"
+                      type="date"
+                      value={formData.militaryEndDate}
+                      onChange={(e) => handleChange('militaryEndDate', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="militaryRankId">Quân hàm</Label>
+                    <GenericSearchSelect
+                      api={categoryConfigs.militaryRank.api}
+                      config={categoryConfigs.militaryRank}
+                      value={formData.militaryRankId?.toString()}
+                      onChange={(v) => handleChange("militaryRankId", String(v))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Ghi chú */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Ghi chú</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="note">Ghi chú</Label>
+                  <Textarea
+                    id="note"
+                    value={formData.note}
+                    onChange={(e) => handleChange('note', e.target.value)}
+                    placeholder="Nhập ghi chú..."
+                    rows={4}
+                  />
                 </div>
               </div>
             </div>

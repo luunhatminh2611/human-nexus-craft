@@ -126,7 +126,7 @@ export default function ResumeTab({ userData }) {
                       {edu.startYear} - {edu.endYear || 'Hiện tại'}
                     </div>
                   </div>
-                  <p className="text-sm">{edu.major || 'Chuyên ngành'}</p>
+                  <p className="text-sm">{edu.major || 'nghề nghiệp'}</p>
                 </div>
               ))
             ) : (

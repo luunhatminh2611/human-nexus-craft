@@ -173,16 +173,6 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
                   <p className="font-medium">{degree.certificateNumber}</p>
                 </div>
               )}
-
-              {degree.level && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Award className="h-4 w-4" />
-                    <span>Trình độ</span>
-                  </div>
-                  <p className="font-medium">{degree.level}</p>
-                </div>
-              )}
             </div>
 
             {/* Document */}

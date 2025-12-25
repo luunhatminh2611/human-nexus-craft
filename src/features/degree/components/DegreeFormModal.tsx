@@ -209,10 +209,6 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
       newErrors.issueDate = 'Vui lòng chọn ngày cấp';
     }
 
-    if (formData.type === 'EDUCATION' && !formData.level) {
-      newErrors.level = 'Vui lòng chọn trình độ';
-    }
-
     if (formData.expiryDate && formData.issueDate) {
       const issueDate = new Date(formData.issueDate);
       const expiryDate = new Date(formData.expiryDate);
@@ -513,31 +509,6 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
           {/* Education specific fields */}
           {formData.type === 'EDUCATION' && (
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="level">
-                  Trình độ <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.level}
-                  onValueChange={(value) => handleChange('level', value)}
-                >
-                  <SelectTrigger id="level" className={errors.level ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Chọn trình độ" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Trung cấp">Trung cấp</SelectItem>
-                    <SelectItem value="Cao đẳng">Cao đẳng</SelectItem>
-                    <SelectItem value="Cử nhân">Cử nhân</SelectItem>
-                    <SelectItem value="Kỹ sư">Kỹ sư</SelectItem>
-                    <SelectItem value="Thạc sĩ">Thạc sĩ</SelectItem>
-                    <SelectItem value="Tiến sĩ">Tiến sĩ</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.level && (
-                  <p className="text-sm text-red-500">{errors.level}</p>
-                )}
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="major">Chuyên ngành</Label>
                 <Input

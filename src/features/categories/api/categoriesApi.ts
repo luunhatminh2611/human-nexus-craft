@@ -465,7 +465,7 @@ export const specialtyApi = {
       const response = await api.get("/specialty");
       return response.data.data;
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách chuyên ngành:", error);
+      console.error("Lỗi khi lấy danh sách nghề nghiệp:", error);
       throw error;
     }
   },
@@ -475,7 +475,7 @@ export const specialtyApi = {
       const response = await api.get(`/specialty/${id}`);
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi lấy chuyên ngành:", error);
+      console.error("Lỗi khi lấy nghề nghiệp:", error);
       throw error;
     }
   },
@@ -492,7 +492,7 @@ export const specialtyApi = {
       });
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi tạo chuyên ngành:", error);
+      console.error("Lỗi khi tạo nghề nghiệp:", error);
       throw error;
     }
   },
@@ -509,7 +509,7 @@ export const specialtyApi = {
       });
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi cập nhật chuyên ngành:", error);
+      console.error("Lỗi khi cập nhật nghề nghiệp:", error);
       throw error;
     }
   },
@@ -519,7 +519,7 @@ export const specialtyApi = {
       const response = await api.delete(`/specialty/${id}`);
       return response.data;
     } catch (error) {
-      console.error("Lỗi khi xóa chuyên ngành:", error);
+      console.error("Lỗi khi xóa nghề nghiệp:", error);
       throw error;
     }
   },
@@ -719,6 +719,667 @@ export const nationalityApi = {
   },
 };
 
+// ============ LABOR CONTRACT TYPE APIs ============
+export const laborContractTypeApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/labor_contract_type");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách loại hợp đồng lao động:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/labor_contract_type/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy loại hợp đồng lao động:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/labor_contract_type", {
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo loại hợp đồng lao động:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/labor_contract_type/${id}`, {
+        id: id,
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật loại hợp đồng lao động:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/labor_contract_type/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa loại hợp đồng lao động:", error);
+      throw error;
+    }
+  },
+};
+
+export const culturalLevelApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/cultural_level");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách trình độ văn hóa:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/cultural_level/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy trình độ văn hóa:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/cultural_level", {
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo trình độ văn hóa:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/cultural_level/${id}`, {
+        id: id,
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trình độ văn hóa:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/cultural_level/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa trình độ văn hóa:", error);
+      throw error;
+    }
+  },
+};
+
+export const professionalLevelApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/professional_level");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách trình độ chuyên môn:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/professional_level/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy trình độ chuyên môn:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/professional_level", {
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo trình độ chuyên môn:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/professional_level/${id}`, {
+        id: id,
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trình độ chuyên môn:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/professional_level/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa trình độ chuyên môn:", error);
+      throw error;
+    }
+  },
+};
+
+export const itLevelApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/it_level");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách trình độ tin học:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/it_level/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy trình độ tin học:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/it_level", {
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo trình độ tin học:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/it_level/${id}`, {
+        id: id,
+        name: data.name,
+        code: data.code || null,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật trình độ tin học:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/it_level/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa trình độ tin học:", error);
+      throw error;
+    }
+  },
+};
+
+export const trainingInstitutionApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/training_institution");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách cơ sở đào tạo:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/training_institution/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy cơ sở đào tạo:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/training_institution", {
+        name: data.name,
+        address: data.address || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo cơ sở đào tạo:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put("/training_institution", {
+        id: id,
+        name: data.name,
+        address: data.address || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật cơ sở đào tạo:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/training_institution/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa cơ sở đào tạo:", error);
+      throw error;
+    }
+  },
+};
+
+export const trainingMajorApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/training_major");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách ngành đào tạo:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/training_major/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy ngành đào tạo:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/training_major", {
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo ngành đào tạo:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/training_major/${id}`, {
+        id: id,
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật ngành đào tạo:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/training_major/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa ngành đào tạo:", error);
+      throw error;
+    }
+  },
+};
+
+export const trainingTypeApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/training_type");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách hình thức đào tạo:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/training_type/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy hình thức đào tạo:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/training_type", {
+        name: data.name,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo hình thức đào tạo:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put("/training_type", {
+        id: id,
+        name: data.name,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật hình thức đào tạo:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/training_type/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa hình thức đào tạo:", error);
+      throw error;
+    }
+  },
+};
+
+export const militaryRankApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/military_rank");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách quân hàm:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/military_rank/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy quân hàm:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/military_rank", {
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo quân hàm:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/military_rank/${id}`, {
+        id: id,
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật quân hàm:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/military_rank/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa quân hàm:", error);
+      throw error;
+    }
+  },
+};
+
+export const policyFamilyApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/policy_family");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách gia đình chính sách:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/policy_family/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy gia đình chính sách:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/policy_family", {
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo gia đình chính sách:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/policy_family/${id}`, {
+        id: id,
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật gia đình chính sách:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/policy_family/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa gia đình chính sách:", error);
+      throw error;
+    }
+  },
+};
+
+export const socialInsuranceJobApi = {
+  getAll: async () => {
+    try {
+      const response = await api.get("/social_insurance_job");
+      return response.data.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách công việc BHXH:", error);
+      throw error;
+    }
+  },
+
+  getById: async (id) => {
+    try {
+      const response = await api.get(`/social_insurance_job/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy công việc BHXH:", error);
+      throw error;
+    }
+  },
+
+  create: async (data) => {
+    try {
+      const response = await api.post("/social_insurance_job", {
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo công việc BHXH:", error);
+      throw error;
+    }
+  },
+
+  update: async (id, data) => {
+    try {
+      const response = await api.put(`/social_insurance_job/${id}`, {
+        id: id,
+        code: data.code,
+        name: data.name,
+        description: data.description || null,
+        updatedAt: new Date().toISOString(),
+        deleted: false,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật công việc BHXH:", error);
+      throw error;
+    }
+  },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/social_insurance_job/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi xóa công việc BHXH:", error);
+      throw error;
+    }
+  },
+};
+
 // Export tất cả
 export const categoriesApi = {
   role: roleApi,
@@ -732,4 +1393,14 @@ export const categoriesApi = {
   politicalTheory: politicalTheoryApi,
   languageLevel: languageLevelApi,
   nationality: nationalityApi,
+  laborContractType: laborContractTypeApi,
+  culturalLevel: culturalLevelApi,
+  professionalLevel: professionalLevelApi,
+  itLevel: itLevelApi,
+  trainingInstitution: trainingInstitutionApi,
+  trainingMajor: trainingMajorApi,
+  trainingType: trainingTypeApi,
+  militaryRank: militaryRankApi,
+  policyFamily: policyFamilyApi,
+  socialInsuranceJob: socialInsuranceJobApi
 };

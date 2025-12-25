@@ -39,7 +39,7 @@ export default function SpecialtyTab() {
     } catch (error) {
       toast({
         title: 'Lỗi',
-        description: 'Không thể tải danh sách chuyên ngành',
+        description: 'Không thể tải danh sách nghề nghiệp',
         variant: 'destructive',
       });
     } finally {
@@ -65,7 +65,7 @@ export default function SpecialtyTab() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên chuyên ngành', variant: 'destructive' });
+      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên nghề nghiệp', variant: 'destructive' });
       return;
     }
 
@@ -77,14 +77,14 @@ export default function SpecialtyTab() {
         await specialtyApi.update(editing.id, form);
         toast({
           title: 'Thành công',
-          description: 'Cập nhật chuyên ngành thành công',
+          description: 'Cập nhật nghề nghiệp thành công',
         });
       } else {
         // Thêm mới
         await specialtyApi.create(form);
         toast({
           title: 'Thành công',
-          description: 'Thêm mới chuyên ngành thành công',
+          description: 'Thêm mới nghề nghiệp thành công',
         });
       }
       
@@ -93,7 +93,7 @@ export default function SpecialtyTab() {
     } catch (error) {
       toast({
         title: 'Lỗi',
-        description: `Không thể ${editing ? 'cập nhật' : 'thêm mới'} chuyên ngành`,
+        description: `Không thể ${editing ? 'cập nhật' : 'thêm mới'} nghề nghiệp`,
         variant: 'destructive',
       });
     } finally {
@@ -102,19 +102,19 @@ export default function SpecialtyTab() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa chuyên ngành này?')) {
+    if (!confirm('Bạn có chắc chắn muốn xóa nghề nghiệp này?')) {
       return;
     }
 
     try {
       setLoading(true);
       await specialtyApi.delete(id);
-      toast({ title: 'Thành công', description: 'Xóa chuyên ngành thành công' });
+      toast({ title: 'Thành công', description: 'Xóa nghề nghiệp thành công' });
       loadSpecialties(); // Reload lại danh sách
     } catch (error) {
       toast({
         title: 'Lỗi',
-        description: 'Không thể xóa chuyên ngành',
+        description: 'Không thể xóa nghề nghiệp',
         variant: 'destructive',
       });
     } finally {
@@ -128,7 +128,7 @@ export default function SpecialtyTab() {
         <div className="flex justify-end">
           <Button onClick={openAdd} disabled={loading}>
             <Plus className="h-4 w-4 mr-2" />
-            Thêm chuyên ngành
+            Thêm nghề nghiệp
           </Button>
         </div>
         
@@ -141,7 +141,7 @@ export default function SpecialtyTab() {
             <TableHeader>
               <TableRow>
                 <TableHead>Mã</TableHead>
-                <TableHead>Tên chuyên ngành</TableHead>
+                <TableHead>Tên nghề nghiệp</TableHead>
                 <TableHead>Mô tả</TableHead>
                 <TableHead className="w-[120px] text-right">Thao tác</TableHead>
               </TableRow>
@@ -189,13 +189,13 @@ export default function SpecialtyTab() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? 'Chỉnh sửa' : 'Thêm mới'} chuyên ngành</DialogTitle>
+            <DialogTitle>{editing ? 'Chỉnh sửa' : 'Thêm mới'} nghề nghiệp</DialogTitle>
             <DialogDescription>Điền thông tin chi tiết bên dưới</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label>Mã chuyên ngành</Label>
+              <Label>Mã nghề nghiệp</Label>
               <Input
                 value={form.code}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
@@ -203,11 +203,11 @@ export default function SpecialtyTab() {
               />
             </div>
             <div>
-              <Label>Tên chuyên ngành *</Label>
+              <Label>Tên nghề nghiệp *</Label>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Nhập tên chuyên ngành"
+                placeholder="Nhập tên nghề nghiệp"
               />
             </div>
             <div>

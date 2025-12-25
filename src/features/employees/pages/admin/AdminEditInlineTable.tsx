@@ -52,7 +52,7 @@ const ALL_COLUMNS = [
   { key: 'positionId', label: 'Chức vụ', defaultVisible: true, editable: true, type: 'searchSelect', config: 'jobTitle' },
   { key: 'startDate', label: 'Ngày vào làm', defaultVisible: true, editable: true, type: 'date' },
   { key: 'educationLevelId', label: 'Trình độ học vấn', defaultVisible: false, editable: true, type: 'searchSelect', config: 'degree' },
-  { key: 'specialtyId', label: 'Chuyên ngành', defaultVisible: false, editable: true, type: 'searchSelect', config: 'specialty' },
+  { key: 'specialtyId', label: '', defaultVisible: false, editable: true, type: 'searchSelect', config: 'specialty' },
   { key: 'languageLevelId', label: 'Trình độ ngoại ngữ', defaultVisible: false, editable: true, type: 'searchSelect', config: 'languageLevel' },
   { key: 'politicalTheoryId', label: 'Lý luận chính trị', defaultVisible: false, editable: true, type: 'searchSelect', config: 'politicalTheory' },
   { key: 'accountStatus', label: 'Trạng thái tài khoản', defaultVisible: true, editable: false, type: 'badge' },

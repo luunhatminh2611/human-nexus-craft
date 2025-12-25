@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Edit, Calendar, ArrowRight, FileText, Plus, Trash2, Users } from 'lucide-react';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Edit, Calendar, ArrowRight, FileText, Plus, Trash2, Users, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Badge } from '@/shared/components/ui/badge';
 import EmployeeModal from './modal/EmployeeModal';
@@ -105,7 +106,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
     try {
       await familyApi.delete(familyId);
       alert('Xóa thân nhân thành công');
-      fetchFamilyMembers(); // Refresh danh sách
+      fetchFamilyMembers();
     } catch (error) {
       console.error('Lỗi khi xóa thân nhân:', error);
       alert('Lỗi khi xóa thân nhân');
@@ -175,8 +176,8 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           )}
         </CardHeader>
         <CardContent>
-          <h3 className="font-semibold text-lg mb-4">I. Thông tin cá nhân</h3>
-          <div className="grid md:grid-cols-3 gap-6">
+          <h3 className="font-semibold text-lg mb-4 text-blue-600">I. Thông tin cá nhân</h3>
+          <div className="grid md:grid-cols-3 gap-4">
             <div>
               <Label className="text-sm text-muted-foreground mb-1">Giới tính</Label>
               <Input
@@ -192,6 +193,15 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
                 type="date"
                 value={userData.birthday || ''}
                 disabled
+                className='mt-2'
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-1">Nơi sinh</Label>
+              <Input
+                value={userData.birthPlace || ''}
+                disabled
+                placeholder="Chưa cập nhật"
                 className='mt-2'
               />
             </div>
@@ -223,41 +233,26 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
               />
             </div>
             <div>
-              <Label className="text-sm text-muted-foreground mb-1">Tỉnh/Thành phố</Label>
+              <Label className="text-sm text-muted-foreground mb-1">Gia đình chính sách</Label>
               <Input
-                value={userData.provinceCityName || ''}
-                disabled
-                placeholder="Chưa cập nhật"
-                className='mt-2'
-              />
-            </div>
-            <div>
-              <Label className="text-sm text-muted-foreground mb-1">Phường/Xã</Label>
-              <Input
-                value={userData.wardName || ''}
-                disabled
-                placeholder="Chưa cập nhật"
-                className='mt-2'
-              />
-            </div>
-            <div>
-              <Label className="text-sm text-muted-foreground mb-1">Địa chỉ cụ thể</Label>
-              <Input
-                value={userData.contactAddress || ''}
+                value={userData.policyFamilyName || ''}
                 disabled
                 placeholder="Chưa cập nhật"
                 className='mt-2'
               />
             </div>
           </div>
+
+          {/* II. CMND/CCCD */}
           <div className='mt-6'>
-            <h3 className="font-semibold text-lg mb-2">II. CMND/CCCD</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">II. CMND/CCCD</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <Label>Số CMND/CCCD</Label>
                 <Input
                   value={userData.cccdNumber || ''}
                   disabled
+                  placeholder="Chưa cập nhật"
                   className='mt-2'
                 />
               </div>
@@ -275,59 +270,403 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
                 <Input
                   value={userData.cccdPalce || ''}
                   disabled
+                  placeholder="Chưa cập nhật"
                   className='mt-2'
                 />
               </div>
             </div>
           </div>
 
-          {/* III. Trình độ học vấn & chuyên môn */}
+          {/* III. Thông tin địa chỉ */}
           <div className='mt-6'>
-            <h3 className="font-semibold text-lg mb-2">III. Trình độ học vấn & chuyên ngành</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">III. Thông tin địa chỉ</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Tỉnh/Thành phố</Label>
+                <Input
+                  value={userData.provinceCityName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Phường/Xã</Label>
+                <Input
+                  value={userData.wardName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Địa chỉ liên hệ</Label>
+                <Input
+                  value={userData.contactAddress || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Hộ khẩu thường trú</Label>
+                <Input
+                  value={userData.permanentAddress || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Nguyên quán</Label>
+                <Input
+                  value={userData.nativePlace || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Quê quán</Label>
+                <Input
+                  value={userData.homeTown || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* IV. Trình độ học vấn & chuyên môn */}
+          <div className='mt-6'>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">IV. Trình độ học vấn & chuyên môn</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Bậc học</Label>
                 <Input
                   value={userData?.educationLevelName || ''}
                   disabled
-                  placeholder="Ví dụ: Đại học, Thạc sĩ, Tiến sĩ"
+                  placeholder="Chưa cập nhật"
                   className='mt-2'
                 />
               </div>
-              <div className="">
-                <Label>Chuyên ngành</Label>
+              <div>
+                <Label>Trình độ cụ thể</Label>
+                <Input
+                  value={userData?.educationDetail || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Trình độ văn hóa</Label>
+                <Input
+                  value={userData?.culturalLevelName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Trình độ chuyên môn</Label>
+                <Input
+                  value={userData?.professionalLevelName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Nghề nghiệp</Label>
                 <Input
                   value={userData?.specialtyName || ''}
                   disabled
+                  placeholder="Chưa cập nhật"
                   className='mt-2'
                 />
               </div>
               <div>
-                <Label>Trình độ lý luận chính trị</Label>
+                <Label>Trình độ tin học</Label>
                 <Input
-                  value={userData?.politicalTheoryName || ''}
+                  value={userData?.itLevelName || ''}
                   disabled
+                  placeholder="Chưa cập nhật"
                   className='mt-2'
                 />
               </div>
               <div>
-                <Label>Ngoại ngữ</Label>
+                <Label>Trình độ ngoại ngữ</Label>
                 <Input
                   value={userData.languageLevelName || ''}
                   disabled
-                  placeholder="Ví dụ: Tiếng Anh B2, TOEIC 850"
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Lý luận chính trị</Label>
+                <Input
+                  value={userData?.politicalTheoryName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
                   className='mt-2'
                 />
               </div>
             </div>
           </div>
+
+          <div className='mt-6'>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">IV.1. Thông tin đào tạo</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Trường đào tạo</Label>
+                <Input
+                  value={userData?.trainingInstitutionName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngành đào tạo</Label>
+                <Input
+                  value={userData?.trainingMajorName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Hình thức đào tạo</Label>
+                <Input
+                  value={userData?.trainingTypeName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* V. Thông tin công việc */}
+          <div className='mt-6'>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">V. Thông tin công việc</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Ngày vào làm</Label>
+                <Input
+                  type="date"
+                  value={userData.startDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày kết thúc</Label>
+                <Input
+                  type="date"
+                  value={userData.endDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Phòng ban/Phân xưởng</Label>
+                <Input
+                  value={userData.departmentName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Chức vụ</Label>
+                <Input
+                  value={userData.positionName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Loại hợp đồng lao động</Label>
+                <Input
+                  value={userData.laborContractTypeName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Công việc cụ thể</Label>
+                <Input
+                  value={userData.currentJobDetail || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Danh hiệu</Label>
+                <Input
+                  value={userData.title || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Số thẻ từ</Label>
+                <Input
+                  value={userData.cardNumber || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày trả hồ sơ</Label>
+                <Input
+                  type="date"
+                  value={userData.documentReturnDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-6">
+                {userData.isWoundedSoldier ? (
+                  <Badge className="bg-green-500 text-green-800">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Thương binh
+                  </Badge>
+                ) : (
+                  <Badge className="bg-gray-100 text-gray-500">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Không phải thương binh
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* VI. Thông tin BHXH */}
+          <div className='mt-6'>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">VI. Thông tin Bảo hiểm xã hội</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Số sổ BHXH</Label>
+                <Input
+                  value={userData.socialInsuranceNumber || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày tham gia BHXH</Label>
+                <Input
+                  type="date"
+                  value={userData.socialInsuranceStartDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Công việc BHXH</Label>
+                <Input
+                  value={userData.socialInsuranceJobName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* VII. Thông tin Đảng, Đoàn, Quân đội */}
+          <div className='mt-6'>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">VII. Thông tin Đảng, Đoàn, Quân đội</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Ngày vào Đảng</Label>
+                <Input
+                  type="date"
+                  value={userData.partyJoinDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày chính thức kết nạp Đảng</Label>
+                <Input
+                  type="date"
+                  value={userData.partyOfficialDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày vào Đoàn</Label>
+                <Input
+                  type="date"
+                  value={userData.youthUnionJoinDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày nhập ngũ</Label>
+                <Input
+                  type="date"
+                  value={userData.militaryJoinDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Ngày xuất ngũ</Label>
+                <Input
+                  type="date"
+                  value={userData.militaryEndDate || ''}
+                  disabled
+                  className='mt-2'
+                />
+              </div>
+              <div>
+                <Label>Quân hàm</Label>
+                <Input
+                  value={userData.militaryRankName || ''}
+                  disabled
+                  placeholder="Chưa cập nhật"
+                  className='mt-2'
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* VIII. Ghi chú */}
+          {userData.note && (
+            <div className='mt-6'>
+              <h3 className="font-semibold text-lg mb-4 text-blue-600">VIII. Ghi chú</h3>
+              <div>
+                <Textarea
+                  value={userData.note || ''}
+                  disabled
+                  rows={4}
+                  className="resize-none"
+                />
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* IV. Lịch sử điều động */}
+      {/* IX. Lịch sử điều động */}
       <Card>
         <CardHeader>
-          <CardTitle>IV. Lịch sử điều động</CardTitle>
+          <CardTitle>IX. Lịch sử điều động</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoadingHistory ? (
@@ -404,10 +743,10 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
         </CardContent>
       </Card>
 
-      {/* V. Thông tin thân nhân */}
+      {/* X. Thông tin thân nhân */}
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
-          <CardTitle>V. Thông tin thân nhân</CardTitle>
+          <CardTitle>X. Thông tin thân nhân</CardTitle>
           {canManageFamily && (
             <Button variant="outline" size="sm" onClick={handleAddFamily}>
               <Plus className="h-4 w-4 mr-2" />
