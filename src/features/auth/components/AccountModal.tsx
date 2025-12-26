@@ -39,7 +39,7 @@ export default function AccountModal({
   const [formData, setFormData] = useState({
     username: '',
     password: '',
-    fullName: '',
+    name: '',
     email: '',
     phone: '',
     employeeCode: '',
@@ -52,7 +52,7 @@ export default function AccountModal({
         setFormData({
           username: existingUser.username || '',
           password: '', // Không hiển thị mật khẩu cũ
-          fullName: existingUser.fullName || employeeData?.fullName || '',
+          name: existingUser.name || employeeData?.fullName || '',
           email: existingUser.email || '',
           phone: existingUser.phone || '',
           employeeCode: employeeData?.code || '',
@@ -62,7 +62,7 @@ export default function AccountModal({
         setFormData({
           username: '',
           password: '',
-          fullName: employeeData?.fullName || '',
+          name: employeeData?.name || '',
           email: employeeData?.user?.email || '',
           phone: employeeData?.user?.phone || '',
           employeeCode: employeeData?.code || '',
@@ -95,7 +95,7 @@ export default function AccountModal({
       setError('Mật khẩu phải có ít nhất 6 ký tự');
       return false;
     }
-    if (!formData.fullName.trim()) {
+    if (!formData.name.trim()) {
       setError('Vui lòng nhập họ tên');
       return false;
     }
@@ -133,7 +133,7 @@ export default function AccountModal({
         await authService.register({
           username: formData.username,
           password: formData.password,
-          fullName: formData.fullName,
+          fullName: formData.name,
           email: formData.email,
           phone: formData.phone,
           employeeCode: formData.employeeCode,
@@ -239,7 +239,7 @@ export default function AccountModal({
             <Input
               id="fullName"
               name="fullName"
-              value={formData.fullName}
+              value={formData.name}
               onChange={handleChange}
               placeholder="Nhập họ và tên"
               disabled

@@ -69,6 +69,16 @@ export const employeeApi = {
     }
   },
 
+  updateBulk: async (payload: any[]) => {
+    try {
+      const response = await api.put('/employee/update_list', { payload });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật hàng loạt nhân viên:", error);
+      throw error;
+    }
+  },
+
   // Cập nhật thông tin nhân viên
   update: async (id: number, payload) => {
     try {

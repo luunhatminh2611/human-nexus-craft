@@ -49,6 +49,7 @@ import LeavesTab from '../../components/LeavesTab';
 import { SalaryTabWithDragDrop } from '../../components/SalaryTabWithDragDrop';
 import UserTable from '@/features/employees/components/UserTable';
 import { Button as Button2 } from '@/shared/components/ui/button/Button2';
+import BulkEditEmployeeModal from '../../components/modal/BulkEditEmployeeModal';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -79,7 +80,7 @@ export default function Employees() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [mainTab, setMainTab] = useState('info');
   const [subTab, setSubTab] = useState('info');
-
+  const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   // Fetch employees
@@ -429,10 +430,10 @@ export default function Employees() {
 
                   {selectedEmployeeId ? (
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex-1">
+                      {/* <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex-1">
                         <Upload className="h-4 w-4" />
                         Import Excel
-                      </Button>
+                      </Button> */}
                       <Button variant="outline" size="sm" onClick={handleExportExcel} className="flex-1">
                         <Download className="h-4 w-4" />
                         Export Excel
@@ -440,10 +441,10 @@ export default function Employees() {
                     </div>
                   ) : (
                     <>
-                      <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                      {/* <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                         <Upload className="h-4 w-4 mr-2" />
                         Import Excel
-                      </Button>
+                      </Button> */}
                       <Button variant="outline" onClick={handleExportExcel}>
                         <Download className="h-4 w-4 mr-2" />
                         Export Excel
@@ -451,13 +452,22 @@ export default function Employees() {
                     </>
                   )}
 
-                  <Button
-                    onClick={handleOpenCreateModal}
-                    className={selectedEmployeeId ? "w-full bg-green-500 hover:bg-green-600 text-white" : "bg-green-500 text-white"}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Thêm nhân viên
-                  </Button>
+                  <div className='flex gap-2'>
+                    <Button
+                      onClick={handleOpenCreateModal}
+                      className={selectedEmployeeId ? "w-full bg-green-500 hover:bg-green-600 text-white" : "bg-green-500 text-white"}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Thêm nhân viên
+                    </Button>
+                    <Button
+                      onClick={() => setIsBulkEditModalOpen(true)}
+                      className={selectedEmployeeId ? "w-full bg-green-500 hover:bg-green-600 text-white" : "bg-green-500 text-white"}
+                    >
+                      <UserCog className="h-4 w-4 mr-2" />
+                      Sửa hàng loạt
+                    </Button>
+                  </div>
                 </div>
               </Card>
 
@@ -939,6 +949,10 @@ export default function Employees() {
         onSuccess={() => {
           window.location.reload();
         }}
+      />
+      <BulkEditEmployeeModal
+        isOpen={isBulkEditModalOpen}
+        onClose={() => setIsBulkEditModalOpen(false)}
       />
     </div>
   );
