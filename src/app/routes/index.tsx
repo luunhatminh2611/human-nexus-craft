@@ -19,6 +19,15 @@ import ManagerPPEPlanDetailPage from '@/features/safety/pages/manager/ManagerPPE
 import AdminLeaveRequestMockPage from '@/features/leave-request/pages/admin/LeaveRequestMock';
 import DegreeHRPage from '@/features/degree/pages/DegreeHRPage';
 import DegreeEmployeePage from '@/features/degree/pages/DegreeEmployeePage';
+import OverseasHRPage from '@/features/overseasTrip/pages/OverseasHRPage';
+import OverseasEmployeePage from '@/features/overseasTrip/pages/OverseasEmployeePage';
+import RewardPage from '@/features/reward/pages/RewardPage';
+import DisciplinePage from '@/features/discipline/pages/DisciplinePage';
+import AppointmentPage from '@/features/appointment/pages/AppointmentPage';
+import EmployeeHistoryPage from '@/features/appointment/pages/AppointmentHistoryPage';
+import ContractPage from '@/features/contract/pages/ContractPage';
+import EmployeeDocumentsPage from '@/features/employeeFile/pages/EmployeeDocumentsPage';
+import SocialInsurancePage from '@/features/socialInsurance/pages/SocialInsurancePage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -109,6 +118,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_TRANSFER.slice(1), element: <TransferAdminPage /> },
       { path: ROUTES.ADMIN_SAFETY_DETAIL.slice(1), element: <PPEPlanDetailPage /> },
       { path: ROUTES.ADMIN_DEGREE_MANAGEMENT.slice(1), element: <DegreeHRPage /> },
+      { path: ROUTES.ADMIN_EXIT_MANAGEMENT.slice(1), element: <OverseasHRPage /> },
       // Manager Routes
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },
@@ -138,6 +148,14 @@ export const router = createBrowserRouter([
       { path: ROUTES.TRAINING_DETAIL.slice(1), element: <TrainingDetail /> },
       { path: ROUTES.LEAVE_REQUESTS.slice(1), element: <LeaveRequest /> },
       { path: ROUTES.DEGREE_MANAGEMENT.slice(1), element: <DegreeEmployeePage /> },
+      { path: ROUTES.EXIT_MANAGEMENT.slice(1), element: <OverseasEmployeePage /> },
+      { path: ROUTES.REWARD_MANAGEMENT.slice(1), element: <RewardPage /> },
+      { path: ROUTES.DISCIPLINE_MANAGEMENT.slice(1), element: <DisciplinePage /> },
+      { path: ROUTES.APPOINTMENT_NAGEMENT.slice(1), element: <AppointmentPage /> },
+      { path: ROUTES.APPOINT_HISTORY.slice(1), element: <EmployeeHistoryPage /> },
+      { path: ROUTES.CONTRACT_MANAGEMENT.slice(1), element: <ContractPage /> },
+      { path: ROUTES.EMPLOYEE_FILE_MANAGEMENT.slice(1), element: <EmployeeDocumentsPage /> },
+      { path: ROUTES.SOCIAL_INSURANCE.slice(1), element: <SocialInsurancePage /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]

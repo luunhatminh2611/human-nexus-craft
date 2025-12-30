@@ -184,7 +184,7 @@ export default function EmployeeModal({
         // Thông tin CCCD
         cccdNumber: employeeData.cccdNumber || '',
         cccdDate: employeeData.cccdDate || '',
-        cccdPlace: employeeData.cccdPalce || '',
+        cccdPlace: employeeData.cccdPlace || '',
         // Địa chỉ
         contactAddress: employeeData.contactAddress || '',
         birthPlace: employeeData.birthPlace || '',

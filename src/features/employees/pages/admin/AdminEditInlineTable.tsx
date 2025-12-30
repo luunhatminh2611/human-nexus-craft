@@ -30,7 +30,7 @@ const FIELD_MAPPING = {
   'employeeCode': 'code',
   'fullName': 'name',
   'dateOfBirth': 'birthday',
-  'cccdPlace': 'cccdPalce', // Lưu ý: API có typo 'Palce'
+  'cccdPlace': 'cccdPlace', // Lưu ý: API có typo 'Palce'
 };
 
 // Định nghĩa tất cả các cột có thể hiển thị
@@ -205,7 +205,7 @@ export default function EmployeeInlineEditTable({
 
       cccdNumber: merged.cccdNumber || null,
       cccdDate: merged.cccdDate || null,
-      cccdPlace: merged.cccdPalce || merged.cccdPlace || null,
+      cccdPlace: merged.cccdPlace || merged.cccdPlace || null,
       contactAddress: merged.contactAddress || null,
       ethnicity: merged.ethnicity || null,
       religion: merged.religion || null,

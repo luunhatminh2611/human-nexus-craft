@@ -99,7 +99,7 @@ export default function BulkEditEmployeeModal({ isOpen, onClose }) {
                 // CCCD
                 cccdNumber: employeeData.cccdNumber || '',
                 cccdDate: employeeData.cccdDate || '',
-                cccdPalce: employeeData.cccdPalce || '',
+                cccdPlace: employeeData.cccdPlace || '',
 
                 // Địa chỉ
                 contactAddress: employeeData.contactAddress || '',
@@ -208,7 +208,7 @@ export default function BulkEditEmployeeModal({ isOpen, onClose }) {
             // CCCD
             cccdNumber: emp.cccdNumber || null,
             cccdDate: emp.cccdDate || null,
-            cccdPalce: emp.cccdPalce || null,
+            cccdPlace: emp.cccdPlace || null,
 
             // Địa chỉ
             contactAddress: emp.contactAddress || null,
@@ -415,8 +415,8 @@ export default function BulkEditEmployeeModal({ isOpen, onClose }) {
                         <div className="space-y-1">
                             <Label className="text-xs">Nơi cấp CCCD</Label>
                             <Input
-                                value={employee.cccdPalce}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdPalce', e.target.value)}
+                                value={employee.cccdPlace}
+                                onChange={(e) => handleFieldChange(employee.id, 'cccdPlace', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>

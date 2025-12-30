@@ -268,7 +268,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
               <div>
                 <Label>Nơi cấp</Label>
                 <Input
-                  value={userData.cccdPalce || ''}
+                  value={userData.cccdPlace || ''}
                   disabled
                   placeholder="Chưa cập nhật"
                   className='mt-2'

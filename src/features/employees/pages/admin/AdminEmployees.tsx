@@ -407,7 +407,7 @@ export default function Employees() {
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={selectedEmployeeId ? "Tìm kiếm nhân viên..." : "Tìm kiếm theo mã nhân viên, tên nhân viên, email"}
+                      placeholder={selectedEmployeeId ? "Tìm kiếm nhân viên..." : "Tìm kiếm theo mã nhân viên, tên nhân viên"}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"

@@ -26,6 +26,8 @@ export const ROUTES = {
   ADMIN_CONTRACT_MANAGEMENT: '/admin/employees/contract',
   ADMIN_LEAVE_MANAGEMENT: '/admin/employees/leave-requests',
   ADMIN_DEGREE_MANAGEMENT: '/admin/employees/degree',
+  ADMIN_EXIT_MANAGEMENT: '/admin/exit',
+
 
   MANAGER_DASHBOARD: '/manager/dashboard',
   MANAGER_EMPLOYEES: '/manager/employees',
@@ -53,6 +55,14 @@ export const ROUTES = {
   LEAVE_REQUESTS: '/user/leave-requests',
   TRANSFER_DETAIL: '/transfer/detail/:id',
   DEGREE_MANAGEMENT: '/degree/management',
+  EXIT_MANAGEMENT: '/employee/exit',
+  REWARD_MANAGEMENT: '/reward',
+  DISCIPLINE_MANAGEMENT: '/discipline',
+  APPOINTMENT_NAGEMENT: '/appoint',
+  APPOINT_HISTORY: '/appoint/history',
+  CONTRACT_MANAGEMENT: '/contract',
+  EMPLOYEE_FILE_MANAGEMENT: '/file',
+  SOCIAL_INSURANCE: '/social-insurance',
   ROOT: '/',
   NOT_FOUND: '*',
 };

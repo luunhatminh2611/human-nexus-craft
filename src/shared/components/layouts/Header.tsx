@@ -55,9 +55,22 @@ export const Header = memo(({
     fetchUserDetail();
   }, []);
 
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
+  // Hàm check active cho main menu item
+  const isMainItemActive = (item: any) => {
+    // Nếu có submenu, check xem có submenu nào active không
+    if (item.submenu && item.submenu.length > 0) {
+      return item.submenu.some((subItem: any) => 
+        subItem.path && location.pathname === subItem.path
+      );
+    }
+    // Nếu không có submenu, check path trực tiếp
+    if (item.path === '/') return location.pathname === '/';
+    return item.path && location.pathname === item.path;
+  };
+
+  // Hàm check active cho submenu item
+  const isSubmenuActive = (path: string) => {
+    return location.pathname === path;
   };
 
   const handleMainItemClick = (item: any) => {
@@ -97,17 +110,13 @@ export const Header = memo(({
               </div>
             </div>
           </div>
-
         </div>
-        {/* User account */}
-
       </div>
 
       {/* Navigation bar */}
       <nav className="flex items-center px-6 py-2 gap-1">
         {navigationItems.map((item) => {
-          // const Icon = item.icon;
-          const active = item.path ? isActive(item.path) : false;
+          const active = isMainItemActive(item);
           const hasSubmenu = item.submenu && item.submenu.length > 0;
           const isDropdownOpen = openDropdown === item.label;
 
@@ -122,7 +131,6 @@ export const Header = memo(({
                     : 'text-white hover:bg-green-600'
                 )}
               >
-                {/* <Icon className="h-4 w-4" /> */}
                 <span>{item.label}</span>
                 {hasSubmenu && (
                   <ChevronDown
@@ -139,7 +147,7 @@ export const Header = memo(({
                 <div className="absolute left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
                   {item.submenu.map((subItem: any) => {
                     const SubIcon = subItem.icon;
-                    const subActive = subItem.path ? isActive(subItem.path) : false;
+                    const subActive = isSubmenuActive(subItem.path);
 
                     return (
                       <button
@@ -204,7 +212,7 @@ export const Header = memo(({
           </Dropdown>
         </div>
       </nav>
-    </header >
+    </header>
   );
 });
 

@@ -46,10 +46,23 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         submenu: [
           { label: 'Bằng cấp', icon: School, path: '/degree/management' },
           { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
-          { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
-          { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/admin/social-insurance' },
-          { label: 'Hồ sơ', icon: FolderClosed, path: '/admin/file' },
+          { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/employee/exit' },
+          { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
+          { label: 'Hồ sơ', icon: FolderClosed, path: '/file' },
           { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
+        ]
+      },
+      {
+        label: 'Quyết định',
+        path: '/',
+        submenu: [
+          { label: 'Khen thưởng', icon: PartyPopper, path: '/reward' },
+          { label: 'Kỷ luật', icon: ShieldAlert, path: '/discipline' },
+          { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
+          { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
+          { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
+          // { label: 'Quản lý hợp đồng', icon: Signature, path: '/contract' },
+          // { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
         ]
       },
       { label: 'Đào tạo', path: '/employee/learning' },
@@ -69,9 +82,22 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
           { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
           // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
           { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
-          { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/admin/social-insurance' },
-          { label: 'Hồ sơ', icon: FolderClosed, path: '/admin/file' },
+          { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
+          { label: 'Hồ sơ', icon: FolderClosed, path: '/file' },
           { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
+        ]
+      },
+      {
+        label: 'Quyết định',
+        path: '/',
+        submenu: [
+          { label: 'Khen thưởng', icon: PartyPopper, path: '/reward' },
+          { label: 'Kỷ luật', icon: ShieldAlert, path: '/discipline' },
+          { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
+          { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
+          { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
+          // { label: 'Quản lý hợp đồng', icon: Signature, path: '/contract' },
+          // { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
         ]
       },
       { label: 'Đào tạo', path: '/manager/learning' },
@@ -95,8 +121,8 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
         // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
         { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
-        { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/admin/social-insurance' },
-        { label: 'Hồ sơ', icon: FolderClosed, path: '/admin/file' },
+        { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
+        { label: 'Hồ sơ', icon: FolderClosed, path: '/file' },
         { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
         // { label: 'KPI', icon: Sparkle, path: '/admin/employees/kpi' },
         // { label: 'Lương', icon: CircleDollarSign, path: '/admin/employees/salary' },
@@ -109,21 +135,19 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
       label: 'Quyết định',
       path: '/admin/transfer',
       submenu: [
-        { label: 'Khen thưởng', icon: PartyPopper, path: '/admin/reward' },
-        { label: 'Kỷ luật', icon: ShieldAlert, path: '/admin/discipline' },
-        { label: 'Bổ nhiệm', icon: RailSymbol, path: '/admin/appoint' },
-        { label: 'Miễn nhiệm', icon: Split, path: '/admin/dismissed' },
-        { label: 'Điều chỉnh lương', icon: CircleDollarSign, path: '/admin/manage-salary' },
+        { label: 'Khen thưởng', icon: PartyPopper, path: '/reward' },
+        { label: 'Kỷ luật', icon: ShieldAlert, path: '/discipline' },
+        { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
+        { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
         { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
-        { label: 'Tạm hoãn/Chấm dứt hợp đồng', icon: Signature, path: '/admin/contract-dismiss' },
-        { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
+        { label: 'Quản lý hợp đồng', icon: Signature, path: '/contract' },
+        // { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
       ]
     },
     {
-      label: 'Chấm công & Nghỉ phép',
+      label: 'Nghỉ phép & Công tác',
       path: '/admin/work-schedule',
       submenu: [
-        { label: 'Chấm công', icon: ClockArrowUp, path: '/admin/time-keeping' },
         { label: 'Nghỉ phép', icon: Mailbox, path: '/admin/leave-requests' },
         { label: 'Lịch công tác', icon: History, path: '/admin/work-schedule' },
       ]

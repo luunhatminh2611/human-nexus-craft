@@ -27,6 +27,7 @@ import MilitaryRankTab from '../../components/MilitaryRankTab';
 import PolicyFamilyTab from '../../components/PolicyFamilyTab';
 import SocialInsuranceJobTab from '../../components/SocialJobTab';
 import { Button } from '@/shared/components/ui/button/Button2';
+import DepartmentTabs from '../../components/DepartmentsTab';
 
 interface Category {
   id: string;
@@ -39,6 +40,7 @@ const categories: Category[] = [
   // Nhóm Nhân sự
   { id: 'jobTitles', label: 'Chức vụ', component: JobTitlesTab, group: 'Nhân sự' },
   { id: 'contractType', label: 'Loại hợp đồng', component: LaborContractTypeTab, group: 'Nhân sự' },
+  { id: 'department', label: 'Phòng Ban', component: DepartmentTabs, group: 'Nhân sự' },
   { id: 'departmentTypes', label: 'Loại Phòng Ban', component: DepartmentTypesTab, group: 'Nhân sự' },
   { id: 'ppe', label: 'Đồ bảo hộ lao động', component: PPEItemsTab, group: 'Nhân sự' },
   
