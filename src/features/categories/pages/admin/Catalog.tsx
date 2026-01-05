@@ -94,11 +94,6 @@ export default function Catalog() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Danh mục hệ thống</h1>
-        <p className="text-muted-foreground">Quản lý các danh mục trong hệ thống</p>
-      </div>
-
       <div className="flex gap-6">
         {/* Sidebar */}
         <Card className="w-64 flex-shrink-0">

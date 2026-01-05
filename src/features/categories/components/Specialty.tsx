@@ -1,241 +1,413 @@
-// components/catalog/SpecialtyTab.tsx
-import { useState, useEffect } from 'react';
-import { CardContent } from '@/shared/components/ui/card';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/shared/components/ui/button/Button2';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/shared/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/tables/table';
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
-import { useToast } from '@/shared/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/shared/components/tables/table';
+import { Input } from '@/shared/components/ui/input';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
 import { specialtyApi } from '@/features/categories/api/categoriesApi';
+import { toast } from 'sonner';
+
+interface Specialty {
+  id: number;
+  name: string;
+  code?: string;
+  description?: string;
+}
 
 export default function SpecialtyTab() {
-  const { toast } = useToast();
-  
-  const [specialties, setSpecialties] = useState([]);
+  const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<Specialty | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', code: '', description: '' });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    description: '',
+  });
 
-  // Load danh sách chuyên môn khi component mount
   useEffect(() => {
-    loadSpecialties();
+    fetchSpecialties();
   }, []);
 
-  const loadSpecialties = async () => {
+  const fetchSpecialties = async () => {
     try {
       setLoading(true);
       const data = await specialtyApi.getAll();
-      setSpecialties(data);
+      setSpecialties(data || []);
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể tải danh sách nghề nghiệp',
-        variant: 'destructive',
-      });
+      toast.error('Không thể tải danh sách nghề nghiệp');
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const openAdd = () => {
-    setEditing(null);
-    setForm({ name: '', code: '', description: '' });
-    setDialogOpen(true);
-  };
-
-  const openEdit = (item) => {
-    setEditing(item);
-    setForm({
-      name: item.name,
-      code: item.code || '',
-      description: item.description || '',
+  // Lọc và phân trang
+  const filteredSpecialties = useMemo(() => {
+    return specialties.filter(item => {
+      const search = searchTerm.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(search) ||
+        (item.code && item.code.toLowerCase().includes(search)) ||
+        (item.description && item.description.toLowerCase().includes(search))
+      );
     });
-    setDialogOpen(true);
+  }, [specialties, searchTerm]);
+
+  const totalPages = Math.ceil(filteredSpecialties.length / itemsPerPage);
+
+  const paginatedSpecialties = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredSpecialties.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredSpecialties, currentPage, itemsPerPage]);
+
+  // Reset về trang 1 khi search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const handleOpenDialog = (item?: Specialty) => {
+    if (item) {
+      setSelectedItem(item);
+      setFormData({
+        name: item.name,
+        code: item.code || '',
+        description: item.description || '',
+      });
+    } else {
+      setSelectedItem(null);
+      setFormData({
+        name: '',
+        code: '',
+        description: '',
+      });
+    }
+    setIsDialogOpen(true);
   };
 
-  const handleSave = async () => {
-    if (!form.name.trim()) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập tên nghề nghiệp', variant: 'destructive' });
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedItem(null);
+    setFormData({
+      name: '',
+      code: '',
+      description: '',
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Vui lòng nhập tên nghề nghiệp');
       return;
     }
 
     try {
       setLoading(true);
-      
-      if (editing) {
-        // Cập nhật
-        await specialtyApi.update(editing.id, form);
-        toast({
-          title: 'Thành công',
-          description: 'Cập nhật nghề nghiệp thành công',
-        });
+      if (selectedItem) {
+        await specialtyApi.update(selectedItem.id, formData);
+        toast.success('Cập nhật nghề nghiệp thành công');
       } else {
-        // Thêm mới
-        await specialtyApi.create(form);
-        toast({
-          title: 'Thành công',
-          description: 'Thêm mới nghề nghiệp thành công',
-        });
+        await specialtyApi.create(formData);
+        toast.success('Thêm nghề nghiệp thành công');
       }
-      
-      setDialogOpen(false);
-      loadSpecialties(); // Reload lại danh sách
+      handleCloseDialog();
+      fetchSpecialties();
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: `Không thể ${editing ? 'cập nhật' : 'thêm mới'} nghề nghiệp`,
-        variant: 'destructive',
-      });
+      toast.error(selectedItem ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa nghề nghiệp này?')) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!selectedItem) return;
 
     try {
       setLoading(true);
-      await specialtyApi.delete(id);
-      toast({ title: 'Thành công', description: 'Xóa nghề nghiệp thành công' });
-      loadSpecialties(); // Reload lại danh sách
+      await specialtyApi.delete(selectedItem.id);
+      toast.success('Xóa nghề nghiệp thành công');
+      setIsDeleteDialogOpen(false);
+      setSelectedItem(null);
+      fetchSpecialties();
     } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể xóa nghề nghiệp',
-        variant: 'destructive',
-      });
+      toast.error('Xóa nghề nghiệp thất bại');
+      console.error(error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
-    <>
-      <CardContent className="pt-6 space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={openAdd} disabled={loading}>
-            <Plus className="h-4 w-4 mr-2" />
+    <div className="space-y-4 p-4">
+      <div className="grid grid-cols-6 items-center gap-4">
+        <div className="flex col-span-6 items-center gap-2">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Tìm kiếm theo tên, mã, mô tả nghề nghiệp..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+
+          <Button className="shrink-0" variant='outline'>
+            <Upload className="mr-1 h-2 w-2" />
+            Tải lên
+          </Button>
+          <Button className="shrink-0" variant='outline'>
+            <Download className="mr-1 h-2 w-2" />
+            Tải xuống
+          </Button>
+
+          {/* Button */}
+          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+            <Plus className="mr-2 h-4 w-4" />
             Thêm nghề nghiệp
           </Button>
         </div>
-        
-        {loading && specialties.length === 0 ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
+      </div>
+
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader className='bg-muted'>
+            <TableRow>
+              <TableHead className="w-[80px] border">STT</TableHead>
+              <TableHead className="border">Mã nghề nghiệp</TableHead>
+              <TableHead className="border">Tên nghề nghiệp</TableHead>
+              <TableHead className="border">Mô tả</TableHead>
+              <TableHead className="text-center w-[150px] border">Thao tác</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead>Mã</TableHead>
-                <TableHead>Tên nghề nghiệp</TableHead>
-                <TableHead>Mô tả</TableHead>
-                <TableHead className="w-[120px] text-right">Thao tác</TableHead>
+                <TableCell colSpan={5} className="text-center">
+                  Đang tải...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {specialties.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
-                    Chưa có dữ liệu
+            ) : paginatedSpecialties.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center">
+                  {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedSpecialties.map((item, index) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium border">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
-                </TableRow>
-              ) : (
-                specialties.map((specialty) => (
-                  <TableRow key={specialty.id}>
-                    <TableCell className="font-mono text-sm">{specialty.code || '-'}</TableCell>
-                    <TableCell className="font-medium">{specialty.name}</TableCell>
-                    <TableCell>{specialty.description || '-'}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => openEdit(specialty)}
-                        disabled={loading}
+                  <TableCell className="border">
+                    {item.code ? (
+                      <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-medium">
+                        {item.code}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="font-medium border">{item.name}</TableCell>
+                  <TableCell className='border'>{item.description || '-'}</TableCell>
+                  <TableCell className="text-center border">
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenDialog(item)}
+                        className="hover:bg-blue-50"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(specialty.id)}
-                        disabled={loading}
+                        size="sm"
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        className="hover:bg-red-50 hover:text-red-600"
                       >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+      {/* Pagination */}
+      {filteredSpecialties.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
+            {Math.min(currentPage * itemsPerPage, filteredSpecialties.length)} trong tổng số{' '}
+            {filteredSpecialties.length} nghề nghiệp
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Trước
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      className="w-10"
+                    >
+                      {page}
+                    </Button>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return (
+                    <span key={page} className="px-2">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Sau
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog thêm/sửa */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Chỉnh sửa' : 'Thêm mới'} nghề nghiệp</DialogTitle>
-            <DialogDescription>Điền thông tin chi tiết bên dưới</DialogDescription>
+            <DialogTitle>
+              {selectedItem ? 'Cập nhật nghề nghiệp' : 'Thêm nghề nghiệp mới'}
+            </DialogTitle>
           </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="code">Mã nghề nghiệp</Label>
+              <Input
+                id="code"
+                value={formData.code}
+                onChange={(e) =>
+                  setFormData({ ...formData, code: e.target.value })
+                }
+                placeholder="Ví dụ: NN-01, IT-DEV, HR-MGR..."
+              />
+            </div>
 
-          <div className="space-y-4">
-            <div>
-              <Label>Mã nghề nghiệp</Label>
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Tên nghề nghiệp <span className="text-red-500">*</span>
+              </Label>
               <Input
-                value={form.code}
-                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
-                placeholder="Nhập mã (tùy chọn)"
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Ví dụ: Kỹ sư phần mềm, Quản lý nhân sự..."
               />
             </div>
-            <div>
-              <Label>Tên nghề nghiệp *</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="Nhập tên nghề nghiệp"
-              />
-            </div>
-            <div>
-              <Label>Mô tả</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Mô tả</Label>
               <Textarea
-                value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="Nhập mô tả"
-                rows={3}
+                id="description"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                placeholder="Nhập mô tả chi tiết về nghề nghiệp..."
+                rows={4}
               />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setDialogOpen(false)}
-                disabled={loading}
-              >
-                Hủy
-              </Button>
-              <Button onClick={handleSave} disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Lưu
-              </Button>
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>
+              Hủy
+            </Button>
+            <Button onClick={handleSubmit} disabled={loading}>
+              {loading ? 'Đang xử lý...' : selectedItem ? 'Cập nhật' : 'Thêm mới'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+
+      {/* Dialog xác nhận xóa */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác nhận xóa</DialogTitle>
+          </DialogHeader>
+          <p>
+            Bạn có chắc chắn muốn xóa nghề nghiệp <strong>"{selectedItem?.name}"</strong> không?
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setSelectedItem(null);
+              }}
+            >
+              Hủy
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={loading}>
+              {loading ? 'Đang xóa...' : 'Xóa'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

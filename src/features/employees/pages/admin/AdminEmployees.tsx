@@ -407,7 +407,7 @@ export default function Employees() {
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder={selectedEmployeeId ? "Tìm kiếm nhân viên..." : "Tìm kiếm theo mã nhân viên, tên nhân viên"}
+                      placeholder={selectedEmployeeId ? "Tìm kiếm nhân viên..." : "Tìm kiếm theo tên nhân viên, mã nhân viên"}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
@@ -485,12 +485,13 @@ export default function Employees() {
                   <table className="w-full">
                     <thead className="bg-white sticky top-0 z-10">
                       <tr>
-                        <th className="text-left p-3 text-sm font-semibold">Nhân viên</th>
+                        <th className="text-left p-3 text-sm font-semibold">Tên nhân viên</th>
                         {!selectedEmployeeId && (
                           <>
+                            <th className="text-left p-3 text-sm font-semibold">Mã nhân viên</th>
                             <th className="text-left p-3 text-sm font-semibold">Chức vụ</th>
-                            <th className="text-left p-3 text-sm font-semibold">Ngày vào làm</th>
-                            <th className="text-left p-3 text-sm font-semibold">Tài khoản</th>
+                            <th className="text-left p-3 text-sm font-semibold">Phòng ban</th>
+                            <th className="text-left p-3 text-sm font-semibold">Trạng thái</th>
                             <th className="text-center p-3 text-sm font-semibold">Thao tác</th>
                           </>
                         )}
@@ -513,36 +514,48 @@ export default function Employees() {
                               </div>
                               <div className="min-w-0">
                                 <p className="font-medium text-sm truncate">{employee.fullName}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {employee.employeeCode}
-                                </p>
                               </div>
                             </div>
                           </td>
                           {!selectedEmployeeId && (
                             <>
                               <td className="p-3">
-                                <p className="text-sm">{employee.positionName || '-'}</p>
-                                <p className="text-xs text-muted-foreground">{employee.departmentName || '-'}</p>
+                                <p className="text-sm">{employee.employeeCode || '-'}</p>
                               </td>
                               <td className="p-3">
-                                <p className="text-sm">{employee.startDate || '-'}</p>
+                                <p className="text-sm">{employee.positionName || '-'}</p>
+                              </td>
+                              <td className="p-3">
+                                <p className="text-sm">{employee.departmentName || '-'}</p>
                               </td>
                               <td className="p-3">
                                 {employee.email ? (
                                   <Badge variant="default" className="text-xs">
                                     <CheckCircle className="h-3 w-3 mr-1" />
-                                    Đã tạo TK
+                                    Đã có tài khoản
                                   </Badge>
                                 ) : (
                                   <Badge variant="secondary" className="text-xs">
                                     <XCircle className="h-3 w-3 mr-1" />
-                                    Chưa có TK
+                                    Chưa có tài khoản
                                   </Badge>
                                 )}
                               </td>
                               <td className="p-3">
                                 <div className="flex gap-1 justify-center">
+                                  <Button2
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setModalMode('edit');
+                                      setSelectedEmployeeId(employee.id);
+                                      setIsModalOpen(true);
+                                    }}
+                                    title="Chỉnh sửa"
+                                  >
+                                    <UserCog className="h-4 w-4" />
+                                  </Button2>
                                   <Button2
                                     variant="ghost"
                                     size="sm"
@@ -677,11 +690,18 @@ export default function Employees() {
 
                       {/* Tabs */}
                       <Tabs value={mainTab} onValueChange={setMainTab}>
-                        <TabsList className="grid grid-cols-4 w-full">
-                          <TabsTrigger value="info">Thông tin</TabsTrigger>
-                          <TabsTrigger value="business">Nghiệp vụ</TabsTrigger>
-                          <TabsTrigger value="skill">Chuyên môn</TabsTrigger>
-                          <TabsTrigger value="benefit">Chế độ</TabsTrigger>
+                        <TabsList
+                          className="grid w-full"
+                          style={{
+                            gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr auto',
+                          }}
+                        >
+                          <TabsTrigger value="info">Hồ sơ & Quyết định</TabsTrigger>
+                          <TabsTrigger value="benefit">Chế độ & Phúc lợi</TabsTrigger>
+                          <TabsTrigger value="">Lương & Đánh giá</TabsTrigger>
+                          <TabsTrigger value="skill">Đào tạo, bồi dưỡng</TabsTrigger>
+                          <TabsTrigger value="business">Nghỉ phép & Công tác</TabsTrigger>
+                          <TabsTrigger value="/">Khác</TabsTrigger>
                         </TabsList>
                       </Tabs>
 
@@ -696,7 +716,47 @@ export default function Employees() {
                                 onClick={() => setSubTab('info')}
                                 className={subTab === 'info' ? '' : 'hover:bg-background'}
                               >
-                                Thông tin nhân sự
+                                Sơ yếu lý lịch
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'decision' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('decision')}
+                                className={subTab === 'decision' ? '' : 'hover:bg-background'}
+                              >
+                                Quyết định
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'degree' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('degree')}
+                                className={subTab === 'degree' ? '' : 'hover:bg-background'}
+                              >
+                                Bằng cấp
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'contracts' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('contracts')}
+                                className={subTab === 'contracts' ? '' : 'hover:bg-background'}
+                              >
+                                Hợp đồng
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'medical' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('medical')}
+                                className={subTab === 'medical' ? '' : 'hover:bg-background'}
+                              >
+                                Y tế
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'profile' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('profile')}
+                                className={subTab === 'profile' ? '' : 'hover:bg-background'}
+                              >
+                                Hồ sơ khác
                               </Button2>
                               <Button2
                                 variant={subTab === 'family' ? 'default' : 'ghost'}
@@ -705,22 +765,6 @@ export default function Employees() {
                                 className={subTab === 'family' ? '' : 'hover:bg-background'}
                               >
                                 Quan hệ gia đình
-                              </Button2>
-                              <Button2
-                                variant={subTab === 'profile' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('profile')}
-                                className={subTab === 'profile' ? '' : 'hover:bg-background'}
-                              >
-                                Hồ sơ
-                              </Button2>
-                              <Button2
-                                variant={subTab === 'other' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('other')}
-                                className={subTab === 'other' ? '' : 'hover:bg-background'}
-                              >
-                                Khác
                               </Button2>
                             </div>
 
@@ -743,22 +787,6 @@ export default function Employees() {
                         {mainTab === 'business' && (
                           <div className="space-y-4">
                             <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
-                              <Button2
-                                variant={subTab === 'decision' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('decision')}
-                                className={subTab === 'decision' ? '' : 'hover:bg-background'}
-                              >
-                                Quyết định
-                              </Button2>
-                              <Button2
-                                variant={subTab === 'contracts' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('contracts')}
-                                className={subTab === 'contracts' ? '' : 'hover:bg-background'}
-                              >
-                                Hợp đồng
-                              </Button2>
                               <Button2
                                 variant={subTab === 'leaves' ? 'default' : 'ghost'}
                                 size="sm"
@@ -793,14 +821,6 @@ export default function Employees() {
                         {mainTab === 'skill' && (
                           <div className="space-y-4">
                             <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
-                              <Button2
-                                variant={subTab === 'degree' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('degree')}
-                                className={subTab === 'degree' ? '' : 'hover:bg-background'}
-                              >
-                                Bằng cấp
-                              </Button2>
                               <Button2
                                 variant={subTab === 'training' ? 'default' : 'ghost'}
                                 size="sm"
@@ -851,14 +871,6 @@ export default function Employees() {
                                 className={subTab === 'insurance' ? '' : 'hover:bg-background'}
                               >
                                 Bảo hiểm
-                              </Button2>
-                              <Button2
-                                variant={subTab === 'medical' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('medical')}
-                                className={subTab === 'medical' ? '' : 'hover:bg-background'}
-                              >
-                                Y tế
                               </Button2>
                             </div>
 

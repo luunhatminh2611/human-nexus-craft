@@ -234,9 +234,13 @@ export default function OrgChart() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Sơ đồ tổ chức</h1>
-        <p className="text-muted-foreground">Cơ cấu phòng ban và nhân sự</p>
+      <div className="space-y-1 pb-4 border-b">
+        <h1 className="text-2xl font-semibold text-center">
+          Sơ đồ tổ chức
+        </h1>
+        <p className="text-sm text-muted-foreground text-center max-w-xl mx-auto">
+          Cơ cấu phòng ban và mối quan hệ quản lý trong đơn vị
+        </p>
       </div>
 
       {/* Organizational Chart với scroll horizontal */}
@@ -262,98 +266,6 @@ export default function OrgChart() {
                 </div>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Department List Table */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Danh sách phòng ban</h2>
-        <Button onClick={openAddModal}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm phòng ban
-        </Button>
-      </div>
-
-      <Card>
-        <CardContent className="p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border">
-              <thead className="bg-muted text-left">
-                <tr>
-                  <th className="p-3 border">Mã phòng ban</th>
-                  <th className="p-3 border">Tên phòng ban</th>
-                  <th className="p-3 border">Loại phòng ban</th>
-                  <th className="p-3 border">Phòng ban gốc</th>
-                  <th className="p-3 border text-center">Số nhân viên</th>
-                  <th className="p-3 border text-center w-[120px]">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {departments.length > 0 ? (
-                  departments.map((dept) => {
-                    const parentDept = departments.find((d) => d.id === dept.parentId);
-                    
-                    return (
-                      <tr key={dept.id} className="hover:bg-muted/40">
-                        <td className="p-3 border text-sm text-muted-foreground">{dept.code || '-'}</td>
-                        <td className="p-3 border font-medium">{dept.name}</td>
-                        <td className="p-3 border">
-                          {dept.departmentType ? (
-                            <div className="flex flex-col gap-1">
-                              <Badge variant="outline" className="w-fit">
-                                {dept.departmentType.name}
-                              </Badge>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground italic">-</span>
-                          )}
-                        </td>
-                        <td className="p-3 border">
-                          {parentDept ? (
-                            parentDept.name
-                          ) : (
-                            <span className="text-muted-foreground italic">(Phòng ban gốc)</span>
-                          )}
-                        </td>
-                        <td className="p-3 border text-center">
-                          <Badge variant="secondary" className="flex items-center gap-1 justify-center w-fit mx-auto">
-                            <Users className="h-3 w-3" />
-                            {countEmployees(dept.id)}
-                          </Badge>
-                        </td>
-                        <td className="p-3 border text-center">
-                          <div className="flex justify-center gap-2">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => openEditModal(dept)}
-                              className="h-7 w-7"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="destructive"
-                              onClick={() => openDeleteConfirm(dept)}
-                              className="h-7 w-7"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="text-center p-4 text-muted-foreground">
-                      Không có phòng ban nào
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
         </CardContent>
       </Card>

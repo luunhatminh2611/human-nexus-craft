@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
   Dialog,
@@ -18,7 +18,7 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Plus, Pencil, Trash2, FileText } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
 import { categoriesApi } from '../api/categoriesApi';
 import { toast } from 'sonner';
 
@@ -35,6 +35,9 @@ export default function SocialInsuranceJobTab() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SocialInsuranceJob | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -57,6 +60,30 @@ export default function SocialInsuranceJobTab() {
       setLoading(false);
     }
   };
+
+  // Lọc và phân trang
+  const filteredSocialInsuranceJobs = useMemo(() => {
+    return socialInsuranceJobs.filter(item => {
+      const search = searchTerm.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(search) ||
+        (item.code && item.code.toLowerCase().includes(search)) ||
+        (item.description && item.description.toLowerCase().includes(search))
+      );
+    });
+  }, [socialInsuranceJobs, searchTerm]);
+
+  const totalPages = Math.ceil(filteredSocialInsuranceJobs.length / itemsPerPage);
+
+  const paginatedSocialInsuranceJobs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredSocialInsuranceJobs.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredSocialInsuranceJobs, currentPage, itemsPerPage]);
+
+  // Reset về trang 1 khi search
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleOpenDialog = (item?: SocialInsuranceJob) => {
     if (item) {
@@ -130,63 +157,73 @@ export default function SocialInsuranceJobTab() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   return (
     <div className="space-y-4 p-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <FileText className="h-6 w-6 text-orange-600" />
-          <h2 className="text-xl font-semibold">Quản lý công việc BHXH</h2>
+      <div className="grid grid-cols-6 items-center gap-4">
+        <div className="flex col-span-6 items-center gap-2">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Tìm kiếm theo tên, mã, mô tả công việc BHXH..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-full"
+            />
+          </div>
+
+          <Button className="shrink-0" variant='outline'>
+            <Upload className="mr-1 h-2 w-2" />
+            Tải lên
+          </Button>
+          <Button className="shrink-0" variant='outline'>
+            <Download className="mr-1 h-2 w-2" />
+            Tải xuống
+          </Button>
+
+          {/* Button */}
+          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+            <Plus className="mr-2 h-4 w-4" />
+            Thêm công việc BHXH
+          </Button>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Thêm công việc BHXH
-        </Button>
       </div>
 
-      <div className="border rounded-lg">
+      <div className="border rounded-lg overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className='bg-muted'>
             <TableRow>
-              <TableHead className="w-[80px]">STT</TableHead>
-              <TableHead>Mã công việc</TableHead>
-              <TableHead>Tên công việc BHXH</TableHead>
-              <TableHead>Mô tả</TableHead>
-              <TableHead className="text-right w-[150px]">Thao tác</TableHead>
+              <TableHead className="w-[80px] border">STT</TableHead>
+              <TableHead className="border">Mã công việc</TableHead>
+              <TableHead className="border">Tên công việc BHXH</TableHead>
+              <TableHead className="border">Mô tả</TableHead>
+              <TableHead className="text-center w-[150px] border">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    <span>Đang tải...</span>
-                  </div>
+                <TableCell colSpan={5} className="text-center">
+                  Đang tải...
                 </TableCell>
               </TableRow>
-            ) : socialInsuranceJobs.length === 0 ? (
+            ) : paginatedSocialInsuranceJobs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <FileText className="h-8 w-8" />
-                    <p>Chưa có dữ liệu công việc BHXH</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleOpenDialog()}
-                      className="mt-2"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Thêm công việc đầu tiên
-                    </Button>
-                  </div>
+                <TableCell colSpan={5} className="text-center">
+                  {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
-              socialInsuranceJobs.map((item, index) => (
+              paginatedSocialInsuranceJobs.map((item, index) => (
                 <TableRow key={item.id}>
-                  <TableCell className="font-medium">{index + 1}</TableCell>
-                  <TableCell>
+                  <TableCell className="font-medium border">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </TableCell>
+                  <TableCell className="border">
                     {item.code ? (
                       <span className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs font-medium">
                         {item.code}
@@ -195,18 +232,15 @@ export default function SocialInsuranceJobTab() {
                       <span className="text-muted-foreground">-</span>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>
-                    {item.description || <span className="text-muted-foreground">-</span>}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                  <TableCell className="font-medium border">{item.name}</TableCell>
+                  <TableCell className='border'>{item.description || '-'}</TableCell>
+                  <TableCell className="text-center border">
+                    <div className="flex justify-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleOpenDialog(item)}
                         className="hover:bg-blue-50"
-                        title="Chỉnh sửa"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -218,7 +252,6 @@ export default function SocialInsuranceJobTab() {
                           setIsDeleteDialogOpen(true);
                         }}
                         className="hover:bg-red-50 hover:text-red-600"
-                        title="Xóa"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -231,12 +264,72 @@ export default function SocialInsuranceJobTab() {
         </Table>
       </div>
 
+      {/* Pagination */}
+      {filteredSocialInsuranceJobs.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-gray-500">
+            Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
+            {Math.min(currentPage * itemsPerPage, filteredSocialInsuranceJobs.length)} trong tổng số{' '}
+            {filteredSocialInsuranceJobs.length} công việc BHXH
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Trước
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
+                if (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                ) {
+                  return (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      className="w-10"
+                    >
+                      {page}
+                    </Button>
+                  );
+                } else if (page === currentPage - 2 || page === currentPage + 2) {
+                  return (
+                    <span key={page} className="px-2">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Sau
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Dialog thêm/sửa */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {selectedItem ? 'Cập nhật công việc BHXH' : 'Thêm công việc BHXH'}
+              {selectedItem ? 'Cập nhật công việc BHXH' : 'Thêm công việc BHXH mới'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -250,9 +343,6 @@ export default function SocialInsuranceJobTab() {
                 }
                 placeholder="Ví dụ: CVBHXH-01, NGHE-01, NGHE-02..."
               />
-              <p className="text-xs text-muted-foreground">
-                Mã định danh cho công việc BHXH (tùy chọn)
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -265,11 +355,8 @@ export default function SocialInsuranceJobTab() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Ví dụ: Công việc nặng nhọc, độc hại, nguy hiểm, đặc biệt nặng nhọc..."
+                placeholder="Ví dụ: Công việc nặng nhọc, độc hại, nguy hiểm..."
               />
-              <p className="text-xs text-muted-foreground">
-                Tên đầy đủ của công việc theo quy định BHXH
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -286,18 +373,11 @@ export default function SocialInsuranceJobTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog} disabled={loading}>
+            <Button variant="outline" onClick={handleCloseDialog}>
               Hủy
             </Button>
             <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                  Đang xử lý...
-                </>
-              ) : (
-                selectedItem ? 'Cập nhật' : 'Thêm mới'
-              )}
+              {loading ? 'Đang xử lý...' : selectedItem ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -309,15 +389,9 @@ export default function SocialInsuranceJobTab() {
           <DialogHeader>
             <DialogTitle>Xác nhận xóa</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p>
-              Bạn có chắc chắn muốn xóa công việc BHXH{' '}
-              <strong className="text-red-600">"{selectedItem?.name}"</strong> không?
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Hành động này không thể hoàn tác.
-            </p>
-          </div>
+          <p>
+            Bạn có chắc chắn muốn xóa công việc BHXH <strong>"{selectedItem?.name}"</strong> không?
+          </p>
           <DialogFooter>
             <Button
               variant="outline"
@@ -325,23 +399,11 @@ export default function SocialInsuranceJobTab() {
                 setIsDeleteDialogOpen(false);
                 setSelectedItem(null);
               }}
-              disabled={loading}
             >
               Hủy
             </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleDelete} 
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                  Đang xóa...
-                </>
-              ) : (
-                'Xóa'
-              )}
+            <Button variant="destructive" onClick={handleDelete} disabled={loading}>
+              {loading ? 'Đang xóa...' : 'Xóa'}
             </Button>
           </DialogFooter>
         </DialogContent>
