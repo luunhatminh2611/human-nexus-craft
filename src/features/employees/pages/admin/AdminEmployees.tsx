@@ -54,6 +54,11 @@ import BulkEditEmployeeModal from '../../components/modal/BulkEditEmployeeModal'
 import BulkAddEmployeeModal from '../../components/modal/BulkAddEmployeeModal';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger, } from '@/shared/components/ui/popover';
+import RewardTab from '../../components/RewardTab';
+import DisciplineTab from '../../components/DisciplineTab';
+import AppointmentTab from '../../components/AppointmentTab';
+import DismissalTab from '../../components/DismissalTab';
+import TransferTab from '../../components/TransferTab';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -925,10 +930,37 @@ export default function Employees() {
                                     </PopoverContent>
                                   </Popover>
 
-                                  <InfoTab
-                                    userData={employeeDetailData}
-                                    employeeId={selectedEmployeeId}
-                                  />
+                                  {/* Render component based on decision type */}
+                                  {decisionType === 'reward' && (
+                                    <RewardTab
+                                      employeeId={Number(selectedEmployeeId)}
+                                      userData={employeeDetailData}
+                                    />
+                                  )}
+                                  {decisionType === 'discipline' && (
+                                    <DisciplineTab
+                                      userData={employeeDetailData}
+                                      employeeId={Number(selectedEmployeeId)}
+                                    />
+                                  )}
+                                  {decisionType === 'appointment' && (
+                                    <AppointmentTab employeeId={Number(selectedEmployeeId)} userData={employeeDetailData} />
+                                  )}
+                                  {decisionType === 'dismissal' && (
+                                    <DismissalTab employeeId={Number(selectedEmployeeId)} userData={employeeDetailData} />
+                                  )}
+                                  {decisionType === 'transfer' && (
+                                    <TransferTab
+                                      employeeId={Number(selectedEmployeeId)}
+                                      userData={employeeDetailData}
+                                    />
+                                  )}
+                                  {!['reward', 'discipline', 'appointment', 'dismissal', 'transfer'].includes(decisionType) && (
+                                    <InfoTab
+                                      userData={employeeDetailData}
+                                      employeeId={selectedEmployeeId}
+                                    />
+                                  )}
                                 </div>
                               )}
                               {subTab === 'degree' && (
