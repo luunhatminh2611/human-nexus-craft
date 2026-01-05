@@ -242,7 +242,7 @@ export default function RewardApprovalModal({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label className="text-muted-foreground">Họ và tên</Label>
+                <Label className="text-muted-foreground">Tên nhân viên</Label>
                 <p className="font-medium">{reward.employeeName}</p>
               </div>
               <div>

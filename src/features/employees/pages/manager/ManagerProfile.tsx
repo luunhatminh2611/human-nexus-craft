@@ -245,7 +245,7 @@ export default function ManagerProfile() {
                             <CardContent className="space-y-4">
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
-                                        <Label>Họ và tên</Label>
+                                        <Label>Tên nhân viên</Label>
                                         <Input value={`${employee.firstName} ${employee.lastName}`} disabled />
                                     </div>
                                     <div>

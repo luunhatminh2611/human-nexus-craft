@@ -20,7 +20,7 @@ export default function ResumeTab({ userData }) {
         <CardContent>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Họ và tên</p>
+              <p className="text-sm text-muted-foreground">Tên nhân viên</p>
               <p className="font-medium">{userData.fullName || 'Chưa cập nhật'}</p>
             </div>
             <div>
@@ -201,7 +201,7 @@ export default function ResumeTab({ userData }) {
                 <div key={index} className="p-4 border rounded-lg">
                   <div className="grid md:grid-cols-2 gap-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">Họ và tên</p>
+                      <p className="text-sm text-muted-foreground">Tên nhân viên</p>
                       <p className="font-medium">{member.name || 'Chưa cập nhật'}</p>
                     </div>
                     <div>

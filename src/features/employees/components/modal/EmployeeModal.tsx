@@ -397,7 +397,7 @@ export default function EmployeeModal({
     onSuccess: () => {
       toast({
         title: 'Thành công',
-        description: 'Cập nhật thông tin nhân viên thành công',
+        description: 'Chỉnh sửa nhân viên thành công',
       });
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
@@ -410,7 +410,7 @@ export default function EmployeeModal({
     onError: (error: any) => {
       toast({
         title: 'Lỗi',
-        description: error.message || 'Không thể cập nhật thông tin nhân viên',
+        description: error.message || 'Không thể Chỉnh sửa nhân viên',
         variant: 'destructive',
       });
     },
@@ -463,7 +463,7 @@ export default function EmployeeModal({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {mode === 'create' ? 'Thêm nhân viên mới' : 'Cập nhật thông tin nhân viên'}
+            {mode === 'create' ? 'Thêm nhân viên' : 'Chỉnh sửa nhân viên'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create'
@@ -499,13 +499,13 @@ export default function EmployeeModal({
 
                   <div className="space-y-2">
                     <Label htmlFor="fullName">
-                      Họ và tên <span className="text-destructive">*</span>
+                      Tên nhân viên <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="fullName"
                       value={formData.fullName}
                       onChange={(e) => handleChange('fullName', e.target.value)}
-                      placeholder="Nhập họ và tên"
+                      placeholder="Nhập tên nhân viên"
                       required
                     />
                   </div>
@@ -931,7 +931,7 @@ export default function EmployeeModal({
 
               {/* Thông tin BHXH */}
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin Bảo hiểm xã hội</h3>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin bảo hiểm xã hội</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="socialInsuranceNumber">Số sổ BHXH</Label>
@@ -967,7 +967,7 @@ export default function EmployeeModal({
 
               {/* Thông tin Đảng, Đoàn, Quân đội */}
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin Đảng, Đoàn, Quân đội</h3>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">Thông tin tổ chức chính trị – xã hội</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="partyJoinDate">Ngày vào Đảng</Label>
@@ -1057,7 +1057,7 @@ export default function EmployeeModal({
                   ? 'Đang xử lý...'
                   : mode === 'create'
                     ? 'Thêm nhân viên'
-                    : 'Lưu thay đổi'}
+                    : 'Xác nhận'}
               </Button>
             </DialogFooter>
           </form>

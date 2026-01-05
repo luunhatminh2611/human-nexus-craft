@@ -249,7 +249,7 @@ export default function DegreeEmployeePage() {
               <SelectValue placeholder="Loại" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Tất cả loại</SelectItem>
+              <SelectItem value="ALL">Tất cả loại bằng cấp</SelectItem>
               <SelectItem value="EDUCATION">Học vấn</SelectItem>
               <SelectItem value="CERTIFICATION">Chứng chỉ</SelectItem>
               <SelectItem value="LICENSE">Giấy phép</SelectItem>
@@ -277,11 +277,11 @@ export default function DegreeEmployeePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Loại</TableHead>
+                <TableHead>Loại bằng cấp</TableHead>
                 <TableHead>Tên bằng cấp</TableHead>
                 <TableHead>Tổ chức cấp</TableHead>
                 <TableHead>Ngày cấp</TableHead>
-                <TableHead>Ngày hết hạn</TableHead>
+                <TableHead>Thời gian hiệu lực</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-right">Thao tác</TableHead>
               </TableRow>

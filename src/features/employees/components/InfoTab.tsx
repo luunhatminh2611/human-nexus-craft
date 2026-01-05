@@ -418,7 +418,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
 
           <div className='mt-6'>
-            <h3 className="font-semibold text-lg mb-4 text-blue-600">IV.1. Thông tin đào tạo</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">V. Thông tin đào tạo</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Trường đào tạo</Label>
@@ -452,7 +452,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
 
           {/* V. Thông tin công việc */}
           <div className='mt-6'>
-            <h3 className="font-semibold text-lg mb-4 text-blue-600">V. Thông tin công việc</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">VI. Thông tin công việc</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Ngày vào làm</Label>
@@ -553,7 +553,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
 
           {/* VI. Thông tin BHXH */}
           <div className='mt-6'>
-            <h3 className="font-semibold text-lg mb-4 text-blue-600">VI. Thông tin Bảo hiểm xã hội</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">VII. Thông tin Bảo hiểm xã hội</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Số sổ BHXH</Label>
@@ -587,7 +587,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
 
           {/* VII. Thông tin Đảng, Đoàn, Quân đội */}
           <div className='mt-6'>
-            <h3 className="font-semibold text-lg mb-4 text-blue-600">VII. Thông tin Đảng, Đoàn, Quân đội</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600">VIII. Thông tin tổ chức chính trị – xã hội</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label>Ngày vào Đảng</Label>
@@ -649,7 +649,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           {/* VIII. Ghi chú */}
           {userData.note && (
             <div className='mt-6'>
-              <h3 className="font-semibold text-lg mb-4 text-blue-600">VIII. Ghi chú</h3>
+              <h3 className="font-semibold text-lg mb-4 text-blue-600">IX. Ghi chú</h3>
               <div>
                 <Textarea
                   value={userData.note || ''}
@@ -664,7 +664,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
       </Card>
 
       {/* IX. Lịch sử điều động */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>IX. Lịch sử điều động</CardTitle>
         </CardHeader>
@@ -743,7 +743,6 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
         </CardContent>
       </Card>
 
-      {/* X. Thông tin thân nhân */}
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>X. Thông tin thân nhân</CardTitle>
@@ -839,7 +838,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
 
       {isAdmin && (
         <EmployeeModal

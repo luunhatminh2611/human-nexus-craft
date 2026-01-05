@@ -161,7 +161,7 @@ export default function AdminDashboard() {
     },
     {
       id: 2,
-      action: 'Thêm nhân viên mới',
+      action: 'Thêm nhân viên',
       user: 'Nguyễn Văn An',
       target: 'Hoàng Văn Em',
       time: '2 giờ trước',

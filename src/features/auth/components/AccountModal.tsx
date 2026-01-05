@@ -234,14 +234,14 @@ export default function AccountModal({
 
           <div className="space-y-2">
             <Label htmlFor="fullName">
-              Họ và tên <span className="text-red-500">*</span>
+              Tên nhân viên <span className="text-red-500">*</span>
             </Label>
             <Input
               id="fullName"
               name="fullName"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Nhập họ và tên"
+              placeholder="Tên nhân viên"
               disabled
             />
           </div>

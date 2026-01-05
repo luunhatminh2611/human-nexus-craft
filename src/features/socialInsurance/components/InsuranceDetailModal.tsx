@@ -122,7 +122,7 @@ export default function InsuranceDetailModal({
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-sm text-gray-600">Họ và tên</Label>
+                  <Label className="text-sm text-gray-600">Tên nhân viên</Label>
                   <p className="font-medium">{record.employeeName}</p>
                 </div>
                 <div>

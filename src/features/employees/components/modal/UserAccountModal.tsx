@@ -261,14 +261,14 @@ export default function UserAccountModal({
                     {/* Row 2: Full Name (spans 2 columns) */}
                     <div className="space-y-2">
                         <Label htmlFor="fullName">
-                            Họ và tên <span className="text-red-500">*</span>
+                            Tên nhân viên <span className="text-red-500">*</span>
                         </Label>
                         <Input
                             id="fullName"
                             name="fullName"
                             value={formData.fullName}
                             onChange={handleChange}
-                            placeholder="Nhập họ và tên"
+                            placeholder="Nhập tên nhân viên"
                             disabled={loading}
                         />
                     </div>

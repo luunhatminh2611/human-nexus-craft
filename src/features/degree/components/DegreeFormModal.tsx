@@ -523,7 +523,7 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
 
           {/* Certificate Number */}
           <div className="space-y-2">
-            <Label htmlFor="certificateNumber">Số bằng cấp/chứng chỉ</Label>
+            <Label htmlFor="certificateNumber">Bằng cấp/chứng chỉ</Label>
             <Input
               id="certificateNumber"
               value={formData.certificateNumber}
@@ -536,7 +536,7 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="issueDate">
-                Ngày cấp <span className="text-red-500">*</span>
+                Ngày hiệu lực <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="issueDate"

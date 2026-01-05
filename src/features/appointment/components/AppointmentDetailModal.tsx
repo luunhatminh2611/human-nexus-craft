@@ -275,7 +275,7 @@ export default function AppointmentDetailModal({
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label className="text-muted-foreground">Họ và tên</Label>
+                <Label className="text-muted-foreground">Tên nhân viên</Label>
                 <p className="font-medium text-lg">{appointment.employeeName}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">

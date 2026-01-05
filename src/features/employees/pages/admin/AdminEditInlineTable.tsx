@@ -36,7 +36,7 @@ const FIELD_MAPPING = {
 // Định nghĩa tất cả các cột có thể hiển thị
 const ALL_COLUMNS = [
   { key: 'employeeCode', label: 'Mã nhân viên', defaultVisible: true, editable: true, type: 'text' },
-  { key: 'fullName', label: 'Họ và tên', defaultVisible: true, editable: true, type: 'text' },
+  { key: 'fullName', label: 'Tên nhân viên', defaultVisible: true, editable: true, type: 'text' },
   { key: 'dateOfBirth', label: 'Ngày sinh', defaultVisible: true, editable: true, type: 'date' },
   { key: 'gender', label: 'Giới tính', defaultVisible: true, editable: true, type: 'select', options: ['NAM', 'NỮ', 'KHÁC'] },
   { key: 'cccdNumber', label: 'CCCD/CMND', defaultVisible: false, editable: true, type: 'text' },

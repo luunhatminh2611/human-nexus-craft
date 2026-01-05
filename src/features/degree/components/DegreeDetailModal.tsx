@@ -168,7 +168,7 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Award className="h-4 w-4" />
-                    <span>Số chứng chỉ</span>
+                    <span>Bằng cấp/chứng chỉ</span>
                   </div>
                   <p className="font-medium">{degree.certificateNumber}</p>
                 </div>

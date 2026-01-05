@@ -20,7 +20,7 @@ interface Column {
 }
 
 const initialColumns: Column[] = [
-  { id: "name", label: "Họ và tên", visible: true },
+  { id: "name", label: "Tên nhân viên", visible: true },
   { id: "email", label: "Email", visible: true },
   { id: "phone", label: "Số điện thoại", visible: true },
   { id: "dateOfBirth", label: "Ngày sinh", visible: true },

@@ -152,7 +152,7 @@ function SafetyItemModal({ isOpen, onClose, onSave, editingItem }) {
                             Hủy
                         </Button>
                         <Button type="submit">
-                            {editingItem ? "Lưu thay đổi" : "Thêm mới"}
+                            {editingItem ? "Xác nhận" : "Thêm mới"}
                         </Button>
                     </div>
                 </form>

@@ -377,7 +377,7 @@ export default function OverseasViewModal({
               </Button>
               <Button onClick={handleSave} disabled={isSubmitting}>
                 <Save className="h-4 w-4 mr-2" />
-                {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                {isSubmitting ? 'Đang lưu...' : 'Xác nhận'}
               </Button>
             </>
           ) : (

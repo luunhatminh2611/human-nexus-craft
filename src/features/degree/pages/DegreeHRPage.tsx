@@ -212,7 +212,7 @@ export default function DegreeHRPage() {
           <div className="text-2xl font-bold mt-1 text-red-600">{stats.rejected}</div>
         </Card>
         <Card className="p-4 border-orange-200 bg-orange-50">
-          <div className="text-sm text-muted-foreground">Sắp hết hạn</div>
+          <div className="text-sm text-muted-foreground">Hết hạn</div>
           <div className="text-2xl font-bold mt-1 text-orange-600">{stats.expiringSoon}</div>
         </Card>
       </div>
@@ -223,7 +223,7 @@ export default function DegreeHRPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, bằng cấp hoặc tổ chức"
+              placeholder="Tìm kiếm theo tên nhân viên, mã nhân viên, tên bằng cấp"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -247,7 +247,7 @@ export default function DegreeHRPage() {
               <SelectValue placeholder="Loại" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Tất cả loại</SelectItem>
+              <SelectItem value="ALL">Tất cả loại bằng cấp</SelectItem>
               <SelectItem value="EDUCATION">Học vấn</SelectItem>
               <SelectItem value="CERTIFICATION">Chứng chỉ</SelectItem>
               <SelectItem value="LICENSE">Giấy phép</SelectItem>
@@ -276,11 +276,12 @@ export default function DegreeHRPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nhân viên</TableHead>
-                <TableHead>Loại</TableHead>
+                <TableHead>Loại bằng cấp</TableHead>
                 <TableHead>Tên bằng cấp</TableHead>
                 <TableHead>Tổ chức cấp</TableHead>
-                <TableHead>Ngày nộp</TableHead>
-                <TableHead>Ngày hết hạn</TableHead>
+                <TableHead>Bằng cấp/chứng chỉ</TableHead>
+                <TableHead>Ngày vào sổ</TableHead>
+                <TableHead>Thời gian hiệu lực</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
@@ -326,6 +327,9 @@ export default function DegreeHRPage() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{degree.institution}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{degree.certificateNumber}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">

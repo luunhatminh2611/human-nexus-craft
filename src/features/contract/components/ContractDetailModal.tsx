@@ -145,7 +145,7 @@ export default function ContractDetailModal({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm text-gray-600">Họ và tên</Label>
+                  <Label className="text-sm text-gray-600">Tên nhân viên</Label>
                   <p className="font-medium">{contract.employeeName}</p>
                 </div>
                 <div>

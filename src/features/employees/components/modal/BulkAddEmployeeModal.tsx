@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import {
@@ -17,54 +17,33 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/shared/components/ui/dialog';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-} from '@/shared/components/ui/command';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/shared/components/ui/popover';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { employeeApi } from '../../api/employeeApi';
 import { toast } from '@/shared/components/ui/use-toast';
-import { Loader2, X, Search, Check, ChevronsUpDown, Upload, Download } from 'lucide-react';
+import { Loader2, X, Plus, UserPlus, Download, Upload } from 'lucide-react';
 import GenericSearchSelect from "@/features/employees/components/GenericSearchSelect";
 import { categoryConfigs } from "@/features/employees/components/CategoriesConfig";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/tables/table';
-import { ChevronDown, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
+import { ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 
-interface BulkEditEmployeeModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    preSelectedEmployeeIds?: number[];
-}
-
-export default function BulkEditEmployeeModal({
-    isOpen,
-    onClose,
-    preSelectedEmployeeIds = []
-}: BulkEditEmployeeModalProps) {
+export default function BulkAddEmployeeModal({ isOpen, onClose }) {
     const queryClient = useQueryClient();
-    const [selectedEmployees, setSelectedEmployees] = useState([]);
-    const [searchOpen, setSearchOpen] = useState(false);
-    const [searchValue, setSearchValue] = useState('');
+    const [employees, setEmployees] = useState([]);
+    const [nextId, setNextId] = useState(1);
 
-    const [viewMode, setViewMode] = useState<'table' | 'expanded'>('table');
+
+    const [viewMode, setViewMode] = useState<'table' | 'expanded'>('table'); // Chế độ hiển thị
     const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
         'code', 'fullName', 'birthDate', 'startDate', 'departmentId', 'positionId',
         'gender', 'contactAddress', 'laborContractTypeId'
     ]));
 
-    // Định nghĩa tất cả các cột
     const allColumns = {
+        // Cột bắt buộc (không thể ẩn)
         required: [
             { key: 'code', label: 'Mã NV *' },
             { key: 'fullName', label: 'Tên NV *' },
@@ -73,6 +52,7 @@ export default function BulkEditEmployeeModal({
             { key: 'departmentId', label: 'Phòng ban *' },
             { key: 'positionId', label: 'Chức vụ *' },
         ],
+        // Cột tùy chọn
         optional: [
             { key: 'gender', label: 'Giới tính', group: 'Cơ bản' },
             { key: 'birthPlace', label: 'Nơi sinh', group: 'Cơ bản' },
@@ -134,101 +114,13 @@ export default function BulkEditEmployeeModal({
         setVisibleColumns(newVisible);
     };
 
-    useEffect(() => {
-        const loadPreSelectedEmployees = async () => {
-            if (!isOpen || preSelectedEmployeeIds.length === 0) return;
-
-            try {
-                // Load tất cả nhân viên đã chọn
-                const promises = preSelectedEmployeeIds.map(id =>
-                    employeeApi.getById(id).then(response => response.data || response)
-                );
-
-                const employeesData = await Promise.all(promises);
-
-                // Map data giống như handleAddEmployee
-                const mappedEmployees = employeesData.map(employeeData => ({
-                    id: employeeData.id,
-                    code: employeeData.code || '',
-                    fullName: employeeData.name || '',
-                    birthDate: employeeData.birthday || '',
-                    birthPlace: employeeData.birthPlace || '',
-                    startDate: employeeData.startDate || '',
-                    endDate: employeeData.endDate || '',
-                    gender: employeeData.gender || 'NAM',
-                    status: employeeData.status || 'Đang làm việc',
-                    cccdNumber: employeeData.cccdNumber || '',
-                    cccdDate: employeeData.cccdDate || '',
-                    cccdPlace: employeeData.cccdPlace || '',
-                    contactAddress: employeeData.contactAddress || '',
-                    nativePlace: employeeData.nativePlace || '',
-                    homeTown: employeeData.homeTown || '',
-                    permanentAddress: employeeData.permanentAddress || '',
-                    departmentId: employeeData.departmentId?.toString() || '',
-                    positionId: employeeData.positionId?.toString() || '',
-                    laborContractTypeId: employeeData.laborContractTypeId?.toString() || '',
-                    currentJobDetail: employeeData.currentJobDetail || '',
-                    title: employeeData.title || '',
-                    cardNumber: employeeData.cardNumber || '',
-                    documentReturnDate: employeeData.documentReturnDate || '',
-                    isWoundedSoldier: employeeData.isWoundedSoldier || false,
-                    ethnicity: employeeData.ethnicity || '',
-                    religion: employeeData.religion || '',
-                    nationalityId: employeeData.nationalityId?.toString() || '',
-                    policyFamilyId: employeeData.policyFamilyId?.toString() || '',
-                    wardId: employeeData.wardId?.toString() || '',
-                    provinceCityId: employeeData.provinceCityId?.toString() || '',
-                    specialtyId: employeeData.specialtyId?.toString() || '',
-                    educationLevelId: employeeData.educationLevelId?.toString() || '',
-                    educationDetail: employeeData.educationDetail || '',
-                    politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
-                    languageLevelId: employeeData.languageLevelId?.toString() || '',
-                    culturalLevelId: employeeData.culturalLevelId?.toString() || '',
-                    professionalLevelId: employeeData.professionalLevelId?.toString() || '',
-                    itLevelId: employeeData.itLevelId?.toString() || '',
-                    trainingInstitutionId: employeeData.trainingInstitutionId?.toString() || '',
-                    trainingMajorId: employeeData.trainingMajorId?.toString() || '',
-                    trainingTypeId: employeeData.trainingTypeId?.toString() || '',
-                    socialInsuranceNumber: employeeData.socialInsuranceNumber || '',
-                    socialInsuranceStartDate: employeeData.socialInsuranceStartDate || '',
-                    socialInsuranceJobId: employeeData.socialInsuranceJobId?.toString() || '',
-                    partyJoinDate: employeeData.partyJoinDate || '',
-                    partyOfficialDate: employeeData.partyOfficialDate || '',
-                    youthUnionJoinDate: employeeData.youthUnionJoinDate || '',
-                    militaryJoinDate: employeeData.militaryJoinDate || '',
-                    militaryEndDate: employeeData.militaryEndDate || '',
-                    militaryRankId: employeeData.militaryRankId?.toString() || '',
-                    note: employeeData.note || '',
-                    userId: employeeData.userId || null,
-                }));
-
-                setSelectedEmployees(mappedEmployees);
-            } catch (error) {
-                console.error('Error loading pre-selected employees:', error);
-                toast({
-                    title: 'Lỗi',
-                    description: 'Không thể tải thông tin nhân viên',
-                    variant: 'destructive',
-                });
-            }
-        };
-
-        loadPreSelectedEmployees();
-    }, [isOpen, preSelectedEmployeeIds]);
-
-    // Fetch all employees for search
-    const { data: allEmployees = [] } = useQuery({
-        queryKey: ['employees'],
-        queryFn: employeeApi.getAll,
-    });
-
-    // Update mutation
-    const updateMutation = useMutation({
-        mutationFn: (payload: any[]) => employeeApi.updateBulk(payload),
+    // Create mutation
+    const createMutation = useMutation({
+        mutationFn: (payload: any[]) => employeeApi.saveAll(payload),
         onSuccess: () => {
             toast({
                 title: 'Thành công',
-                description: `Đã cập nhật ${selectedEmployees.length} nhân viên`,
+                description: `Đã thêm ${employees.length} nhân viên`,
             });
             queryClient.invalidateQueries({ queryKey: ['employees'] });
             handleClose();
@@ -236,137 +128,130 @@ export default function BulkEditEmployeeModal({
         onError: (error: any) => {
             toast({
                 title: 'Lỗi',
-                description: error.message || 'Không thể cập nhật nhân viên',
+                description: error.message || 'Không thể thêm nhân viên',
                 variant: 'destructive',
             });
         },
     });
 
-    const handleAddEmployee = async (employeeId: number) => {
-        if (selectedEmployees.find(e => e.id === employeeId)) {
-            toast({
-                title: 'Thông báo',
-                description: 'Nhân viên này đã được thêm',
-                variant: 'destructive',
-            });
-            return;
-        }
+    const createNewEmployee = () => {
+        return {
+            tempId: nextId,
+            code: '',
+            fullName: '',
+            birthDate: '',
+            birthPlace: '',
+            startDate: '',
+            endDate: '',
+            gender: 'NAM',
+            status: 'Đang làm việc',
 
-        try {
-            const response = await employeeApi.getById(employeeId);
-            const employeeData = response.data || response;
+            // CCCD
+            cccdNumber: '',
+            cccdDate: '',
+            cccdPlace: '',
 
-            setSelectedEmployees(prev => [...prev, {
-                id: employeeData.id,
-                code: employeeData.code || '',
-                fullName: employeeData.name || '',
-                birthDate: employeeData.birthday || '',
-                birthPlace: employeeData.birthPlace || '',
-                startDate: employeeData.startDate || '',
-                endDate: employeeData.endDate || '',
-                gender: employeeData.gender || 'NAM',
-                status: employeeData.status || 'Đang làm việc',
+            // Địa chỉ
+            contactAddress: '',
+            nativePlace: '',
+            homeTown: '',
+            permanentAddress: '',
 
-                // CCCD
-                cccdNumber: employeeData.cccdNumber || '',
-                cccdDate: employeeData.cccdDate || '',
-                cccdPlace: employeeData.cccdPlace || '',
+            // Công việc
+            departmentId: '',
+            positionId: '',
+            laborContractTypeId: '',
+            currentJobDetail: '',
+            title: '',
+            cardNumber: '',
+            documentReturnDate: '',
+            isWoundedSoldier: false,
 
-                // Địa chỉ
-                contactAddress: employeeData.contactAddress || '',
-                nativePlace: employeeData.nativePlace || '',
-                homeTown: employeeData.homeTown || '',
-                permanentAddress: employeeData.permanentAddress || '',
+            // Thông tin cá nhân
+            ethnicity: '',
+            religion: '',
+            nationalityId: '',
+            policyFamilyId: '',
 
-                // Công việc
-                departmentId: employeeData.departmentId?.toString() || '',
-                positionId: employeeData.positionId?.toString() || '',
-                laborContractTypeId: employeeData.laborContractTypeId?.toString() || '',
-                currentJobDetail: employeeData.currentJobDetail || '',
-                title: employeeData.title || '',
-                cardNumber: employeeData.cardNumber || '',
-                documentReturnDate: employeeData.documentReturnDate || '',
-                isWoundedSoldier: employeeData.isWoundedSoldier || false,
+            // Địa chỉ hành chính
+            wardId: '',
+            provinceCityId: '',
 
-                // Thông tin cá nhân
-                ethnicity: employeeData.ethnicity || '',
-                religion: employeeData.religion || '',
-                nationalityId: employeeData.nationalityId?.toString() || '',
-                policyFamilyId: employeeData.policyFamilyId?.toString() || '',
+            // Trình độ
+            specialtyId: '',
+            educationLevelId: '',
+            educationDetail: '',
+            politicalTheoryId: '',
+            languageLevelId: '',
+            culturalLevelId: '',
+            professionalLevelId: '',
+            itLevelId: '',
 
-                // Địa chỉ hành chính
-                wardId: employeeData.wardId?.toString() || '',
-                provinceCityId: employeeData.provinceCityId?.toString() || '',
+            // Đào tạo
+            trainingInstitutionId: '',
+            trainingMajorId: '',
+            trainingTypeId: '',
 
-                // Trình độ
-                specialtyId: employeeData.specialtyId?.toString() || '',
-                educationLevelId: employeeData.educationLevelId?.toString() || '',
-                educationDetail: employeeData.educationDetail || '',
-                politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
-                languageLevelId: employeeData.languageLevelId?.toString() || '',
-                culturalLevelId: employeeData.culturalLevelId?.toString() || '',
-                professionalLevelId: employeeData.professionalLevelId?.toString() || '',
-                itLevelId: employeeData.itLevelId?.toString() || '',
+            // BHXH
+            socialInsuranceNumber: '',
+            socialInsuranceStartDate: '',
+            socialInsuranceJobId: '',
 
-                // Đào tạo
-                trainingInstitutionId: employeeData.trainingInstitutionId?.toString() || '',
-                trainingMajorId: employeeData.trainingMajorId?.toString() || '',
-                trainingTypeId: employeeData.trainingTypeId?.toString() || '',
+            // Đảng, Đoàn, Quân đội
+            partyJoinDate: '',
+            partyOfficialDate: '',
+            youthUnionJoinDate: '',
+            militaryJoinDate: '',
+            militaryEndDate: '',
+            militaryRankId: '',
 
-                // BHXH
-                socialInsuranceNumber: employeeData.socialInsuranceNumber || '',
-                socialInsuranceStartDate: employeeData.socialInsuranceStartDate || '',
-                socialInsuranceJobId: employeeData.socialInsuranceJobId?.toString() || '',
-
-                // Đảng, Đoàn, Quân đội
-                partyJoinDate: employeeData.partyJoinDate || '',
-                partyOfficialDate: employeeData.partyOfficialDate || '',
-                youthUnionJoinDate: employeeData.youthUnionJoinDate || '',
-                militaryJoinDate: employeeData.militaryJoinDate || '',
-                militaryEndDate: employeeData.militaryEndDate || '',
-                militaryRankId: employeeData.militaryRankId?.toString() || '',
-
-                // Ghi chú
-                note: employeeData.note || '',
-                userId: employeeData.userId || null,
-            }]);
-
-            setSearchValue('');
-            setSearchOpen(false);
-        } catch (error) {
-            console.error('Error fetching employee:', error);
-            toast({
-                title: 'Lỗi',
-                description: 'Không thể tải thông tin nhân viên',
-                variant: 'destructive',
-            });
-        }
+            // Ghi chú
+            note: '',
+        };
     };
 
-    const handleRemoveEmployee = (employeeId: number) => {
-        setSelectedEmployees(prev => prev.filter(e => e.id !== employeeId));
+    const handleAddEmployee = () => {
+        setEmployees(prev => [...prev, createNewEmployee()]);
+        setNextId(prev => prev + 1);
     };
 
-    const handleFieldChange = (employeeId: number, field: string, value: any) => {
-        setSelectedEmployees(prev =>
+    const handleRemoveEmployee = (tempId: number) => {
+        setEmployees(prev => prev.filter(e => e.tempId !== tempId));
+    };
+
+    const handleFieldChange = (tempId: number, field: string, value: any) => {
+        setEmployees(prev =>
             prev.map(emp =>
-                emp.id === employeeId ? { ...emp, [field]: value } : emp
+                emp.tempId === tempId ? { ...emp, [field]: value } : emp
             )
         );
     };
 
     const handleSubmit = () => {
-        if (selectedEmployees.length === 0) {
+        if (employees.length === 0) {
             toast({
                 title: 'Thông báo',
-                description: 'Vui lòng chọn ít nhất một nhân viên',
+                description: 'Vui lòng thêm ít nhất một nhân viên',
                 variant: 'destructive',
             });
             return;
         }
 
-        const payload = selectedEmployees.map(emp => ({
-            id: Number(emp.id),
+        // Validate required fields
+        const invalidEmployees = employees.filter(emp =>
+            !emp.code || !emp.fullName || !emp.birthDate || !emp.startDate || !emp.departmentId || !emp.positionId
+        );
+
+        // if (invalidEmployees.length > 0) {
+        //     toast({
+        //         title: 'Thông báo',
+        //         description: 'Vui lòng điền đầy đủ các trường bắt buộc (*)',
+        //         variant: 'destructive',
+        //     });
+        //     return;
+        // }
+
+        const payload = employees.map(emp => ({
             code: emp.code,
             fullName: emp.fullName,
             birthDate: emp.birthDate,
@@ -433,25 +318,16 @@ export default function BulkEditEmployeeModal({
             militaryRank: emp.militaryRankId ? { id: Number(emp.militaryRankId) } : null,
             policyFamily: emp.policyFamilyId ? { id: Number(emp.policyFamilyId) } : null,
             socialInsuranceJob: emp.socialInsuranceJobId ? { id: Number(emp.socialInsuranceJobId) } : null,
-
-            ...(emp.userId && {
-                user: { id: emp.userId }
-            }),
         }));
 
-        updateMutation.mutate(payload);
+        createMutation.mutate(payload);
     };
 
     const handleClose = () => {
-        setSelectedEmployees([]);
-        setSearchValue('');
+        setEmployees([]);
+        setNextId(1);
         onClose();
     };
-
-    const filteredEmployees = allEmployees.filter(emp =>
-        emp.fullName?.toLowerCase().includes(searchValue.toLowerCase()) ||
-        emp.code?.toLowerCase().includes(searchValue.toLowerCase())
-    );
 
     const renderTableCell = (employee, field: string) => {
         const commonInputClass = "h-8 text-sm w-full min-w-[150px]";
@@ -461,7 +337,6 @@ export default function BulkEditEmployeeModal({
             case 'fullName':
             case 'birthPlace':
             case 'religion':
-            case 'ethnicity':
             case 'currentJobDetail':
             case 'title':
             case 'cardNumber':
@@ -476,7 +351,7 @@ export default function BulkEditEmployeeModal({
                 return (
                     <Input
                         value={employee[field]}
-                        onChange={(e) => handleFieldChange(employee.id, field, e.target.value)}
+                        onChange={(e) => handleFieldChange(employee.tempId, field, e.target.value)}
                         className={commonInputClass}
                         placeholder="..."
                     />
@@ -497,7 +372,7 @@ export default function BulkEditEmployeeModal({
                     <Input
                         type="date"
                         value={employee[field]}
-                        onChange={(e) => handleFieldChange(employee.id, field, e.target.value)}
+                        onChange={(e) => handleFieldChange(employee.tempId, field, e.target.value)}
                         className={commonInputClass}
                     />
                 );
@@ -506,7 +381,7 @@ export default function BulkEditEmployeeModal({
                 return (
                     <Select
                         value={employee.gender}
-                        onValueChange={(value) => handleFieldChange(employee.id, 'gender', value)}
+                        onValueChange={(value) => handleFieldChange(employee.tempId, 'gender', value)}
                     >
                         <SelectTrigger className={commonInputClass}>
                             <SelectValue />
@@ -524,7 +399,7 @@ export default function BulkEditEmployeeModal({
                     <div className="flex items-center justify-center">
                         <Checkbox
                             checked={employee.isWoundedSoldier}
-                            onCheckedChange={(checked) => handleFieldChange(employee.id, 'isWoundedSoldier', checked)}
+                            onCheckedChange={(checked) => handleFieldChange(employee.tempId, 'isWoundedSoldier', checked)}
                         />
                     </div>
                 );
@@ -533,12 +408,14 @@ export default function BulkEditEmployeeModal({
                 return (
                     <Textarea
                         value={employee.note}
-                        onChange={(e) => handleFieldChange(employee.id, 'note', e.target.value)}
+                        onChange={(e) => handleFieldChange(employee.tempId, 'note', e.target.value)}
                         className="text-sm min-w-[200px]"
                         rows={2}
                     />
                 );
 
+            // Các trường GenericSearchSelect
+            case 'ethnicity':
             case 'nationalityId':
             case 'policyFamilyId':
             case 'provinceCityId':
@@ -570,7 +447,7 @@ export default function BulkEditEmployeeModal({
                             api={config.api}
                             config={config}
                             value={employee[field]}
-                            onChange={(v) => handleFieldChange(employee.id, field, String(v))}
+                            onChange={(v) => handleFieldChange(employee.tempId, field, String(v))}
                         />
                     </div>
                 );
@@ -581,18 +458,18 @@ export default function BulkEditEmployeeModal({
     };
 
     const renderEmployeeFieldsExpanded = (employee, index) => (
-        <div key={employee.id} className="border rounded-lg p-4 space-y-4 bg-muted/30">
+        <div key={employee.tempId} className="border rounded-lg p-4 space-y-4 bg-muted/30">
             <div className="flex items-center justify-between sticky top-0 bg-muted/30 pb-2 border-b z-10">
                 <h4 className="font-semibold text-sm flex items-center gap-2">
                     <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs">
                         {index + 1}
                     </span>
-                    {employee.fullName}
+                    {employee.fullName || 'Nhân viên mới'}
                 </h4>
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleRemoveEmployee(employee.id)}
+                    onClick={() => handleRemoveEmployee(employee.tempId)}
                 >
                     <X className="h-4 w-4" />
                 </Button>
@@ -614,16 +491,18 @@ export default function BulkEditEmployeeModal({
                             <Label className="text-xs">Mã NV *</Label>
                             <Input
                                 value={employee.code}
-                                onChange={(e) => handleFieldChange(employee.id, 'code', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'code', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập mã nhân viên"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Tên nhân viên *</Label>
                             <Input
                                 value={employee.fullName}
-                                onChange={(e) => handleFieldChange(employee.id, 'fullName', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'fullName', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập tên nhân viên"
                             />
                         </div>
                         <div className="space-y-1">
@@ -631,7 +510,7 @@ export default function BulkEditEmployeeModal({
                             <Input
                                 type="date"
                                 value={employee.birthDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'birthDate', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'birthDate', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>
@@ -639,15 +518,16 @@ export default function BulkEditEmployeeModal({
                             <Label className="text-xs">Nơi sinh</Label>
                             <Input
                                 value={employee.birthPlace}
-                                onChange={(e) => handleFieldChange(employee.id, 'birthPlace', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'birthPlace', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập nơi sinh"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Giới tính</Label>
                             <Select
                                 value={employee.gender}
-                                onValueChange={(value) => handleFieldChange(employee.id, 'gender', value)}
+                                onValueChange={(value) => handleFieldChange(employee.tempId, 'gender', value)}
                             >
                                 <SelectTrigger className="h-8 text-sm">
                                     <SelectValue />
@@ -661,18 +541,20 @@ export default function BulkEditEmployeeModal({
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Dân tộc</Label>
-                            <Input
-                                value={employee.ethnicity}
-                                onChange={(e) => handleFieldChange(employee.id, 'ethnicity', e.target.value)}
-                                className="h-8 text-sm"
+                            <GenericSearchSelect
+                                api={categoryConfigs.ethnicity.api}
+                                config={categoryConfigs.ethnicity}
+                                value={employee.ethnicity?.toString()}
+                                onChange={(v) => handleFieldChange(employee.tempId, "ethnicity", String(v))}
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Tôn giáo</Label>
                             <Input
                                 value={employee.religion}
-                                onChange={(e) => handleFieldChange(employee.id, 'religion', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'religion', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập tôn giáo"
                             />
                         </div>
                         <div className="space-y-1">
@@ -681,7 +563,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.nationality.api}
                                 config={categoryConfigs.nationality}
                                 value={employee.nationalityId}
-                                onChange={(v) => handleFieldChange(employee.id, 'nationalityId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'nationalityId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -690,15 +572,16 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.policyFamily.api}
                                 config={categoryConfigs.policyFamily}
                                 value={employee.policyFamilyId}
-                                onChange={(v) => handleFieldChange(employee.id, 'policyFamilyId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'policyFamilyId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Số CCCD</Label>
                             <Input
                                 value={employee.cccdNumber}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdNumber', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'cccdNumber', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập số CCCD"
                             />
                         </div>
                         <div className="space-y-1">
@@ -706,7 +589,7 @@ export default function BulkEditEmployeeModal({
                             <Input
                                 type="date"
                                 value={employee.cccdDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdDate', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'cccdDate', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>
@@ -714,8 +597,9 @@ export default function BulkEditEmployeeModal({
                             <Label className="text-xs">Nơi cấp CCCD</Label>
                             <Input
                                 value={employee.cccdPlace}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdPlace', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'cccdPlace', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập nơi cấp"
                             />
                         </div>
                     </div>
@@ -730,7 +614,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.provinceCity.api}
                                 config={categoryConfigs.provinceCity}
                                 value={employee.provinceCityId}
-                                onChange={(v) => handleFieldChange(employee.id, 'provinceCityId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'provinceCityId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -739,39 +623,43 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.ward.api}
                                 config={categoryConfigs.ward}
                                 value={employee.wardId}
-                                onChange={(v) => handleFieldChange(employee.id, 'wardId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'wardId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Địa chỉ liên hệ</Label>
                             <Input
                                 value={employee.contactAddress}
-                                onChange={(e) => handleFieldChange(employee.id, 'contactAddress', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'contactAddress', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập địa chỉ"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Hộ khẩu thường trú</Label>
                             <Input
                                 value={employee.permanentAddress}
-                                onChange={(e) => handleFieldChange(employee.id, 'permanentAddress', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'permanentAddress', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập hộ khẩu"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Nguyên quán</Label>
                             <Input
                                 value={employee.nativePlace}
-                                onChange={(e) => handleFieldChange(employee.id, 'nativePlace', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'nativePlace', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập nguyên quán"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Quê quán</Label>
                             <Input
                                 value={employee.homeTown}
-                                onChange={(e) => handleFieldChange(employee.id, 'homeTown', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'homeTown', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập quê quán"
                             />
                         </div>
                     </div>
@@ -785,7 +673,7 @@ export default function BulkEditEmployeeModal({
                             <Input
                                 type="date"
                                 value={employee.startDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'startDate', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'startDate', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>
@@ -794,18 +682,17 @@ export default function BulkEditEmployeeModal({
                             <Input
                                 type="date"
                                 value={employee.endDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'endDate', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'endDate', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>
-
                         <div className="space-y-1">
                             <Label className="text-xs">Phòng ban *</Label>
                             <GenericSearchSelect
                                 api={categoryConfigs.department.api}
                                 config={categoryConfigs.department}
                                 value={employee.departmentId}
-                                onChange={(v) => handleFieldChange(employee.id, 'departmentId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'departmentId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -814,7 +701,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.jobTitle.api}
                                 config={categoryConfigs.jobTitle}
                                 value={employee.positionId}
-                                onChange={(v) => handleFieldChange(employee.id, 'positionId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'positionId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -823,31 +710,34 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.laborContractType.api}
                                 config={categoryConfigs.laborContractType}
                                 value={employee.laborContractTypeId}
-                                onChange={(v) => handleFieldChange(employee.id, 'laborContractTypeId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'laborContractTypeId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Công việc cụ thể</Label>
                             <Input
                                 value={employee.currentJobDetail}
-                                onChange={(e) => handleFieldChange(employee.id, 'currentJobDetail', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'currentJobDetail', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập công việc"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Danh hiệu</Label>
                             <Input
                                 value={employee.title}
-                                onChange={(e) => handleFieldChange(employee.id, 'title', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'title', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập danh hiệu"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Số thẻ từ</Label>
                             <Input
                                 value={employee.cardNumber}
-                                onChange={(e) => handleFieldChange(employee.id, 'cardNumber', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'cardNumber', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập số thẻ"
                             />
                         </div>
                         <div className="space-y-1">
@@ -855,14 +745,14 @@ export default function BulkEditEmployeeModal({
                             <Input
                                 type="date"
                                 value={employee.documentReturnDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'documentReturnDate', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'documentReturnDate', e.target.value)}
                                 className="h-8 text-sm"
                             />
                         </div>
                         <div className="space-y-1 flex items-center gap-2 pt-5">
                             <Checkbox
                                 checked={employee.isWoundedSoldier}
-                                onCheckedChange={(checked) => handleFieldChange(employee.id, 'isWoundedSoldier', checked)}
+                                onCheckedChange={(checked) => handleFieldChange(employee.tempId, 'isWoundedSoldier', checked)}
                             />
                             <Label className="text-xs cursor-pointer">Thương binh</Label>
                         </div>
@@ -878,15 +768,16 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.degree.api}
                                 config={categoryConfigs.degree}
                                 value={employee.educationLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'educationLevelId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'educationLevelId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trình độ cụ thể</Label>
                             <Input
                                 value={employee.educationDetail}
-                                onChange={(e) => handleFieldChange(employee.id, 'educationDetail', e.target.value)}
+                                onChange={(e) => handleFieldChange(employee.tempId, 'educationDetail', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập trình độ"
                             />
                         </div>
                         <div className="space-y-1">
@@ -895,7 +786,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.culturalLevel.api}
                                 config={categoryConfigs.culturalLevel}
                                 value={employee.culturalLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'culturalLevelId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'culturalLevelId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -904,7 +795,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.professionalLevel.api}
                                 config={categoryConfigs.professionalLevel}
                                 value={employee.professionalLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'professionalLevelId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'professionalLevelId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -913,7 +804,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.specialty.api}
                                 config={categoryConfigs.specialty}
                                 value={employee.specialtyId}
-                                onChange={(v) => handleFieldChange(employee.id, 'specialtyId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'specialtyId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -922,7 +813,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.itLevel.api}
                                 config={categoryConfigs.itLevel}
                                 value={employee.itLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'itLevelId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'itLevelId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -931,7 +822,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.languageLevel.api}
                                 config={categoryConfigs.languageLevel}
                                 value={employee.languageLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'languageLevelId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'languageLevelId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -940,7 +831,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.politicalTheory.api}
                                 config={categoryConfigs.politicalTheory}
                                 value={employee.politicalTheoryId}
-                                onChange={(v) => handleFieldChange(employee.id, 'politicalTheoryId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'politicalTheoryId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -949,7 +840,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.trainingInstitution.api}
                                 config={categoryConfigs.trainingInstitution}
                                 value={employee.trainingInstitutionId}
-                                onChange={(v) => handleFieldChange(employee.id, 'trainingInstitutionId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'trainingInstitutionId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -958,7 +849,7 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.trainingMajor.api}
                                 config={categoryConfigs.trainingMajor}
                                 value={employee.trainingMajorId}
-                                onChange={(v) => handleFieldChange(employee.id, 'trainingMajorId', String(v))}
+                                onChange={(v) => handleFieldChange(employee.tempId, 'trainingMajorId', String(v))}
                             />
                         </div>
                         <div className="space-y-1">
@@ -967,105 +858,139 @@ export default function BulkEditEmployeeModal({
                                 api={categoryConfigs.trainingType.api}
                                 config={categoryConfigs.trainingType}
                                 value={employee.trainingTypeId}
-                                onChange={(v) => handleFieldChange(employee.id, 'trainingTypeId', String(v))}
+                                onChange={(v) =>
+                                    handleFieldChange(employee.tempId, 'trainingTypeId', String(v))
+                                }
                             />
                         </div>
                     </div>
                 </TabsContent>
-
-                {/* Tab Khác */}
                 <TabsContent value="other" className="space-y-3">
                     <div className="grid grid-cols-4 gap-3">
+                        {/* BHXH */}
                         <div className="space-y-1">
                             <Label className="text-xs">Số sổ BHXH</Label>
                             <Input
                                 value={employee.socialInsuranceNumber}
-                                onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceNumber', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'socialInsuranceNumber', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày tham gia BHXH</Label>
                             <Input
                                 type="date"
                                 value={employee.socialInsuranceStartDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceStartDate', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'socialInsuranceStartDate', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
                         <div className="space-y-1">
                             <Label className="text-xs">Công việc BHXH</Label>
                             <GenericSearchSelect
                                 api={categoryConfigs.socialInsuranceJob.api}
                                 config={categoryConfigs.socialInsuranceJob}
                                 value={employee.socialInsuranceJobId}
-                                onChange={(v) => handleFieldChange(employee.id, 'socialInsuranceJobId', String(v))}
+                                onChange={(v) =>
+                                    handleFieldChange(employee.tempId, 'socialInsuranceJobId', String(v))
+                                }
                             />
                         </div>
+
+                        {/* Đảng */}
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày vào Đảng</Label>
                             <Input
                                 type="date"
                                 value={employee.partyJoinDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'partyJoinDate', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'partyJoinDate', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày chính thức Đảng</Label>
                             <Input
                                 type="date"
                                 value={employee.partyOfficialDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'partyOfficialDate', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'partyOfficialDate', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
+                        {/* Đoàn */}
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày vào Đoàn</Label>
                             <Input
                                 type="date"
                                 value={employee.youthUnionJoinDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'youthUnionJoinDate', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'youthUnionJoinDate', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
+                        {/* Quân đội */}
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày nhập ngũ</Label>
                             <Input
                                 type="date"
                                 value={employee.militaryJoinDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'militaryJoinDate', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'militaryJoinDate', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày xuất ngũ</Label>
                             <Input
                                 type="date"
                                 value={employee.militaryEndDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'militaryEndDate', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'militaryEndDate', e.target.value)
+                                }
                                 className="h-8 text-sm"
                             />
                         </div>
+
                         <div className="space-y-1">
                             <Label className="text-xs">Quân hàm</Label>
                             <GenericSearchSelect
                                 api={categoryConfigs.militaryRank.api}
                                 config={categoryConfigs.militaryRank}
                                 value={employee.militaryRankId}
-                                onChange={(v) => handleFieldChange(employee.id, 'militaryRankId', String(v))}
+                                onChange={(v) =>
+                                    handleFieldChange(employee.tempId, 'militaryRankId', String(v))
+                                }
                             />
                         </div>
+
+                        {/* Ghi chú */}
                         <div className="space-y-1 col-span-3">
                             <Label className="text-xs">Ghi chú</Label>
                             <Textarea
                                 value={employee.note}
-                                onChange={(e) => handleFieldChange(employee.id, 'note', e.target.value)}
+                                onChange={(e) =>
+                                    handleFieldChange(employee.tempId, 'note', e.target.value)
+                                }
                                 className="text-sm"
+                                rows={3}
                             />
                         </div>
                     </div>
-
                 </TabsContent>
             </Tabs>
         </div>
@@ -1126,118 +1051,69 @@ export default function BulkEditEmployeeModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Chỉnh sửa hàng loạt nhân viên</DialogTitle>
+            <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col p-0">
+                <DialogHeader className="px-6 py-4 border-b">
+                    <DialogTitle className="flex items-center gap-2">
+                        <UserPlus className="h-5 w-5" />
+                        Thêm nhiều nhân viên
+                    </DialogTitle>
                     <DialogDescription>
-                        Tìm kiếm và chọn nhân viên để chỉnh sửa thông tin. Các trường được đánh dấu (*) là bắt buộc.
+                        Có thể thêm nhiều nhân viên và lưu một lần
                     </DialogDescription>
                 </DialogHeader>
 
+                {/* BODY */}
                 <div className="flex-1 overflow-hidden flex flex-col">
-                    {/* Search Bar - giữ nguyên như cũ */}
-                    {preSelectedEmployeeIds.length === 0 && (
-                        <div className="px-4 py-3 border-b bg-muted/30">
-                            <div className="flex gap-2">
-                                <div className="flex-1">
-                                    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                                variant="outline"
-                                                role="combobox"
-                                                aria-expanded={searchOpen}
-                                                className="w-full justify-between"
-                                            >
-                                                <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                                                {searchValue || "Nhập tên nhân viên..."}
-                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[400px] p-0" align="start">
-                                            <Command>
-                                                <CommandInput
-                                                    placeholder="Tìm kiếm nhân viên..."
-                                                    value={searchValue}
-                                                    onValueChange={setSearchValue}
-                                                />
-                                                <CommandEmpty>Không tìm thấy nhân viên.</CommandEmpty>
-                                                <CommandGroup className="max-h-64 overflow-auto">
-                                                    {filteredEmployees.map((employee) => (
-                                                        <CommandItem
-                                                            key={employee.id}
-                                                            value={employee.fullName}
-                                                            onSelect={() => handleAddEmployee(employee.id)}
-                                                        >
-                                                            <Check
-                                                                className={`mr-2 h-4 w-4 ${selectedEmployees.find(e => e.id === employee.id)
-                                                                    ? "opacity-100"
-                                                                    : "opacity-0"
-                                                                    }`}
-                                                            />
-                                                            <div className="flex flex-col">
-                                                                <span className="font-medium">{employee.fullName}</span>
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {employee.code} • {employee.departmentName}
-                                                                </span>
-                                                            </div>
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <Button className="shrink-0 whitespace-nowrap">
-                                    Import Excel
-                                </Button>
-                            </div>
+                    {/* Toolbar */}
+                    <div className="px-6 py-3 border-b flex items-center justify-between bg-muted/30">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <Upload className="h-4 w-4" />
+                                Tải lên
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <Download className="h-4 w-4" />
+                                Tải xuống
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setViewMode(viewMode === 'table' ? 'expanded' : 'table')}
+                                className="gap-2"
+                            >
+                                {viewMode === 'table' ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+                                {viewMode === 'table' ? 'Mở rộng' : 'Thu gọn'}
+                            </Button>
+
+                            {viewMode === 'table' && <ColumnSelector />}
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={handleAddEmployee}
+                            >
+                                <Plus className="h-4 w-4" />
+                                Thêm nhân viên
+                            </Button>
                         </div>
-                    )}
 
-                    {/* Toolbar - chỉ hiển thị khi có nhân viên được chọn */}
-                    {selectedEmployees.length > 0 && (
-                        <div className="px-4 py-3 border-b flex items-center justify-between bg-muted/30">
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Upload className="h-4 w-4" />
-                                    Tải lên
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    className="gap-2"
-                                >
-                                    <Download className="h-4 w-4" />
-                                    Tải xuống
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setViewMode(viewMode === 'table' ? 'expanded' : 'table')}
-                                    className="gap-2"
-                                >
-                                    {viewMode === 'table' ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-                                    {viewMode === 'table' ? 'Mở rộng' : 'Thu gọn'}
-                                </Button>
-
-                                {viewMode === 'table' && <ColumnSelector />}
-                            </div>
-
-                            <div className="text-sm text-muted-foreground">
-                                Đã chọn: <b>{selectedEmployees.length}</b> nhân viên
-                            </div>
+                        <div className="text-sm text-muted-foreground">
+                            Tổng số: <b>{employees.length}</b> nhân viên
                         </div>
-                    )}
+                    </div>
 
                     {/* Content */}
-                    <div className="flex-1 overflow-auto px-4 py-4">
-                        {selectedEmployees.length === 0 ? (
-                            <div className="text-center py-12 text-muted-foreground">
-                                <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                                <p>Chưa có nhân viên nào được chọn</p>
-                                <p className="text-sm">Sử dụng ô tìm kiếm ở trên để thêm nhân viên</p>
+                    <div className="flex-1 overflow-auto px-6 py-4">
+                        {employees.length === 0 ? (
+                            <div className="text-sm text-muted-foreground text-center py-10">
+                                Chưa có nhân viên nào. Nhấn <b>Thêm nhân viên</b> để bắt đầu.
                             </div>
                         ) : viewMode === 'table' ? (
                             // TABLE VIEW
@@ -1264,8 +1140,8 @@ export default function BulkEditEmployeeModal({
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {selectedEmployees.map((employee, index) => (
-                                            <TableRow key={employee.id}>
+                                        {employees.map((employee, index) => (
+                                            <TableRow key={employee.tempId}>
                                                 <TableCell className="sticky left-0 bg-background z-10 border-r">
                                                     <span className="font-medium">{index + 1}</span>
                                                 </TableCell>
@@ -1273,7 +1149,7 @@ export default function BulkEditEmployeeModal({
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => handleRemoveEmployee(employee.id)}
+                                                        onClick={() => handleRemoveEmployee(employee.tempId)}
                                                     >
                                                         <X className="h-4 w-4" />
                                                     </Button>
@@ -1298,31 +1174,35 @@ export default function BulkEditEmployeeModal({
                         ) : (
                             // EXPANDED VIEW
                             <div className="space-y-4">
-                                {selectedEmployees.map((employee, index) => renderEmployeeFieldsExpanded(employee, index))}
+                                {employees.map((employee, index) => renderEmployeeFieldsExpanded(employee, index))}
                             </div>
                         )}
                     </div>
                 </div>
 
-                <DialogFooter className="border-t pt-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleClose}
-                        disabled={updateMutation.isPending}
-                    >
-                        Hủy
-                    </Button>
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={updateMutation.isPending || selectedEmployees.length === 0}
-                        className="bg-green-500 text-white hover:bg-green-600"
-                    >
-                        {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        {updateMutation.isPending ? 'Đang lưu...' : `Xác nhận (${selectedEmployees.length})`}
-                    </Button>
+                {/* FOOTER */}
+                <DialogFooter className="px-6 py-4 border-t">
+                    <div className="w-full flex justify-between items-center">
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleClose}
+                                disabled={createMutation.isPending}
+                            >
+                                Hủy
+                            </Button>
+                            <Button
+                                onClick={handleSubmit}
+                                disabled={createMutation.isPending || employees.length === 0}
+                            >
+                                {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                {createMutation.isPending ? 'Đang lưu...' : 'Lưu tất cả'}
+                            </Button>
+                        </div>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
 }
+

@@ -204,7 +204,7 @@ export default function DegreeApprovalModal({
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4" />
-                  <span>Ngày cấp</span>
+                  <span>Ngày hiệu lực</span>
                 </div>
                 <p className="font-medium">
                   {new Date(degree.issueDate).toLocaleDateString('vi-VN')}
@@ -227,7 +227,7 @@ export default function DegreeApprovalModal({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Award className="h-4 w-4" />
-                    <span>Số chứng chỉ</span>
+                    <span>Bằng cấp/chứng chỉ</span>
                   </div>
                   <p className="font-medium">{degree.certificateNumber}</p>
                 </div>

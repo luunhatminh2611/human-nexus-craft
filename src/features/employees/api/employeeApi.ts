@@ -59,6 +59,16 @@ export const employeeApi = {
     }
   },
 
+  saveAll: async (payload: any[]) => {
+    try {
+      const response = await api.post('/employee/save_all', { payload });
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi tạo nhiều nhân viên:", error);
+      throw error;
+    }
+  },
+
   updateList: async (data: UpdateEmployeeListRequest) => {
     try {
       const response = await api.put('/employee', data);

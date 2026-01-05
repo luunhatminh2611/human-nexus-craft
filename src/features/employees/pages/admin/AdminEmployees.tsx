@@ -30,7 +30,8 @@ import {
   ShieldCheck,
   CheckCircle,
   XCircle,
-  Trash2
+  Trash2,
+  ArrowLeft
 } from 'lucide-react';
 import { employeeApi } from '../../api/employeeApi';
 import { userApi } from '../../api/userApi';
@@ -50,6 +51,8 @@ import { SalaryTabWithDragDrop } from '../../components/SalaryTabWithDragDrop';
 import UserTable from '@/features/employees/components/UserTable';
 import { Button as Button2 } from '@/shared/components/ui/button/Button2';
 import BulkEditEmployeeModal from '../../components/modal/BulkEditEmployeeModal';
+import BulkAddEmployeeModal from '../../components/modal/BulkAddEmployeeModal';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -81,6 +84,9 @@ export default function Employees() {
   const [mainTab, setMainTab] = useState('info');
   const [subTab, setSubTab] = useState('info');
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
+  const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+
   const fileInputRef = useRef(null);
 
   // Fetch employees
@@ -183,6 +189,25 @@ export default function Employees() {
     fetchEmployeeDetail();
   }, [selectedEmployeeId]);
 
+  const handleToggleEmployee = (employeeId: number) => {
+    setSelectedEmployeeIds(prev => {
+      if (prev.includes(employeeId)) {
+        return prev.filter(id => id !== employeeId);
+      } else {
+        return [...prev, employeeId];
+      }
+    });
+  };
+
+  // Toggle all checkboxes
+  const handleToggleAll = () => {
+    if (selectedEmployeeIds.length === filteredEmployees.length) {
+      setSelectedEmployeeIds([]);
+    } else {
+      setSelectedEmployeeIds(filteredEmployees.map(emp => emp.id));
+    }
+  };
+
   const filteredEmployees = useMemo(() => {
     return employees.filter((emp) => {
       const text = searchTerm.toLowerCase();
@@ -216,6 +241,10 @@ export default function Employees() {
       );
     });
   }, [users, searchTerm]);
+
+  // Check if all are selected
+  const isAllSelected = selectedEmployeeIds.length === filteredEmployees.length && filteredEmployees.length > 0;
+  const isIndeterminate = selectedEmployeeIds.length > 0 && selectedEmployeeIds.length < filteredEmployees.length;
 
   const handleRowClick = (employeeId) => {
     setSelectedEmployeeId(employeeId);
@@ -320,6 +349,14 @@ export default function Employees() {
     setSelectedUserId(null);
   };
 
+  const handleOpenBulkEdit = async () => {
+    if (selectedEmployeeIds.length === 0) {
+      alert('Vui lòng chọn ít nhất một nhân viên để chỉnh sửa');
+      return;
+    }
+    setIsBulkEditModalOpen(true);
+  };
+
   const handleDeleteUser = async (id) => {
     if (confirm('Bạn có chắc chắn muốn xóa tài khoản này không?')) {
       try {
@@ -382,14 +419,26 @@ export default function Employees() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Quản lý nhân viên</h1>
-            <p className="text-muted-foreground">
-              {activeTab === 'employees'
-                ? `Quản lý thông tin nhân viên (${filteredEmployees.length}/${employees.length})`
-                : `Quản lý tài khoản người dùng (${filteredUsers.length}/${users.length})`
-              }
-            </p>
+          <div className="flex items-center gap-3">
+            {selectedEmployeeId && (
+              <Button
+                size="sm"
+                onClick={handleCloseDetail}
+                className="shrink-0"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Quay lại
+              </Button>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold">Quản lý nhân viên</h1>
+              <p className="text-muted-foreground">
+                {activeTab === 'employees'
+                  ? `Quản lý danh sách nhân viên (${filteredEmployees.length}/${employees.length})`
+                  : `Quản lý danh sách tài khoản (${filteredUsers.length}/${users.length})`
+                }
+              </p>
+            </div>
           </div>
 
           <TabsList>
@@ -399,77 +448,80 @@ export default function Employees() {
         </div>
 
         <TabsContent value="employees" className="space-y-4 mt-6">
-          <div className={`grid gap-4 transition-all duration-300 ${selectedEmployeeId ? 'grid-cols-12' : 'grid-cols-1'}`}>
+          <Card className="p-4 mb-4">
+            <div className={"flex flex-col md:flex-row gap-4"}>
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={"Tìm kiếm theo tên nhân viên, mã nhân viên"}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-            <div className={selectedEmployeeId ? 'col-span-4' : 'col-span-12'}>
-              <Card className="p-4 mb-4">
-                <div className={selectedEmployeeId ? "space-y-3" : "flex flex-col md:flex-row gap-4"}>
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder={selectedEmployeeId ? "Tìm kiếm nhân viên..." : "Tìm kiếm theo tên nhân viên, mã nhân viên"}
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
+              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                <SelectTrigger className={"w-full md:w-48"}>
+                  <SelectValue placeholder="Phòng ban" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tất cả phòng ban</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-                  <Select value={filterDepartment} onValueChange={setFilterDepartment}>
-                    <SelectTrigger className={selectedEmployeeId ? "flex-1" : "w-full md:w-48"}>
-                      <SelectValue placeholder="Phòng ban" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tất cả phòng ban</SelectItem>
-                      {departments.map(dept => (
-                        <SelectItem key={dept.id} value={dept.name}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {selectedEmployeeId ? (
-                    <div className="flex gap-2">
-                      {/* <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex-1">
+              {selectedEmployeeId ? (
+                <div>
+                  {/* <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex-1">
                         <Upload className="h-4 w-4" />
                         Import Excel
                       </Button> */}
-                      <Button variant="outline" size="sm" onClick={handleExportExcel} className="flex-1">
-                        <Download className="h-4 w-4" />
-                        Export Excel
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      {/* <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  <Button variant="outline" size="sm" onClick={handleExportExcel} className="flex-1">
+                    <Download className="h-4 w-4 mr-2" />
+                    Tải xuống
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  {/* <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                         <Upload className="h-4 w-4 mr-2" />
                         Import Excel
                       </Button> */}
-                      <Button variant="outline" onClick={handleExportExcel}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export Excel
-                      </Button>
-                    </>
-                  )}
+                  <Button variant="outline" onClick={handleExportExcel} >
+                    <Download className="h-4 w-4 mr-2" />
+                    Tải xuống
+                  </Button>
+                </>
+              )}
 
-                  <div className='flex gap-2'>
-                    <Button
-                      onClick={handleOpenCreateModal}
-                      className={selectedEmployeeId ? "w-full bg-green-500 hover:bg-green-600 text-white" : "bg-green-500 text-white"}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Thêm nhân viên
-                    </Button>
-                    <Button
-                      onClick={() => setIsBulkEditModalOpen(true)}
-                      className={selectedEmployeeId ? "w-full bg-green-500 hover:bg-green-600 text-white" : "bg-green-500 text-white"}
-                    >
-                      <UserCog className="h-4 w-4 mr-2" />
-                      Sửa hàng loạt
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+              <div className='flex gap-2'>
+                <Button
+                  // onClick={handleOpenCreateModal}
+                  onClick={() => setIsBulkAddModalOpen(true)}
+                  className={"bg-green-500 hover:bg-green-600 text-white"}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Thêm nhân viên
+                </Button>
+                {selectedEmployeeIds.length > 0 && (
+                  <Button
+                    onClick={handleOpenBulkEdit}
+                    className={"bg-blue-500 hover:bg-blue-600 text-white"}
+                  >
+                    <UserCog className="h-4 w-4 mr-2" />
+                    Chỉnh sửa ({selectedEmployeeIds.length})
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+          <div className={`grid gap-4 transition-all duration-300 ${selectedEmployeeId ? 'grid-cols-12' : 'grid-cols-1'}`}>
+            <div className={selectedEmployeeId ? 'col-span-4' : 'col-span-12'}>
+
 
               <input
                 type="file"
@@ -485,6 +537,14 @@ export default function Employees() {
                   <table className="w-full">
                     <thead className="bg-white sticky top-0 z-10">
                       <tr>
+                        {!selectedEmployeeId && (
+                          <th className="text-center p-3 text-sm font-semibold w-12">
+                            <Checkbox
+                              checked={isAllSelected}
+                              onCheckedChange={handleToggleAll}
+                            />
+                          </th>
+                        )}
                         <th className="text-left p-3 text-sm font-semibold">Tên nhân viên</th>
                         {!selectedEmployeeId && (
                           <>
@@ -501,11 +561,18 @@ export default function Employees() {
                       {filteredEmployees.map((employee) => (
                         <tr
                           key={employee.id}
-                          onClick={() => handleRowClick(employee.id)}
-                          className={`border-b cursor-pointer hover:bg-muted/50 transition-colors ${selectedEmployeeId === employee.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''
-                            }`}
+                          className={`border-b hover:bg-muted/50 transition-colors ${selectedEmployeeId === employee.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''
+                            } ${selectedEmployeeIds.includes(employee.id) ? 'bg-blue-50' : ''}`}
                         >
-                          <td className="p-3">
+                          {!selectedEmployeeId && (
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedEmployeeIds.includes(employee.id)}
+                                onCheckedChange={() => handleToggleEmployee(employee.id)}
+                              />
+                            </td>
+                          )}
+                          <td className="p-3 cursor-pointer" onClick={() => handleRowClick(employee.id)}>
                             <div className="flex items-center gap-2">
                               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                                 <span className="text-xs font-medium">
@@ -938,6 +1005,11 @@ export default function Employees() {
         mode={modalMode}
       />
 
+      <BulkAddEmployeeModal
+        isOpen={isBulkAddModalOpen}
+        onClose={() => setIsBulkAddModalOpen(false)}
+      />
+
       <UserAccountModal
         isOpen={isUserModalOpen}
         onClose={handleCloseUserModal}
@@ -964,7 +1036,11 @@ export default function Employees() {
       />
       <BulkEditEmployeeModal
         isOpen={isBulkEditModalOpen}
-        onClose={() => setIsBulkEditModalOpen(false)}
+        onClose={() => {
+          setIsBulkEditModalOpen(false);
+          setSelectedEmployeeIds([]);
+        }}
+        preSelectedEmployeeIds={selectedEmployeeIds}
       />
     </div>
   );
