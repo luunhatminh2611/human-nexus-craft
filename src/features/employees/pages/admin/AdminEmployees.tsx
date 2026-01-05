@@ -53,6 +53,7 @@ import { Button as Button2 } from '@/shared/components/ui/button/Button2';
 import BulkEditEmployeeModal from '../../components/modal/BulkEditEmployeeModal';
 import BulkAddEmployeeModal from '../../components/modal/BulkAddEmployeeModal';
 import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger, } from '@/shared/components/ui/popover';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -86,6 +87,8 @@ export default function Employees() {
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+  const [decisionType, setDecisionType] = useState('reward');
+  const [medicalType, setMedicalType] = useState('record');
 
   const fileInputRef = useRef(null);
 
@@ -121,9 +124,10 @@ export default function Employees() {
 
   useEffect(() => {
     if (mainTab === 'info') setSubTab('info');
-    if (mainTab === 'business') setSubTab('contracts');
+    if (mainTab === 'business') setSubTab('leaves');
     if (mainTab === 'skill') setSubTab('training');
-    if (mainTab === 'benefit') setSubTab('salary');
+    if (mainTab === 'benefit') setSubTab('insurance');
+    if (mainTab === 'salary-review') setSubTab('salary');
   }, [mainTab]);
 
   // Fetch employee detail when selected
@@ -765,7 +769,7 @@ export default function Employees() {
                         >
                           <TabsTrigger value="info">Hồ sơ & Quyết định</TabsTrigger>
                           <TabsTrigger value="benefit">Chế độ & Phúc lợi</TabsTrigger>
-                          <TabsTrigger value="">Lương & Đánh giá</TabsTrigger>
+                          <TabsTrigger value="salary-review">Lương & Đánh giá</TabsTrigger>
                           <TabsTrigger value="skill">Đào tạo, bồi dưỡng</TabsTrigger>
                           <TabsTrigger value="business">Nghỉ phép & Công tác</TabsTrigger>
                           <TabsTrigger value="/">Khác</TabsTrigger>
@@ -843,9 +847,150 @@ export default function Employees() {
                                   employeeId={selectedEmployeeId}
                                 />
                               )}
-                              {subTab === 'family' && <div>Nội dung Quan hệ gia đình</div>}
-                              {subTab === 'profile' && <div>Nội dung Hồ sơ</div>}
-                              {subTab === 'other' && <div>Nội dung Khác</div>}
+                              {subTab === 'decision' && (
+                                <div className="space-y-4">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" className="w-fit">
+                                        {decisionType === 'reward' && 'Khen thưởng'}
+                                        {decisionType === 'discipline' && 'Kỷ luật'}
+                                        {decisionType === 'appointment' && 'Bổ nhiệm'}
+                                        {decisionType === 'dismissal' && 'Miễn nhiệm'}
+                                        {decisionType === 'salary-adjustment' && 'Điều chỉnh lương'}
+                                        {decisionType === 'transfer' && 'Điều chuyển công tác'}
+                                        {decisionType === 'suspend-terminate' && 'Tạm hoãn/Chấm dứt hợp đồng'}
+                                        {decisionType === 'renew-extend' && 'Tái ký hoặc gia hạn hợp đồng'}
+                                        <span className="ml-2">▼</span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-64 p-2">
+                                      <div className="flex flex-col gap-1">
+                                        <Button
+                                          variant={decisionType === 'reward' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('reward')}
+                                        >
+                                          Khen thưởng
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'discipline' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('discipline')}
+                                        >
+                                          Kỷ luật
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'appointment' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('appointment')}
+                                        >
+                                          Bổ nhiệm
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'dismissal' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('dismissal')}
+                                        >
+                                          Miễn nhiệm
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'salary-adjustment' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('salary-adjustment')}
+                                        >
+                                          Điều chỉnh lương
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'transfer' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('transfer')}
+                                        >
+                                          Điều chuyển công tác
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'suspend-terminate' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('suspend-terminate')}
+                                        >
+                                          Tạm hoãn/Chấm dứt hợp đồng
+                                        </Button>
+                                        <Button
+                                          variant={decisionType === 'renew-extend' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setDecisionType('renew-extend')}
+                                        >
+                                          Tái ký hoặc gia hạn hợp đồng
+                                        </Button>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+
+                                  <InfoTab
+                                    userData={employeeDetailData}
+                                    employeeId={selectedEmployeeId}
+                                  />
+                                </div>
+                              )}
+                              {subTab === 'degree' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
+                              {subTab === 'contracts' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
+                              {subTab === 'medical' && (
+                                <div className="space-y-4">
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" className="w-fit">
+                                        {medicalType === 'record' && 'Hồ sơ y tế'}
+                                        {medicalType === 'accident' && 'Tai nạn LĐ & BNN'}
+                                        <span className="ml-2">▼</span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-64 p-2">
+                                      <div className="flex flex-col gap-1">
+                                        <Button
+                                          variant={medicalType === 'record' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setMedicalType('record')}
+                                        >
+                                          Hồ sơ y tế
+                                        </Button>
+                                        <Button
+                                          variant={medicalType === 'accident' ? 'primary' : 'ghost'}
+                                          className="justify-start"
+                                          onClick={() => setMedicalType('accident')}
+                                        >
+                                          Tai nạn LĐ & BNN
+                                        </Button>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+
+                                  <InfoTab
+                                    userData={employeeDetailData}
+                                    employeeId={selectedEmployeeId}
+                                  />
+                                </div>
+                              )}
+                              {subTab === 'profile' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
+                              {subTab === 'family' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
                             </div>
                           </div>
                         )}
@@ -863,6 +1008,14 @@ export default function Employees() {
                                 Nghỉ phép
                               </Button2>
                               <Button2
+                                variant={subTab === 'workSchedule' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('workSchedule')}
+                                className={subTab === 'workSchedule' ? '' : 'hover:bg-background'}
+                              >
+                                Lịch công tác
+                              </Button2>
+                              <Button2
                                 variant={subTab === 'abroad' ? 'default' : 'ghost'}
                                 size="sm"
                                 onClick={() => setSubTab('abroad')}
@@ -874,7 +1027,12 @@ export default function Employees() {
 
                             {/* Content */}
                             <div>
-                              {subTab === 'decision' && <div>Nội dung Quyết định</div>}
+                              {subTab === 'workSchedule' &&
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              }
                               {subTab === 'contracts' && <ContractsTab />}
                               {subTab === 'leaves' && (
                                 <LeavesTab userData={employeeDetailData} />
@@ -887,14 +1045,73 @@ export default function Employees() {
                         {/* Sub Navigation Pills - Chuyên môn */}
                         {mainTab === 'skill' && (
                           <div className="space-y-4">
+
+                            {/* Content */}
+                            <div>
+                              {subTab === 'training' && (
+                                <TrainingTab userData={employeeDetailData} />
+                              )}
+
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Sub Navigation Pills - Chế độ */}
+                        {mainTab === 'benefit' && (
+                          <div className="space-y-4">
                             <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
                               <Button2
-                                variant={subTab === 'training' ? 'default' : 'ghost'}
+                                variant={subTab === 'insurance' ? 'default' : 'ghost'}
                                 size="sm"
-                                onClick={() => setSubTab('training')}
-                                className={subTab === 'training' ? '' : 'hover:bg-background'}
+                                onClick={() => setSubTab('insurance')}
+                                className={subTab === 'insurance' ? '' : 'hover:bg-background'}
                               >
-                                Đào tạo
+                                Bảo hiểm xã hội
+                              </Button2>
+                              <Button2
+                                variant={subTab === 'visit' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('visit')}
+                                className={subTab === 'visit' ? '' : 'hover:bg-background'}
+                              >
+                                Thăm nhân
+                              </Button2>
+                            </div>
+
+                            {/* Content */}
+                            <div>
+                              {subTab === 'insurance' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
+                              {subTab === 'visit' && (
+                                <InfoTab
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}
+                                />
+                              )}
+                            </div>
+                            {/* <div>
+                              {subTab === 'insurance' && <div>Nội dung Bảo hiểm</div>}
+                              {subTab === 'medical' && (
+                                <MedicalTab userData={employeeDetailData} />
+                              )}
+                            </div> */}
+                          </div>
+                        )}
+
+                        {mainTab === 'salary-review' && (
+                          <div className="space-y-4">
+                            <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
+                              <Button2
+                                variant={subTab === 'salary' ? 'default' : 'ghost'}
+                                size="sm"
+                                onClick={() => setSubTab('salary')}
+                                className={subTab === 'salary' ? '' : 'hover:bg-background'}
+                              >
+                                Lương
                               </Button2>
                               <Button2
                                 variant={subTab === 'kpi' ? 'default' : 'ghost'}
@@ -908,47 +1125,11 @@ export default function Employees() {
 
                             {/* Content */}
                             <div>
-                              {subTab === 'degree' && <div>Nội dung Bằng cấp</div>}
-                              {subTab === 'training' && (
-                                <TrainingTab userData={employeeDetailData} />
-                              )}
-                              {subTab === 'kpi' && (
-                                <KpiTab userData={employeeDetailData} />
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Sub Navigation Pills - Chế độ */}
-                        {mainTab === 'benefit' && (
-                          <div className="space-y-4">
-                            <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg border">
-                              <Button2
-                                variant={subTab === 'salary' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('salary')}
-                                className={subTab === 'salary' ? '' : 'hover:bg-background'}
-                              >
-                                Lương
-                              </Button2>
-                              <Button2
-                                variant={subTab === 'insurance' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('insurance')}
-                                className={subTab === 'insurance' ? '' : 'hover:bg-background'}
-                              >
-                                Bảo hiểm
-                              </Button2>
-                            </div>
-
-                            {/* Content */}
-                            <div>
                               {subTab === 'salary' && (
                                 <SalaryTabWithDragDrop employee={employeeDetailData} />
                               )}
-                              {subTab === 'insurance' && <div>Nội dung Bảo hiểm</div>}
-                              {subTab === 'medical' && (
-                                <MedicalTab userData={employeeDetailData} />
+                              {subTab === 'kpi' && (
+                                <KpiTab userData={employeeDetailData} />
                               )}
                             </div>
                           </div>
