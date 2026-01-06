@@ -1055,7 +1055,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                 <DialogHeader className="px-6 py-4 border-b">
                     <DialogTitle className="flex items-center gap-2">
                         <UserPlus className="h-5 w-5" />
-                        Thêm nhiều nhân viên
+                        Thêm nhân viên
                     </DialogTitle>
                     <DialogDescription>
                         Có thể thêm nhiều nhân viên và lưu một lần

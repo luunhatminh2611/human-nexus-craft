@@ -64,7 +64,7 @@ export default function AdminDashboard() {
         count: activeCount,
         change: change,
       };
-    }).filter(d => d.count > 0);
+    });
   }, [employees, departments]);
 
   const totalActive = employees.filter((e) => e.status !== 'Resigned').length;
@@ -222,8 +222,8 @@ export default function AdminDashboard() {
                 {deptStats.map((dept, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex-1">
-                      <p className="font-medium">{dept.name}</p>
-                      <p className="text-2xl font-bold text-[#1a8649]">{dept.count} nhân viên</p>
+                      <p className="text-2xl font-medium">{dept.name}</p>
+                      <p className="text-lg font-bold text-[#1a8649]">{dept.count} nhân viên</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground mb-1">Biến động (30 ngày)</p>
@@ -449,20 +449,43 @@ export default function AdminDashboard() {
               <CardTitle>Phân bổ theo phòng ban (%)</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={deptDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="percentage" fill="#00C49F" name="Tỷ lệ (%)">
-                    {deptDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="overflow-x-auto">
+                <div style={{ minWidth: `${Math.max(600, deptDistribution.length * 150)}px` }}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={deptDistribution}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="name"
+                        angle={0}
+                        textAnchor="middle"
+                        height={50}
+                        interval={0}
+                        tick={{ fontSize: 12 }}
+                        style={{
+                          whiteSpace: 'normal',
+                          wordWrap: 'break-word'
+                        }}
+                      />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        dataKey="percentage"
+                        fill="#00C49F"
+                        name="Tỷ lệ (%)"
+                        maxBarSize={100}
+                      >
+                        {deptDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

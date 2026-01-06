@@ -31,7 +31,9 @@ import {
   CheckCircle,
   XCircle,
   Trash2,
-  ArrowLeft
+  ArrowLeft,
+  Edit,
+  Edit2
 } from 'lucide-react';
 import { employeeApi } from '../../api/employeeApi';
 import { userApi } from '../../api/userApi';
@@ -61,15 +63,19 @@ import DismissalTab from '../../components/DismissalTab';
 import TransferTab from '../../components/TransferTab';
 import SalaryAdjustmentTab from '../../components/SalaryAdjustmentTab';
 import DegreeTab from '../../components/DegreeTab';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Employee selection for detail view
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,6 +102,221 @@ export default function Employees() {
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
   const [decisionType, setDecisionType] = useState('reward');
   const [medicalType, setMedicalType] = useState('record');
+  const [isColumnSettingsOpen, setIsColumnSettingsOpen] = useState(false);
+
+  const [visibleColumns, setVisibleColumns] = useState({
+    employeeName: true,
+    employeeCode: true,
+    positionName: true,
+    departmentName: true,
+    status: true,
+
+    startDate: false,
+    phone: false,
+    contractType: false,
+    dateOfBirth: false,
+    cccdNumber: false,
+    cccdDate: false,
+    cccdPlace: false,
+    contactAddress: false,
+    birthPlace: false,
+    nativePlace: false,
+    homeTown: false,
+    permanentAddress: false,
+    socialInsuranceNumber: false,
+    socialInsuranceStartDate: false,
+    partyJoinDate: false,
+    partyOfficialDate: false,
+    youthUnionJoinDate: false,
+    militaryJoinDate: false,
+    militaryEndDate: false,
+    title: false,
+    isWoundedSoldier: false,
+    currentJobDetail: false,
+    note: false,
+    cardNumber: false,
+    documentReturnDate: false,
+    educationDetail: false,
+    laborContractTypeName: false,
+    culturalLevelName: false,
+    professionalLevelName: false,
+    itLevelName: false,
+    trainingMajorName: false,
+    militaryRankName: false,
+    policyFamilyName: false,
+    socialInsuranceJobName: false,
+  });
+
+  const ColumnSettingsDialog = () => {
+    const columnGroups = {
+      'Thông tin cơ bản': {
+        employeeCode: 'Mã nhân viên',
+        positionName: 'Chức vụ',
+        departmentName: 'Phòng ban',
+        status: 'Trạng thái',
+        startDate: 'Ngày vào làm',
+        phone: 'Số điện thoại',
+        email: 'Email',
+        contractType: 'Loại hợp đồng',
+      },
+      'Thông tin cá nhân': {
+        dateOfBirth: 'Ngày sinh',
+        birthPlace: 'Nơi sinh',
+        nativePlace: 'Quê quán',
+        homeTown: 'Nguyên quán',
+        contactAddress: 'Địa chỉ liên hệ',
+        permanentAddress: 'Địa chỉ thường trú',
+      },
+      'Giấy tờ tùy thân': {
+        cccdNumber: 'Số CCCD/CMND',
+        cccdDate: 'Ngày cấp CCCD',
+        cccdPlace: 'Nơi cấp CCCD',
+        cardNumber: 'Số thẻ',
+      },
+      'Bảo hiểm': {
+        socialInsuranceNumber: 'Số sổ BHXH',
+        socialInsuranceStartDate: 'Ngày tham gia BHXH',
+        socialInsuranceJobName: 'Nghề BHXH',
+      },
+      'Đảng - Đoàn - Quân đội': {
+        partyJoinDate: 'Ngày vào Đảng',
+        partyOfficialDate: 'Ngày chính thức',
+        youthUnionJoinDate: 'Ngày vào Đoàn',
+        militaryJoinDate: 'Ngày nhập ngũ',
+        militaryEndDate: 'Ngày xuất ngũ',
+        militaryRankName: 'Quân hàm',
+        isWoundedSoldier: 'Thương binh',
+      },
+      'Trình độ & Chuyên môn': {
+        culturalLevelName: 'Trình độ văn hóa',
+        professionalLevelName: 'Trình độ chuyên môn',
+        itLevelName: 'Trình độ tin học',
+        trainingMajorName: 'Chuyên ngành đào tạo',
+        educationDetail: 'Chi tiết học vấn',
+        laborContractTypeName: 'Loại hợp đồng lao động',
+      },
+      'Chính sách & Khác': {
+        policyFamilyName: 'Gia đình chính sách',
+        title: 'Chức danh',
+        currentJobDetail: 'Chi tiết công việc hiện tại',
+        documentReturnDate: 'Ngày trả hồ sơ',
+        note: 'Ghi chú',
+      },
+    };
+
+    return (
+      <Dialog open={isColumnSettingsOpen} onOpenChange={setIsColumnSettingsOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Tùy chỉnh cột hiển thị</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Chọn các cột bạn muốn hiển thị trong bảng nhân viên
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-4">
+            {Object.entries(columnGroups).map(([groupName, columns]) => (
+              <div key={groupName} className="space-y-3">
+                <h3 className="font-semibold text-sm border-b pb-2">{groupName}</h3>
+                <div className="grid grid-cols-2 gap-3 pl-2">
+                  {Object.entries(columns).map(([key, label]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={key}
+                        checked={visibleColumns[key]}
+                        onCheckedChange={(checked) => {
+                          setVisibleColumns(prev => ({
+                            ...prev,
+                            [key]: checked
+                          }));
+                        }}
+                      />
+                      <label
+                        htmlFor={key}
+                        className="text-sm cursor-pointer flex-1"
+                      >
+                        {label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setVisibleColumns({
+                    employeeName: true,
+                    employeeCode: true,
+                    positionName: true,
+                    departmentName: true,
+                    status: true,
+                    startDate: false,
+                    phone: false,
+                    contractType: false,
+                    dateOfBirth: false,
+                    cccdNumber: false,
+                    cccdDate: false,
+                    cccdPlace: false,
+                    contactAddress: false,
+                    birthPlace: false,
+                    nativePlace: false,
+                    homeTown: false,
+                    permanentAddress: false,
+                    socialInsuranceNumber: false,
+                    socialInsuranceStartDate: false,
+                    partyJoinDate: false,
+                    partyOfficialDate: false,
+                    youthUnionJoinDate: false,
+                    militaryJoinDate: false,
+                    militaryEndDate: false,
+                    title: false,
+                    isWoundedSoldier: false,
+                    currentJobDetail: false,
+                    note: false,
+                    cardNumber: false,
+                    documentReturnDate: false,
+                    educationDetail: false,
+                    laborContractTypeName: false,
+                    culturalLevelName: false,
+                    professionalLevelName: false,
+                    itLevelName: false,
+                    trainingMajorName: false,
+                    militaryRankName: false,
+                    policyFamilyName: false,
+                    socialInsuranceJobName: false,
+                  });
+                }}
+              >
+                Đặt lại mặc định
+              </Button>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsColumnSettingsOpen(false)}
+                >
+                  Đóng
+                </Button>
+                <Button2
+                  onClick={() => {
+                    setIsColumnSettingsOpen(false);
+                    // Có thể thêm toast thông báo
+                    alert('Đã lưu cấu hình cột');
+                  }}
+                >
+                  Xác nhận
+                </Button2>
+              </div>
+            </div>
+          </div>
+
+
+        </DialogContent>
+      </Dialog>
+    );
+  };
 
   const fileInputRef = useRef(null);
 
@@ -242,6 +463,18 @@ export default function Employees() {
     });
   }, [employees, searchTerm, filterStatus, filterDepartment]);
 
+  const paginatedEmployees = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredEmployees.slice(startIndex, endIndex);
+  }, [filteredEmployees, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterDepartment]);
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const text = searchTerm.toLowerCase();
@@ -339,6 +572,15 @@ export default function Employees() {
       alert('Vui lòng tạo tài khoản trước khi phân quyền');
       return;
     }
+
+    // Tạo userData với thông tin từ userDetailData
+    const userData = {
+      ...userDetailData,
+      userId: userDetailData?.id || employeeDetailData?.userId
+    };
+
+    console.log('Setting user data for role modal:', userData);
+    setSelectedUserData(userData);
     setIsRoleModalOpen(true);
   };
 
@@ -398,6 +640,7 @@ export default function Employees() {
       userId: user.id
     };
     setSelectedUserData(userData);
+    console.log('Selected user data for role modal:', userData);
     setIsRoleModalOpen(true);
   };
 
@@ -432,14 +675,14 @@ export default function Employees() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {selectedEmployeeId && (
-              <Button
+              <Button2
                 size="sm"
                 onClick={handleCloseDetail}
                 className="shrink-0"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Quay lại
-              </Button>
+              </Button2>
             )}
             <div>
               <h1 className="text-3xl font-bold">Quản lý nhân viên</h1>
@@ -495,16 +738,21 @@ export default function Employees() {
                     <Download className="h-4 w-4 mr-2" />
                     Tải xuống
                   </Button>
+
                 </div>
               ) : (
                 <>
-                  {/* <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Import Excel
-                      </Button> */}
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4 mr-1" />
+                    Tải lên
+                  </Button>
                   <Button variant="outline" onClick={handleExportExcel} >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 mr-1" />
                     Tải xuống
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsColumnSettingsOpen(true)}>
+                    <UserCog className="h-4 w-4 mr-1" />
+                    Tùy chỉnh cột
                   </Button>
                 </>
               )}
@@ -518,15 +766,13 @@ export default function Employees() {
                   <Plus className="h-4 w-4 mr-2" />
                   Thêm nhân viên
                 </Button>
-                {selectedEmployeeIds.length > 0 && (
-                  <Button
-                    onClick={handleOpenBulkEdit}
-                    className={"bg-blue-500 hover:bg-blue-600 text-white"}
-                  >
-                    <UserCog className="h-4 w-4 mr-2" />
-                    Chỉnh sửa ({selectedEmployeeIds.length})
-                  </Button>
-                )}
+
+                <Button2
+                  onClick={handleOpenBulkEdit}
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Chỉnh sửa ({selectedEmployeeIds.length})
+                </Button2>
               </div>
             </div>
           </Card>
@@ -546,42 +792,82 @@ export default function Employees() {
               <Card className="overflow-hidden">
                 <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
                   <table className="w-full">
-                    <thead className="bg-white sticky top-0 z-10">
+                    <thead className="bg-muted sticky top-0 z-10">
                       <tr>
                         {!selectedEmployeeId && (
-                          <th className="text-center p-3 text-sm font-semibold w-12">
-                            <Checkbox
-                              checked={isAllSelected}
-                              onCheckedChange={handleToggleAll}
-                            />
-                          </th>
+                          <>
+                            <th className="text-center p-3 text-sm font-semibold w-12">
+                              <Checkbox checked={isAllSelected} onCheckedChange={handleToggleAll} />
+                            </th>
+                            <th className="text-center p-3 text-sm font-semibold w-6">STT</th>
+                          </>
                         )}
-                        <th className="text-left p-3 text-sm font-semibold">Tên nhân viên</th>
                         {!selectedEmployeeId && (
                           <>
-                            <th className="text-left p-3 text-sm font-semibold">Mã nhân viên</th>
-                            <th className="text-left p-3 text-sm font-semibold">Chức vụ</th>
-                            <th className="text-left p-3 text-sm font-semibold">Phòng ban</th>
-                            <th className="text-left p-3 text-sm font-semibold">Trạng thái</th>
+                            {visibleColumns.employeeName && <th className="text-left p-3 text-sm font-semibold">Tên nhân viên</th>}
+                            {visibleColumns.employeeCode && <th className="text-left p-3 text-sm font-semibold">Mã nhân viên</th>}
+                            {visibleColumns.positionName && <th className="text-left p-3 text-sm font-semibold">Chức vụ</th>}
+                            {visibleColumns.departmentName && <th className="text-left p-3 text-sm font-semibold">Phòng ban</th>}
+                            {visibleColumns.status && <th className="text-left p-3 text-sm font-semibold">Trạng thái</th>}
+                            {visibleColumns.startDate && <th className="text-left p-3 text-sm font-semibold">Ngày vào làm</th>}
+                            {visibleColumns.phone && <th className="text-left p-3 text-sm font-semibold">SĐT</th>}
+                            {visibleColumns.contractType && <th className="text-left p-3 text-sm font-semibold">Loại HĐ</th>}
+                            {visibleColumns.dateOfBirth && <th className="text-left p-3 text-sm font-semibold">Ngày sinh</th>}
+                            {visibleColumns.birthPlace && <th className="text-left p-3 text-sm font-semibold">Nơi sinh</th>}
+                            {visibleColumns.nativePlace && <th className="text-left p-3 text-sm font-semibold">Quê quán</th>}
+                            {visibleColumns.homeTown && <th className="text-left p-3 text-sm font-semibold">Nguyên quán</th>}
+                            {visibleColumns.contactAddress && <th className="text-left p-3 text-sm font-semibold">Địa chỉ LH</th>}
+                            {visibleColumns.permanentAddress && <th className="text-left p-3 text-sm font-semibold">Địa chỉ TT</th>}
+                            {visibleColumns.cccdNumber && <th className="text-left p-3 text-sm font-semibold">Số CCCD</th>}
+                            {visibleColumns.cccdDate && <th className="text-left p-3 text-sm font-semibold">Ngày cấp CCCD</th>}
+                            {visibleColumns.cccdPlace && <th className="text-left p-3 text-sm font-semibold">Nơi cấp CCCD</th>}
+                            {visibleColumns.cardNumber && <th className="text-left p-3 text-sm font-semibold">Số thẻ</th>}
+                            {visibleColumns.socialInsuranceNumber && <th className="text-left p-3 text-sm font-semibold">Số sổ BHXH</th>}
+                            {visibleColumns.socialInsuranceStartDate && <th className="text-left p-3 text-sm font-semibold">Ngày tham gia BHXH</th>}
+                            {visibleColumns.socialInsuranceJobName && <th className="text-left p-3 text-sm font-semibold">Nghề BHXH</th>}
+                            {visibleColumns.partyJoinDate && <th className="text-left p-3 text-sm font-semibold">Ngày vào Đảng</th>}
+                            {visibleColumns.partyOfficialDate && <th className="text-left p-3 text-sm font-semibold">Ngày chính thức</th>}
+                            {visibleColumns.youthUnionJoinDate && <th className="text-left p-3 text-sm font-semibold">Ngày vào Đoàn</th>}
+                            {visibleColumns.militaryJoinDate && <th className="text-left p-3 text-sm font-semibold">Ngày nhập ngũ</th>}
+                            {visibleColumns.militaryEndDate && <th className="text-left p-3 text-sm font-semibold">Ngày xuất ngũ</th>}
+                            {visibleColumns.militaryRankName && <th className="text-left p-3 text-sm font-semibold">Quân hàm</th>}
+                            {visibleColumns.isWoundedSoldier && <th className="text-left p-3 text-sm font-semibold">Thương binh</th>}
+                            {visibleColumns.culturalLevelName && <th className="text-left p-3 text-sm font-semibold">Trình độ VH</th>}
+                            {visibleColumns.professionalLevelName && <th className="text-left p-3 text-sm font-semibold">Trình độ CM</th>}
+                            {visibleColumns.itLevelName && <th className="text-left p-3 text-sm font-semibold">Trình độ TH</th>}
+                            {visibleColumns.trainingMajorName && <th className="text-left p-3 text-sm font-semibold">Chuyên ngành</th>}
+                            {visibleColumns.educationDetail && <th className="text-left p-3 text-sm font-semibold">Chi tiết học vấn</th>}
+                            {visibleColumns.laborContractTypeName && <th className="text-left p-3 text-sm font-semibold">Loại HĐLĐ</th>}
+                            {visibleColumns.policyFamilyName && <th className="text-left p-3 text-sm font-semibold">Gia đình CS</th>}
+                            {visibleColumns.title && <th className="text-left p-3 text-sm font-semibold">Chức danh</th>}
+                            {visibleColumns.currentJobDetail && <th className="text-left p-3 text-sm font-semibold">CV hiện tại</th>}
+                            {visibleColumns.documentReturnDate && <th className="text-left p-3 text-sm font-semibold">Ngày trả HS</th>}
+                            {visibleColumns.note && <th className="text-left p-3 text-sm font-semibold">Ghi chú</th>}
+
                             <th className="text-center p-3 text-sm font-semibold">Thao tác</th>
                           </>
                         )}
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredEmployees.map((employee) => (
+                      {paginatedEmployees.map((employee, index) => (
                         <tr
                           key={employee.id}
                           className={`border-b hover:bg-muted/50 transition-colors ${selectedEmployeeId === employee.id ? 'bg-primary/5 border-l-4 border-l-primary' : ''
                             } ${selectedEmployeeIds.includes(employee.id) ? 'bg-blue-50' : ''}`}
                         >
                           {!selectedEmployeeId && (
-                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                              <Checkbox
-                                checked={selectedEmployeeIds.includes(employee.id)}
-                                onCheckedChange={() => handleToggleEmployee(employee.id)}
-                              />
-                            </td>
+                            <>
+                              <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  checked={selectedEmployeeIds.includes(employee.id)}
+                                  onCheckedChange={() => handleToggleEmployee(employee.id)}
+                                />
+                              </td>
+                              <td className="p-3 text-center text-sm text-muted-foreground">
+                                {index + 1}
+                              </td>
+                            </>
                           )}
                           <td className="p-3 cursor-pointer" onClick={() => handleRowClick(employee.id)}>
                             <div className="flex items-center gap-2">
@@ -597,15 +883,18 @@ export default function Employees() {
                           </td>
                           {!selectedEmployeeId && (
                             <>
-                              <td className="p-3">
-                                <p className="text-sm">{employee.employeeCode || '-'}</p>
-                              </td>
-                              <td className="p-3">
-                                <p className="text-sm">{employee.positionName || '-'}</p>
-                              </td>
-                              <td className="p-3">
-                                <p className="text-sm">{employee.departmentName || '-'}</p>
-                              </td>
+                              {visibleColumns.employeeCode && (
+                                <td className="p-3"><p className="text-sm">{employee.employeeCode || '-'}</p></td>
+                              )}
+                              {visibleColumns.positionName && (
+                                <td className="p-3"><p className="text-sm">{employee.positionName || '-'}</p></td>
+                              )}
+                              {visibleColumns.departmentName && (
+                                <td className="p-3"><p className="text-sm">{employee.departmentName || '-'}</p></td>
+                              )}
+                              {visibleColumns.startDate && (
+                                <td className="p-3"><p className="text-sm">{employee.startDate ? new Date(employee.startDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
                               <td className="p-3">
                                 {employee.email ? (
                                   <Badge variant="default" className="text-xs">
@@ -619,7 +908,107 @@ export default function Employees() {
                                   </Badge>
                                 )}
                               </td>
-                              <td className="p-3">
+                              {visibleColumns.phone && (
+                                <td className="p-3"><p className="text-sm">{employee.phone || '-'}</p></td>
+                              )}
+                              {visibleColumns.contractType && (
+                                <td className="p-3"><p className="text-sm">{employee.contractType || '-'}</p></td>
+                              )}
+                              {visibleColumns.dateOfBirth && (
+                                <td className="p-3"><p className="text-sm">{employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.birthPlace && (
+                                <td className="p-3"><p className="text-sm">{employee.birthPlace || '-'}</p></td>
+                              )}
+                              {visibleColumns.nativePlace && (
+                                <td className="p-3"><p className="text-sm">{employee.nativePlace || '-'}</p></td>
+                              )}
+                              {visibleColumns.homeTown && (
+                                <td className="p-3"><p className="text-sm">{employee.homeTown || '-'}</p></td>
+                              )}
+                              {visibleColumns.contactAddress && (
+                                <td className="p-3"><p className="text-sm">{employee.contactAddress || '-'}</p></td>
+                              )}
+                              {visibleColumns.permanentAddress && (
+                                <td className="p-3"><p className="text-sm">{employee.permanentAddress || '-'}</p></td>
+                              )}
+                              {visibleColumns.cccdNumber && (
+                                <td className="p-3"><p className="text-sm">{employee.cccdNumber || '-'}</p></td>
+                              )}
+                              {visibleColumns.cccdDate && (
+                                <td className="p-3"><p className="text-sm">{employee.cccdDate ? new Date(employee.cccdDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.cccdPlace && (
+                                <td className="p-3"><p className="text-sm">{employee.cccdPlace || '-'}</p></td>
+                              )}
+                              {visibleColumns.cardNumber && (
+                                <td className="p-3"><p className="text-sm">{employee.cardNumber || '-'}</p></td>
+                              )}
+                              {visibleColumns.socialInsuranceNumber && (
+                                <td className="p-3"><p className="text-sm">{employee.socialInsuranceNumber || '-'}</p></td>
+                              )}
+                              {visibleColumns.socialInsuranceStartDate && (
+                                <td className="p-3"><p className="text-sm">{employee.socialInsuranceStartDate ? new Date(employee.socialInsuranceStartDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.socialInsuranceJobName && (
+                                <td className="p-3"><p className="text-sm">{employee.socialInsuranceJobName || '-'}</p></td>
+                              )}
+                              {visibleColumns.partyJoinDate && (
+                                <td className="p-3"><p className="text-sm">{employee.partyJoinDate ? new Date(employee.partyJoinDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.partyOfficialDate && (
+                                <td className="p-3"><p className="text-sm">{employee.partyOfficialDate ? new Date(employee.partyOfficialDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.youthUnionJoinDate && (
+                                <td className="p-3"><p className="text-sm">{employee.youthUnionJoinDate ? new Date(employee.youthUnionJoinDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.militaryJoinDate && (
+                                <td className="p-3"><p className="text-sm">{employee.militaryJoinDate ? new Date(employee.militaryJoinDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.militaryEndDate && (
+                                <td className="p-3"><p className="text-sm">{employee.militaryEndDate ? new Date(employee.militaryEndDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.militaryRankName && (
+                                <td className="p-3"><p className="text-sm">{employee.militaryRankName || '-'}</p></td>
+                              )}
+                              {visibleColumns.isWoundedSoldier && (
+                                <td className="p-3"><p className="text-sm">{employee.isWoundedSoldier ? 'Có' : 'Không'}</p></td>
+                              )}
+                              {visibleColumns.culturalLevelName && (
+                                <td className="p-3"><p className="text-sm">{employee.culturalLevelName || '-'}</p></td>
+                              )}
+                              {visibleColumns.professionalLevelName && (
+                                <td className="p-3"><p className="text-sm">{employee.professionalLevelName || '-'}</p></td>
+                              )}
+                              {visibleColumns.itLevelName && (
+                                <td className="p-3"><p className="text-sm">{employee.itLevelName || '-'}</p></td>
+                              )}
+                              {visibleColumns.trainingMajorName && (
+                                <td className="p-3"><p className="text-sm">{employee.trainingMajorName || '-'}</p></td>
+                              )}
+                              {visibleColumns.educationDetail && (
+                                <td className="p-3"><p className="text-sm truncate max-w-xs" title={employee.educationDetail}>{employee.educationDetail || '-'}</p></td>
+                              )}
+                              {visibleColumns.laborContractTypeName && (
+                                <td className="p-3"><p className="text-sm">{employee.laborContractTypeName || '-'}</p></td>
+                              )}
+                              {visibleColumns.policyFamilyName && (
+                                <td className="p-3"><p className="text-sm">{employee.policyFamilyName || '-'}</p></td>
+                              )}
+                              {visibleColumns.title && (
+                                <td className="p-3"><p className="text-sm">{employee.title || '-'}</p></td>
+                              )}
+                              {visibleColumns.currentJobDetail && (
+                                <td className="p-3"><p className="text-sm truncate max-w-xs" title={employee.currentJobDetail}>{employee.currentJobDetail || '-'}</p></td>
+                              )}
+                              {visibleColumns.documentReturnDate && (
+                                <td className="p-3"><p className="text-sm">{employee.documentReturnDate ? new Date(employee.documentReturnDate).toLocaleDateString('vi-VN') : '-'}</p></td>
+                              )}
+                              {visibleColumns.note && (
+                                <td className="p-3"><p className="text-sm truncate max-w-xs" title={employee.note}>{employee.note || '-'}</p></td>
+                              )}
+
+                              <td className="p-3" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex gap-1 justify-center">
                                   <Button2
                                     variant="ghost"
@@ -627,12 +1016,12 @@ export default function Employees() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setModalMode('edit');
-                                      setSelectedEmployeeId(employee.id);
+                                      setEditingEmployeeId(employee.id);
                                       setIsModalOpen(true);
                                     }}
                                     title="Chỉnh sửa"
                                   >
-                                    <UserCog className="h-4 w-4" />
+                                    <Edit className="h-4 w-4" />
                                   </Button2>
                                   <Button2
                                     variant="ghost"
@@ -653,6 +1042,72 @@ export default function Employees() {
                   </table>
                 </div>
               </Card>
+              {filteredEmployees.length > 0 && (
+                <Card className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-muted-foreground">Hiển thị</span>
+                      <Select
+                        value={itemsPerPage.toString()}
+                        onValueChange={(value) => {
+                          setItemsPerPage(Number(value));
+                          setCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                          <SelectItem value="100">100</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                      >
+                        Đầu
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Trước
+                      </Button>
+
+                      <span className="text-sm px-4">
+                        Trang {currentPage} / {totalPages}
+                      </span>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Sau
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                      >
+                        Cuối
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </div>
             {selectedEmployeeId && (
               <div className="col-span-8">
@@ -1218,7 +1673,7 @@ export default function Employees() {
       <EmployeeModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        employeeId={null}
+        employeeId={editingEmployeeId}
         mode={modalMode}
       />
 
@@ -1226,6 +1681,8 @@ export default function Employees() {
         isOpen={isBulkAddModalOpen}
         onClose={() => setIsBulkAddModalOpen(false)}
       />
+
+      <ColumnSettingsDialog />
 
       <UserAccountModal
         isOpen={isUserModalOpen}

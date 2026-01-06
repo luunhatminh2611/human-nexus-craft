@@ -579,7 +579,7 @@ const mockData = {
     { id: 'dept001', name: 'Phòng Nhân sự', managerId: 'emp001' },
     { id: 'dept002', name: 'Phòng Kỹ thuật', parentId: 'dept001', managerId: 'emp002' },
     { id: 'dept003', name: 'Phòng Kinh doanh', parentId: 'dept001', managerId: 'emp003' },
-    { id: 'dept004', name: 'Phòng Vận hành', parentId: 'dept001', managerId: 'emp001' },
+    { id: 'dept004', name: 'Phòng Vận hành 111', parentId: 'dept001', managerId: 'emp001' },
     {
       id: "5",
       name: "Phòng Phát triển Sản phẩm",

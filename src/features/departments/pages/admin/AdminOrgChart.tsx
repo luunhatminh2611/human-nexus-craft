@@ -172,12 +172,14 @@ export default function OrgChart() {
             >
               <Edit className="h-3 w-3" />
             </button>
-            <button
-              className="p-1 bg-white rounded-md shadow hover:bg-red-100"
-              onClick={() => onDelete(dept)}
-            >
-              <Trash2 className="h-3 w-3 text-red-500" />
-            </button>
+            {dept.parentId && (
+              <button
+                className="p-1 bg-white rounded-md shadow hover:bg-red-100"
+                onClick={() => onDelete(dept)}
+              >
+                <Trash2 className="h-3 w-3 text-red-500" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -246,11 +248,11 @@ export default function OrgChart() {
       {/* Organizational Chart với scroll horizontal */}
       <Card>
         <CardContent className="p-8">
-          <div className="overflow-x-auto pb-4">
+          <div className="overflow-x-auto pb-4 flex items-center justify-center">
             <div className="inline-flex gap-12">
               {/* Root Departments */}
               {rootDepartments.map((root) => (
-                <div key={root.id} className="flex-shrink-0">
+                <div key={root.id} className="flex-shrink-0 j">
                   <DepartmentNode
                     dept={root}
                     level={0}
