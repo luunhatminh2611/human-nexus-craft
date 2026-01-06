@@ -28,6 +28,7 @@ import EmployeeHistoryPage from '@/features/appointment/pages/AppointmentHistory
 import ContractPage from '@/features/contract/pages/ContractPage';
 import EmployeeDocumentsPage from '@/features/employeeFile/pages/EmployeeDocumentsPage';
 import SocialInsurancePage from '@/features/socialInsurance/pages/SocialInsurancePage';
+import SalaryAdjustmentPage from '@/features/salaryAdjustment/pages/SalaryAdjustmentPage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -156,6 +157,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.CONTRACT_MANAGEMENT.slice(1), element: <ContractPage /> },
       { path: ROUTES.EMPLOYEE_FILE_MANAGEMENT.slice(1), element: <EmployeeDocumentsPage /> },
       { path: ROUTES.SOCIAL_INSURANCE.slice(1), element: <SocialInsurancePage /> },
+      { path: ROUTES.SALARY_ADJUST.slice(1), element: <SalaryAdjustmentPage /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]

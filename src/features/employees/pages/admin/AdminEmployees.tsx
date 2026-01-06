@@ -59,6 +59,8 @@ import DisciplineTab from '../../components/DisciplineTab';
 import AppointmentTab from '../../components/AppointmentTab';
 import DismissalTab from '../../components/DismissalTab';
 import TransferTab from '../../components/TransferTab';
+import SalaryAdjustmentTab from '../../components/SalaryAdjustmentTab';
+import DegreeTab from '../../components/DegreeTab';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -955,7 +957,14 @@ export default function Employees() {
                                       userData={employeeDetailData}
                                     />
                                   )}
-                                  {!['reward', 'discipline', 'appointment', 'dismissal', 'transfer'].includes(decisionType) && (
+                                  {decisionType === 'salary-adjustment' && (
+                                    <SalaryAdjustmentTab
+                                      employeeId={Number(selectedEmployeeId)}
+                                      userData={employeeDetailData}
+                                    />
+                                  )}
+
+                                  {!['reward', 'discipline', 'appointment', 'dismissal', 'transfer', 'salary-adjustment'].includes(decisionType) && (
                                     <InfoTab
                                       userData={employeeDetailData}
                                       employeeId={selectedEmployeeId}
@@ -964,16 +973,13 @@ export default function Employees() {
                                 </div>
                               )}
                               {subTab === 'degree' && (
-                                <InfoTab
+                                <DegreeTab
                                   userData={employeeDetailData}
-                                  employeeId={selectedEmployeeId}
+                                  employeeId={Number(selectedEmployeeId)}
                                 />
                               )}
                               {subTab === 'contracts' && (
-                                <InfoTab
-                                  userData={employeeDetailData}
-                                  employeeId={selectedEmployeeId}
-                                />
+                                <ContractsTab></ContractsTab>
                               )}
                               {subTab === 'medical' && (
                                 <div className="space-y-4">
@@ -1005,10 +1011,9 @@ export default function Employees() {
                                     </PopoverContent>
                                   </Popover>
 
-                                  <InfoTab
-                                    userData={employeeDetailData}
-                                    employeeId={selectedEmployeeId}
-                                  />
+                                  {medicalType === 'record' && (
+                                    <MedicalTab userData={employeeDetailData} />
+                                  )}
                                 </div>
                               )}
                               {subTab === 'profile' && (
@@ -1065,7 +1070,6 @@ export default function Employees() {
                                   employeeId={selectedEmployeeId}
                                 />
                               }
-                              {subTab === 'contracts' && <ContractsTab />}
                               {subTab === 'leaves' && (
                                 <LeavesTab userData={employeeDetailData} />
                               )}

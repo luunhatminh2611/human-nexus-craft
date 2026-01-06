@@ -32,7 +32,8 @@ import {
   ClockArrowUp,
   Send,
   FlagTriangleLeft,
-  Bolt
+  Bolt,
+  CoinsIcon
 } from 'lucide-react';
 import type { NavigationItem } from './types';
 
@@ -58,6 +59,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         submenu: [
           { label: 'Khen thưởng', icon: PartyPopper, path: '/reward' },
           { label: 'Kỷ luật', icon: ShieldAlert, path: '/discipline' },
+          { label: 'Điều chỉnh lương', icon: CoinsIcon, path: '/salary-adjust' },
           { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
           { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
           { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
@@ -93,6 +95,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         submenu: [
           { label: 'Khen thưởng', icon: PartyPopper, path: '/reward' },
           { label: 'Kỷ luật', icon: ShieldAlert, path: '/discipline' },
+          { label: 'Điều chỉnh lương', icon: CoinsIcon, path: '/salary-adjust' },
           { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
           { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
           { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
@@ -137,6 +140,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
       submenu: [
         { label: 'Khen thưởng', icon: PartyPopper, path: '/reward' },
         { label: 'Kỷ luật', icon: ShieldAlert, path: '/discipline' },
+        { label: 'Điều chỉnh lương', icon: CoinsIcon, path: '/salary-adjust' },
         { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
         { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
         { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
