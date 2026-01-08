@@ -33,7 +33,9 @@ import {
   Send,
   FlagTriangleLeft,
   Bolt,
-  CoinsIcon
+  CoinsIcon,
+  File,
+  Hospital
 } from 'lucide-react';
 import type { NavigationItem } from './types';
 
@@ -46,6 +48,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         path: '/admin/employees',
         submenu: [
           { label: 'Bằng cấp', icon: School, path: '/degree/management' },
+          { label: 'Thăm nhân', icon: Hospital, path: '/visit-health' },
           { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
           { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/employee/exit' },
           { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
@@ -67,7 +70,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
           // { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
         ]
       },
-      { label: 'Đào tạo', path: '/employee/learning' },
+      { label: 'Đào tạo, bồi dưỡng', path: '/employee/learning' },
       { label: 'BHLĐ được cấp', path: '/employee/safety' },
       { label: 'Lịch điều động', path: '/employee/transfer' },
       { label: 'Lịch công tác', path: '/employee/work-schedule' },
@@ -82,6 +85,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         submenu: [
           { label: 'Bằng cấp', icon: School, path: '/degree/management' },
           { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
+          { label: 'Thăm nhân', icon: Hospital, path: '/visit-health' },
           // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
           { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
           { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
@@ -103,7 +107,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
           // { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
         ]
       },
-      { label: 'Đào tạo', path: '/manager/learning' },
+      { label: 'Đào tạo, bồi dưỡng', path: '/manager/learning' },
       { label: 'Quản lý điều động', path: '/manager/transfer' },
       { label: 'Phân phát BHLĐ', path: '/admin/safety-dashboard' },
       { label: 'Lịch công tác', path: '/manager/work-schedule' },
@@ -122,7 +126,8 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Nhân viên', icon: Users, path: '/admin/employees' },
         { label: 'Bằng cấp', icon: School, path: '/admin/employees/degree' },
         { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
-        // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
+        { label: 'Thăm nhân', icon: Hospital, path: '/visit-health' },
+        { label: 'Hợp đồng', icon: Signature, path: '/contract' },
         { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
         { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
         { label: 'Hồ sơ', icon: FolderClosed, path: '/file' },
@@ -144,8 +149,8 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Bổ nhiệm/Miễn nhiệm', icon: RailSymbol, path: '/appoint' },
         { label: 'Lịch sử Bổ nhiệm/Miễn nhiệm', icon: Split, path: '/appoint/history' },
         { label: 'Điều chuyển công tác', icon: Rotate3d, path: '/admin/transfer' },
-        { label: 'Quản lý hợp đồng', icon: Signature, path: '/contract' },
-        // { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
+        // { label: 'Quản lý hợp đồng', icon: Signature, path: '/contract' },
+        { label: 'Tái ký/gia hạn hợp đồng', icon: Signature, path: '/admin/contract-resign' },
       ]
     },
     {
@@ -161,7 +166,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
       path: '/admin/training',
       submenu: [
         { label: 'Tuyển dụng', icon: Send, path: '/admin/recruitment' },
-        { label: 'Đào tạo', icon: Mailbox, path: '/admin/training' },
+        { label: 'Đào tạo, bồi dưỡng', icon: Mailbox, path: '/admin/training' },
       ]
     },
 

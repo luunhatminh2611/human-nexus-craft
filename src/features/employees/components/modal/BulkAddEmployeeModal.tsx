@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import {
@@ -22,25 +24,32 @@ import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { employeeApi } from '../../api/employeeApi';
 import { toast } from '@/shared/components/ui/use-toast';
-import { Loader2, X, Plus, UserPlus, Download, Upload } from 'lucide-react';
+import { Loader2, X, Plus, UserPlus, Download, Upload, Copy, ChevronDown, ChevronUp, Maximize2, Minimize2 } from 'lucide-react';
 import GenericSearchSelect from "@/features/employees/components/GenericSearchSelect";
 import { categoryConfigs } from "@/features/employees/components/CategoriesConfig";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/tables/table';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/ui/popover';
-import { ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 
 export default function BulkAddEmployeeModal({ isOpen, onClose }) {
     const queryClient = useQueryClient();
     const [employees, setEmployees] = useState([]);
     const [nextId, setNextId] = useState(1);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [viewMode, setViewMode] = useState<'table' | 'expanded'>('table'); // Chế độ hiển thị
     const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
         'code', 'fullName', 'birthDate', 'startDate', 'departmentId', 'positionId',
         'gender', 'contactAddress', 'laborContractTypeId'
     ]));
+
+    useEffect(() => {
+        if (isOpen && employees.length === 0) {
+            handleAddEmployee();
+        }
+    }, [isOpen]);
 
     const allColumns = {
         // Cột bắt buộc (không thể ẩn)
@@ -210,6 +219,494 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         };
     };
 
+    const handleExportExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const mainSheet = workbook.addWorksheet('Nhân viên');
+            const dropdownSheet = workbook.addWorksheet('Danh mục');
+
+            dropdownSheet.state = 'hidden';
+
+            // Định nghĩa tất cả các cột
+            const columns = [
+                { header: 'Mã nhân viên *', key: 'code', width: 15 },
+                { header: 'Tên nhân viên *', key: 'fullName', width: 25 },
+                { header: 'Ngày sinh *', key: 'birthDate', width: 15 },
+                { header: 'Giới tính', key: 'gender', width: 10 },
+                { header: 'Nơi sinh', key: 'birthPlace', width: 20 },
+                { header: 'Dân tộc', key: 'ethnicity', width: 15 },
+                { header: 'Quốc tịch', key: 'nationality', width: 15 },
+                { header: 'Tôn giáo', key: 'religion', width: 15 },
+                { header: 'Gia đình CS', key: 'policyFamily', width: 20 },
+                { header: 'Số CCCD', key: 'cccdNumber', width: 15 },
+                { header: 'Ngày cấp CCCD', key: 'cccdDate', width: 15 },
+                { header: 'Nơi cấp CCCD', key: 'cccdPlace', width: 20 },
+                { header: 'Tỉnh/TP', key: 'provinceCity', width: 20 },
+                { header: 'Phường/Xã', key: 'ward', width: 20 },
+                { header: 'Địa chỉ liên hệ', key: 'contactAddress', width: 30 },
+                { header: 'Hộ khẩu TT', key: 'permanentAddress', width: 30 },
+                { header: 'Nguyên quán', key: 'nativePlace', width: 20 },
+                { header: 'Quê quán', key: 'homeTown', width: 20 },
+                { header: 'Ngày vào làm *', key: 'startDate', width: 15 },
+                { header: 'Ngày kết thúc', key: 'endDate', width: 15 },
+                { header: 'Phòng ban *', key: 'department', width: 25 },
+                { header: 'Chức vụ *', key: 'position', width: 20 },
+                { header: 'Loại HĐ lao động', key: 'laborContractType', width: 20 },
+                { header: 'Công việc cụ thể', key: 'currentJobDetail', width: 30 },
+                { header: 'Danh hiệu', key: 'title', width: 20 },
+                { header: 'Số thẻ từ', key: 'cardNumber', width: 15 },
+                { header: 'Ngày trả hồ sơ', key: 'documentReturnDate', width: 15 },
+                { header: 'Thương binh', key: 'isWoundedSoldier', width: 12 },
+                { header: 'Bậc học', key: 'educationLevel', width: 20 },
+                { header: 'Trình độ cụ thể', key: 'educationDetail', width: 30 },
+                { header: 'Trình độ VH', key: 'culturalLevel', width: 20 },
+                { header: 'Trình độ CM', key: 'professionalLevel', width: 20 },
+                { header: 'Nghề nghiệp', key: 'specialty', width: 20 },
+                { header: 'Trình độ TH', key: 'itLevel', width: 20 },
+                { header: 'Trình độ NN', key: 'languageLevel', width: 20 },
+                { header: 'Lý luận CT', key: 'politicalTheory', width: 20 },
+                { header: 'Trường ĐT', key: 'trainingInstitution', width: 30 },
+                { header: 'Ngành ĐT', key: 'trainingMajor', width: 25 },
+                { header: 'Hình thức ĐT', key: 'trainingType', width: 20 },
+                { header: 'Số sổ BHXH', key: 'socialInsuranceNumber', width: 15 },
+                { header: 'Ngày tham gia BHXH', key: 'socialInsuranceStartDate', width: 18 },
+                { header: 'Nghề BHXH', key: 'socialInsuranceJob', width: 20 },
+                { header: 'Ngày vào Đảng', key: 'partyJoinDate', width: 15 },
+                { header: 'Ngày chính thức', key: 'partyOfficialDate', width: 15 },
+                { header: 'Ngày vào Đoàn', key: 'youthUnionJoinDate', width: 15 },
+                { header: 'Ngày nhập ngũ', key: 'militaryJoinDate', width: 15 },
+                { header: 'Ngày xuất ngũ', key: 'militaryEndDate', width: 15 },
+                { header: 'Quân hàm', key: 'militaryRank', width: 15 },
+                { header: 'Ghi chú', key: 'note', width: 40 },
+            ];
+
+            mainSheet.columns = columns;
+
+            // Lấy danh mục
+            const [
+                departments,
+                positions,
+                laborContractTypes,
+                nationalities,
+                ethnicities,
+                policyFamilies,
+                provinceCities,
+                wards,
+                degrees,
+                culturalLevels,
+                professionalLevels,
+                specialties,
+                itLevels,
+                languageLevels,
+                politicalTheories,
+                trainingInstitutions,
+                trainingMajors,
+                trainingTypes,
+                socialInsuranceJobs,
+                militaryRanks,
+            ] = await Promise.all([
+                categoryConfigs.department.api.getAll(),
+                categoryConfigs.jobTitle.api.getAll(),
+                categoryConfigs.laborContractType.api.getAll(),
+                categoryConfigs.nationality.api.getAll(),
+                categoryConfigs.ethnicity.api.getAll(),
+                categoryConfigs.policyFamily.api.getAll(),
+                categoryConfigs.provinceCity.api.getAll(),
+                categoryConfigs.ward.api.getAll(),
+                categoryConfigs.degree.api.getAll(),
+                categoryConfigs.culturalLevel.api.getAll(),
+                categoryConfigs.professionalLevel.api.getAll(),
+                categoryConfigs.specialty.api.getAll(),
+                categoryConfigs.itLevel.api.getAll(),
+                categoryConfigs.languageLevel.api.getAll(),
+                categoryConfigs.politicalTheory.api.getAll(),
+                categoryConfigs.trainingInstitution.api.getAll(),
+                categoryConfigs.trainingMajor.api.getAll(),
+                categoryConfigs.trainingType.api.getAll(),
+                categoryConfigs.socialInsuranceJob.api.getAll(),
+                categoryConfigs.militaryRank.api.getAll(),
+            ]);
+
+            // Helper: Tìm tên từ ID
+            const findNameById = (list: any[], id: string) => {
+                if (!id) return '';
+                const found = list?.find(item => item.id === Number(id));
+                return found?.name || '';
+            };
+
+            // Helper: Ghi dropdown
+            let colIndex = 1;
+            const dropdownRanges = {};
+            const writeDropdown = (data: any[], key: string) => {
+                if (data && data.length > 0) {
+                    dropdownSheet.getCell(1, colIndex).value = key;
+                    data.forEach((item, idx) => {
+                        dropdownSheet.getCell(idx + 2, colIndex).value = item.name || item;
+                    });
+                    dropdownRanges[key] = `'Danh mục'!$${getColumnLetter(colIndex)}$2:$${getColumnLetter(colIndex)}$${data.length + 1}`;
+                    colIndex++;
+                }
+            };
+
+            // Ghi danh mục
+            writeDropdown(['Nam', 'Nữ', 'Khác'], 'gender');
+            writeDropdown(departments, 'department');
+            writeDropdown(positions, 'position');
+            writeDropdown(laborContractTypes, 'laborContractType');
+            writeDropdown(nationalities, 'nationality');
+            writeDropdown(ethnicities, 'ethnicity');
+            writeDropdown(policyFamilies, 'policyFamily');
+            writeDropdown(provinceCities, 'provinceCity');
+            writeDropdown(wards, 'ward');
+            writeDropdown(degrees, 'educationLevel');
+            writeDropdown(culturalLevels, 'culturalLevel');
+            writeDropdown(professionalLevels, 'professionalLevel');
+            writeDropdown(specialties, 'specialty');
+            writeDropdown(itLevels, 'itLevel');
+            writeDropdown(languageLevels, 'languageLevel');
+            writeDropdown(politicalTheories, 'politicalTheory');
+            writeDropdown(trainingInstitutions, 'trainingInstitution');
+            writeDropdown(trainingMajors, 'trainingMajor');
+            writeDropdown(trainingTypes, 'trainingType');
+            writeDropdown(socialInsuranceJobs, 'socialInsuranceJob');
+            writeDropdown(militaryRanks, 'militaryRank');
+            writeDropdown(['Có', 'Không'], 'isWoundedSoldier');
+
+            // Ghi dữ liệu nhân viên (nếu có)
+            employees.forEach(emp => {
+                mainSheet.addRow({
+                    code: emp.code,
+                    fullName: emp.fullName,
+                    birthDate: emp.birthDate,
+                    gender: emp.gender,
+                    birthPlace: emp.birthPlace,
+                    ethnicity: findNameById(ethnicities, emp.ethnicity),
+                    nationality: findNameById(nationalities, emp.nationalityId),
+                    religion: emp.religion,
+                    policyFamily: findNameById(policyFamilies, emp.policyFamilyId),
+                    cccdNumber: emp.cccdNumber,
+                    cccdDate: emp.cccdDate,
+                    cccdPlace: emp.cccdPlace,
+                    provinceCity: findNameById(provinceCities, emp.provinceCityId),
+                    ward: findNameById(wards, emp.wardId),
+                    contactAddress: emp.contactAddress,
+                    permanentAddress: emp.permanentAddress,
+                    nativePlace: emp.nativePlace,
+                    homeTown: emp.homeTown,
+                    startDate: emp.startDate,
+                    endDate: emp.endDate,
+                    department: findNameById(departments, emp.departmentId),
+                    position: findNameById(positions, emp.positionId),
+                    laborContractType: findNameById(laborContractTypes, emp.laborContractTypeId),
+                    currentJobDetail: emp.currentJobDetail,
+                    title: emp.title,
+                    cardNumber: emp.cardNumber,
+                    documentReturnDate: emp.documentReturnDate,
+                    isWoundedSoldier: emp.isWoundedSoldier ? 'Có' : 'Không',
+                    educationLevel: findNameById(degrees, emp.educationLevelId),
+                    educationDetail: emp.educationDetail,
+                    culturalLevel: findNameById(culturalLevels, emp.culturalLevelId),
+                    professionalLevel: findNameById(professionalLevels, emp.professionalLevelId),
+                    specialty: findNameById(specialties, emp.specialtyId),
+                    itLevel: findNameById(itLevels, emp.itLevelId),
+                    languageLevel: findNameById(languageLevels, emp.languageLevelId),
+                    politicalTheory: findNameById(politicalTheories, emp.politicalTheoryId),
+                    trainingInstitution: findNameById(trainingInstitutions, emp.trainingInstitutionId),
+                    trainingMajor: findNameById(trainingMajors, emp.trainingMajorId),
+                    trainingType: findNameById(trainingTypes, emp.trainingTypeId),
+                    socialInsuranceNumber: emp.socialInsuranceNumber,
+                    socialInsuranceStartDate: emp.socialInsuranceStartDate,
+                    socialInsuranceJob: findNameById(socialInsuranceJobs, emp.socialInsuranceJobId),
+                    partyJoinDate: emp.partyJoinDate,
+                    partyOfficialDate: emp.partyOfficialDate,
+                    youthUnionJoinDate: emp.youthUnionJoinDate,
+                    militaryJoinDate: emp.militaryJoinDate,
+                    militaryEndDate: emp.militaryEndDate,
+                    militaryRank: findNameById(militaryRanks, emp.militaryRankId),
+                    note: emp.note,
+                });
+            });
+
+            // Thêm validation
+            const addValidation = (columnKey: string, dropdownKey: string) => {
+                const colNumber = columns.findIndex(col => col.key === columnKey) + 1;
+                if (colNumber > 0 && dropdownRanges[dropdownKey]) {
+                    const maxRow = Math.max(employees.length + 1, 100); // Ít nhất 100 dòng
+                    for (let i = 2; i <= maxRow; i++) {
+                        mainSheet.getCell(i, colNumber).dataValidation = {
+                            type: 'list',
+                            allowBlank: true,
+                            formulae: [dropdownRanges[dropdownKey]],
+                        };
+                    }
+                }
+            };
+
+            addValidation('gender', 'gender');
+            addValidation('department', 'department');
+            addValidation('position', 'position');
+            addValidation('laborContractType', 'laborContractType');
+            addValidation('nationality', 'nationality');
+            addValidation('ethnicity', 'ethnicity');
+            addValidation('policyFamily', 'policyFamily');
+            addValidation('provinceCity', 'provinceCity');
+            addValidation('ward', 'ward');
+            addValidation('educationLevel', 'educationLevel');
+            addValidation('culturalLevel', 'culturalLevel');
+            addValidation('professionalLevel', 'professionalLevel');
+            addValidation('specialty', 'specialty');
+            addValidation('itLevel', 'itLevel');
+            addValidation('languageLevel', 'languageLevel');
+            addValidation('politicalTheory', 'politicalTheory');
+            addValidation('trainingInstitution', 'trainingInstitution');
+            addValidation('trainingMajor', 'trainingMajor');
+            addValidation('trainingType', 'trainingType');
+            addValidation('socialInsuranceJob', 'socialInsuranceJob');
+            addValidation('militaryRank', 'militaryRank');
+            addValidation('isWoundedSoldier', 'isWoundedSoldier');
+
+            // Style header
+            mainSheet.getRow(1).font = { bold: true };
+            mainSheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF4472C4' }
+            };
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], {
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+
+            const fileName = employees.length > 0
+                ? `Them_nhan_vien_${new Date().toISOString().split('T')[0]}.xlsx`
+                : `Mau_them_nhan_vien.xlsx`;
+
+            saveAs(blob, fileName);
+
+            toast({
+                title: 'Thành công',
+                description: employees.length > 0
+                    ? `Đã tải xuống file với ${employees.length} nhân viên`
+                    : 'Đã tải xuống file mẫu'
+            });
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: 'Lỗi',
+                description: 'Không thể tải xuống file',
+                variant: 'destructive'
+            });
+        }
+    };
+
+    const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(await file.arrayBuffer());
+
+            const worksheet = workbook.getWorksheet('Nhân viên');
+            if (!worksheet) {
+                throw new Error('Không tìm thấy sheet "Nhân viên"');
+            }
+
+            // Lấy danh mục để map tên -> ID
+            const [
+                departments,
+                positions,
+                laborContractTypes,
+                nationalities,
+                ethnicities,
+                policyFamilies,
+                provinceCities,
+                wards,
+                degrees,
+                culturalLevels,
+                professionalLevels,
+                specialties,
+                itLevels,
+                languageLevels,
+                politicalTheories,
+                trainingInstitutions,
+                trainingMajors,
+                trainingTypes,
+                socialInsuranceJobs,
+                militaryRanks,
+            ] = await Promise.all([
+                categoryConfigs.department.api.getAll(),
+                categoryConfigs.jobTitle.api.getAll(),
+                categoryConfigs.laborContractType.api.getAll(),
+                categoryConfigs.nationality.api.getAll(),
+                categoryConfigs.ethnicity.api.getAll(),
+                categoryConfigs.policyFamily.api.getAll(),
+                categoryConfigs.provinceCity.api.getAll(),
+                categoryConfigs.ward.api.getAll(),
+                categoryConfigs.degree.api.getAll(),
+                categoryConfigs.culturalLevel.api.getAll(),
+                categoryConfigs.professionalLevel.api.getAll(),
+                categoryConfigs.specialty.api.getAll(),
+                categoryConfigs.itLevel.api.getAll(),
+                categoryConfigs.languageLevel.api.getAll(),
+                categoryConfigs.politicalTheory.api.getAll(),
+                categoryConfigs.trainingInstitution.api.getAll(),
+                categoryConfigs.trainingMajor.api.getAll(),
+                categoryConfigs.trainingType.api.getAll(),
+                categoryConfigs.socialInsuranceJob.api.getAll(),
+                categoryConfigs.militaryRank.api.getAll(),
+            ]);
+
+            // Helper: Tìm ID từ tên
+            const findIdByName = (list: any[], name: string) => {
+                if (!name) return '';
+                const found = list?.find(item =>
+                    item.name?.toLowerCase().trim() === name?.toLowerCase().trim()
+                );
+                return found ? String(found.id) : '';
+            };
+
+            const importedEmployees: any[] = [];
+            const existingCodes = new Map(employees.map(emp => [emp.code, emp]));
+
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return; // Skip header
+
+                const getCellValue = (colNumber: number) => {
+                    const cell = row.getCell(colNumber);
+                    return cell.value ? String(cell.value).trim() : '';
+                };
+
+                const code = getCellValue(1);
+                if (!code) return; // Skip empty rows
+
+                const employeeData = {
+                    tempId: existingCodes.has(code) ? existingCodes.get(code)!.tempId : nextId + importedEmployees.length,
+                    code,
+                    fullName: getCellValue(2),
+                    birthDate: getCellValue(3),
+                    gender: getCellValue(4) || 'NAM',
+                    birthPlace: getCellValue(5),
+                    ethnicity: findIdByName(ethnicities, getCellValue(6)),
+                    nationalityId: findIdByName(nationalities, getCellValue(7)),
+                    religion: getCellValue(8),
+                    policyFamilyId: findIdByName(policyFamilies, getCellValue(9)),
+                    cccdNumber: getCellValue(10),
+                    cccdDate: getCellValue(11),
+                    cccdPlace: getCellValue(12),
+                    provinceCityId: findIdByName(provinceCities, getCellValue(13)),
+                    wardId: findIdByName(wards, getCellValue(14)),
+                    contactAddress: getCellValue(15),
+                    permanentAddress: getCellValue(16),
+                    nativePlace: getCellValue(17),
+                    homeTown: getCellValue(18),
+                    startDate: getCellValue(19),
+                    endDate: getCellValue(20),
+                    departmentId: findIdByName(departments, getCellValue(21)),
+                    positionId: findIdByName(positions, getCellValue(22)),
+                    laborContractTypeId: findIdByName(laborContractTypes, getCellValue(23)),
+                    currentJobDetail: getCellValue(24),
+                    title: getCellValue(25),
+                    cardNumber: getCellValue(26),
+                    documentReturnDate: getCellValue(27),
+                    isWoundedSoldier: getCellValue(28) === 'Có',
+                    educationLevelId: findIdByName(degrees, getCellValue(29)),
+                    educationDetail: getCellValue(30),
+                    culturalLevelId: findIdByName(culturalLevels, getCellValue(31)),
+                    professionalLevelId: findIdByName(professionalLevels, getCellValue(32)),
+                    specialtyId: findIdByName(specialties, getCellValue(33)),
+                    itLevelId: findIdByName(itLevels, getCellValue(34)),
+                    languageLevelId: findIdByName(languageLevels, getCellValue(35)),
+                    politicalTheoryId: findIdByName(politicalTheories, getCellValue(36)),
+                    trainingInstitutionId: findIdByName(trainingInstitutions, getCellValue(37)),
+                    trainingMajorId: findIdByName(trainingMajors, getCellValue(38)),
+                    trainingTypeId: findIdByName(trainingTypes, getCellValue(39)),
+                    socialInsuranceNumber: getCellValue(40),
+                    socialInsuranceStartDate: getCellValue(41),
+                    socialInsuranceJobId: findIdByName(socialInsuranceJobs, getCellValue(42)),
+                    partyJoinDate: getCellValue(43),
+                    partyOfficialDate: getCellValue(44),
+                    youthUnionJoinDate: getCellValue(45),
+                    militaryJoinDate: getCellValue(46),
+                    militaryEndDate: getCellValue(47),
+                    militaryRankId: findIdByName(militaryRanks, getCellValue(48)),
+                    note: getCellValue(49),
+                    status: 'Đang làm việc',
+                };
+
+                importedEmployees.push(employeeData);
+            });
+
+            // Merge: Cập nhật nếu trùng code, thêm mới nếu không
+            const updatedEmployees = employees.map(emp => {
+                const imported = importedEmployees.find(imp => imp.code === emp.code);
+                return imported || emp;
+            });
+
+            const newEmployees = importedEmployees.filter(
+                imp => !existingCodes.has(imp.code)
+            );
+
+            setEmployees([...updatedEmployees, ...newEmployees]);
+            setNextId(prev => prev + newEmployees.length);
+
+            toast({
+                title: 'Thành công',
+                description: `Đã nhập ${importedEmployees.length} nhân viên (${newEmployees.length} mới, ${importedEmployees.length - newEmployees.length} cập nhật)`
+            });
+        } catch (error) {
+            console.error(error);
+            toast({
+                title: 'Lỗi',
+                description: error.message || 'Không thể đọc file',
+                variant: 'destructive'
+            });
+        } finally {
+            e.target.value = ''; // Reset input
+        }
+    };
+
+    // Helper function
+    function getColumnLetter(colNumber: number) {
+        let letter = '';
+        while (colNumber > 0) {
+            const mod = (colNumber - 1) % 26;
+            letter = String.fromCharCode(65 + mod) + letter;
+            colNumber = Math.floor((colNumber - mod) / 26);
+        }
+        return letter;
+    }
+
+    const handleCopyEmployee = (tempId: number) => {
+        const employeeToCopy = employees.find(e => e.tempId === tempId);
+        if (employeeToCopy) {
+            const newEmployee = {
+                ...employeeToCopy,
+                tempId: nextId,
+                code: '', // Reset mã nhân viên để tránh trùng
+            };
+            setEmployees(prev => [...prev, newEmployee]);
+            setNextId(prev => prev + 1);
+            toast({
+                title: 'Thành công',
+                description: 'Đã sao chép thông tin nhân viên',
+            });
+        }
+    };
+
+    const toggleRowExpansion = (tempId: number) => {
+        setExpandedRows(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(tempId)) {
+                newSet.delete(tempId);
+            } else {
+                newSet.add(tempId);
+            }
+            return newSet;
+        });
+    };
+
     const handleAddEmployee = () => {
         setEmployees(prev => [...prev, createNewEmployee()]);
         setNextId(prev => prev + 1);
@@ -326,6 +823,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
     const handleClose = () => {
         setEmployees([]);
         setNextId(1);
+        setExpandedRows(new Set());
         onClose();
     };
 
@@ -1067,16 +1565,27 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                     {/* Toolbar */}
                     <div className="px-6 py-3 border-b flex items-center justify-between bg-muted/30">
                         <div className="flex items-center gap-2">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".xlsx,.xls"
+                                className="hidden"
+                                onChange={handleImportExcel}
+                            />
+
                             <Button
                                 size="sm"
                                 className="gap-2"
+                                onClick={() => fileInputRef.current?.click()}
                             >
                                 <Upload className="h-4 w-4" />
                                 Tải lên
                             </Button>
+
                             <Button
                                 size="sm"
                                 className="gap-2"
+                                onClick={handleExportExcel}
                             >
                                 <Download className="h-4 w-4" />
                                 Tải xuống
@@ -1122,8 +1631,8 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-12 sticky left-0 bg-background z-10">#</TableHead>
-                                            <TableHead className="w-12 sticky left-12 bg-background z-10">
-                                                Xóa
+                                            <TableHead className="w-32 text-center sticky left-12 bg-background z-10">
+                                                Thao tác
                                             </TableHead>
                                             {allColumns.required.map(col => (
                                                 <TableHead key={col.key} className="whitespace-nowrap">
@@ -1141,32 +1650,63 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                                     </TableHeader>
                                     <TableBody>
                                         {employees.map((employee, index) => (
-                                            <TableRow key={employee.tempId}>
-                                                <TableCell className="sticky left-0 bg-background z-10 border-r">
-                                                    <span className="font-medium">{index + 1}</span>
-                                                </TableCell>
-                                                <TableCell className="sticky left-12 bg-background z-10 border-r">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleRemoveEmployee(employee.tempId)}
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                                {allColumns.required.map(col => (
-                                                    <TableCell key={col.key}>
-                                                        {renderTableCell(employee, col.key)}
+                                            <>
+                                                <TableRow key={employee.tempId}>
+                                                    <TableCell className="sticky left-0 bg-background z-10 border-r">
+                                                        <span className="font-medium">{index + 1}</span>
                                                     </TableCell>
-                                                ))}
-                                                {allColumns.optional
-                                                    .filter(col => visibleColumns.has(col.key))
-                                                    .map(col => (
+                                                    <TableCell className="sticky left-12 bg-background z-10 border-r">
+                                                        <div className="flex gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => toggleRowExpansion(employee.tempId)}
+                                                                title={expandedRows.has(employee.tempId) ? "Thu gọn" : "Mở rộng"}
+                                                            >
+                                                                {expandedRows.has(employee.tempId) ?
+                                                                    <ChevronUp className="h-4 w-4" /> :
+                                                                    <ChevronDown className="h-4 w-4" />
+                                                                }
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleCopyEmployee(employee.tempId)}
+                                                                title="Sao chép"
+                                                            >
+                                                                <Copy className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleRemoveEmployee(employee.tempId)}
+                                                                title="Xóa"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                    {allColumns.required.map(col => (
                                                         <TableCell key={col.key}>
                                                             {renderTableCell(employee, col.key)}
                                                         </TableCell>
                                                     ))}
-                                            </TableRow>
+                                                    {allColumns.optional
+                                                        .filter(col => visibleColumns.has(col.key))
+                                                        .map(col => (
+                                                            <TableCell key={col.key}>
+                                                                {renderTableCell(employee, col.key)}
+                                                            </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                                {expandedRows.has(employee.tempId) && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2 + allColumns.required.length + allColumns.optional.filter(col => visibleColumns.has(col.key)).length}>
+                                                            {renderEmployeeFieldsExpanded(employee, index)}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </>
                                         ))}
                                     </TableBody>
                                 </Table>
@@ -1196,7 +1736,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                                 disabled={createMutation.isPending || employees.length === 0}
                             >
                                 {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                {createMutation.isPending ? 'Đang lưu...' : 'Lưu tất cả'}
+                                {createMutation.isPending ? 'Đang lưu...' : 'Xác nhận'}
                             </Button>
                         </div>
                     </div>

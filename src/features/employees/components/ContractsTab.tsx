@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -6,291 +7,474 @@ import {
   CardTitle,
 } from '@/shared/components/ui/card';
 import Button from '@/shared/components/ui/button/Button';
+import { Button as Button2 } from '@/shared/components/ui/button/Button2';
 import {
   FileText,
   Download,
   Trash2,
   Upload,
-  Calendar,
-  User,
-  FileCheck,
+  Eye,
   Edit,
+  Plus,
 } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/components/ui/dialog';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
+import { Badge } from '@/shared/components/ui/badge';
+import { contractApi } from '../../contract/api/contractApi';
+import { toast } from '@/shared/hooks/use-toast';
+import ContractFormModal from '../../contract/components/ContractFormModal';
+import ContractDetailModal from '../../contract/components/ContractDetailModal';
+import { categoriesApi } from '@/features/categories/api/categoriesApi';
 
 interface Contract {
-  id: string;
-  fileName: string;
-  fileSize: string;
-  uploadDate: string;
+  id: number;
+  employee: {
+    id: number;
+    code: string;
+    fullName: string;
+    department?: {
+      id: number;
+      name: string;
+    };
+    position?: {
+      id: number;
+      name: string;
+    };
+  };
   contractType: string;
   startDate: string;
-  endDate?: string;
-  status: 'active' | 'expired';
-  uploadedBy: string;
-  fileUrl?: string;
+  endDate: string;
+  salary: number;
+  notes?: string;
+  fileName?: string;
+  fileType?: string;
+  attachmentData?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const initialForm = {
-  contractType: '',
-  startDate: '',
-  endDate: '',
-  file: null as File | null,
-};
+interface ContractsTabProps {
+  employeeId: number;
+}
 
-export default function ContractsTab() {
-  const [contracts, setContracts] = useState<Contract[]>([
-    {
-      id: '1',
-      fileName: 'Hop_dong_het_han_2023.pdf',
-      fileSize: '1.5 MB',
-      uploadDate: '01/01/2024',
-      contractType: 'Hợp đồng thử việc',
-      startDate: '01/11/2023',
-      endDate: '31/12/2023',
-      status: 'expired',
-      uploadedBy: 'Nguyễn Văn Admin',
+export default function ContractsTab({ employeeId }: ContractsTabProps) {
+  const queryClient = useQueryClient();
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
+  const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
+  const [contractTypes, setContractTypes] = useState<{ id: number; name: string }[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Fetch contracts by employee
+  const { data: contracts = [], isLoading, refetch } = useQuery({
+    queryKey: ['contracts', employeeId],
+    queryFn: () => contractApi.getByEmployeeId(employeeId),
+    enabled: !!employeeId,
+  });
+
+  // Fetch contract types
+  useEffect(() => {
+    const fetchContractTypes = async () => {
+      try {
+        const response = await categoriesApi.laborContractType.getAll();
+        setContractTypes(response);
+      } catch (error) {
+        console.error('Error fetching contract types:', error);
+      }
+    };
+    fetchContractTypes();
+  }, []);
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (contractId: number) => contractApi.delete(contractId),
+    onSuccess: () => {
+      toast({
+        title: 'Thành công',
+        description: 'Đã xóa hợp đồng',
+      });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      refetch();
     },
-  ]);
+    onError: (error: any) => {
+      toast({
+        title: 'Lỗi',
+        description: error.message || 'Không thể xóa hợp đồng',
+        variant: 'destructive',
+      });
+    },
+  });
 
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Contract | null>(null);
-  const [form, setForm] = useState(initialForm);
+  // Pagination
+  const paginatedContracts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return contracts.slice(startIndex, endIndex);
+  }, [contracts, currentPage, itemsPerPage]);
 
-  const hasActiveContract = contracts.some(c => c.status === 'active');
+  const totalPages = Math.ceil(contracts.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [contracts.length]);
+
+  const getContractStatus = (contract: Contract) => {
+    if (!contract.endDate) return 'active';
+    const now = new Date();
+    const endDate = new Date(contract.endDate);
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilExpiry < 0) return 'expired';
+    if (daysUntilExpiry <= 30) return 'expiring_soon';
+    return 'active';
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'active': { label: 'Đang hiệu lực', variant: 'default' },
+      'expiring_soon': { label: 'Sắp hết hạn', variant: 'warning' },
+      'expired': { label: 'Hết hạn', variant: 'secondary' },
+    };
+    return statusConfig[status] || statusConfig['active'];
+  };
+
+  const getContractTypeName = (contractTypeId: string | number) => {
+    const type = contractTypes.find(t => t.id === Number(contractTypeId));
+    return type?.name || contractTypeId;
+  };
+
+  const handleDownload = async (contract: Contract) => {
+    if (!contract.fileName) {
+      toast({
+        title: 'Lỗi',
+        description: 'Không tìm thấy file đính kèm',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      if (contract.attachmentData) {
+        const byteCharacters = atob(contract.attachmentData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: contract.fileType || 'application/pdf' });
+        
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = contract.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: 'Thành công',
+          description: 'Đã tải xuống file hợp đồng',
+        });
+      } else {
+        toast({
+          title: 'Lỗi',
+          description: 'Không tìm thấy dữ liệu file',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error downloading contract:', error);
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể tải xuống file',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDelete = (contractId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('Bạn có chắc chắn muốn xóa hợp đồng này?')) {
+      deleteMutation.mutate(contractId);
+    }
+  };
 
   const openCreate = () => {
-    if (hasActiveContract) {
-      alert('Đang có hợp đồng hiệu lực, không thể tạo hợp đồng mới');
-      return;
-    }
-    setEditing(null);
-    setForm(initialForm);
-    setOpen(true);
+    setSelectedContract(null);
+    setIsFormModalOpen(true);
   };
 
-  const openEdit = (contract: Contract) => {
-    setEditing(contract);
-    setForm({
-      contractType: contract.contractType,
-      startDate: contract.startDate,
-      endDate: contract.endDate || '',
-      file: null,
-    });
-    setOpen(true);
+  const openEdit = (contract: Contract, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedContract(contract);
+    setIsFormModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.contractType || !form.startDate) {
-      alert('Vui lòng nhập đầy đủ thông tin');
-      return;
-    }
-
-    if (editing) {
-      setContracts(prev =>
-        prev.map(c =>
-          c.id === editing.id
-            ? {
-                ...c,
-                contractType: form.contractType,
-                startDate: form.startDate,
-                endDate: form.endDate,
-                fileName: form.file?.name || c.fileName,
-                fileSize: form.file
-                  ? `${(form.file.size / 1024 / 1024).toFixed(1)} MB`
-                  : c.fileSize,
-              }
-            : c
-        )
-      );
-    } else {
-      const file = form.file;
-      if (!file) {
-        alert('Vui lòng chọn file hợp đồng');
-        return;
-      }
-
-      setContracts(prev => [
-        {
-          id: String(Date.now()),
-          fileName: file.name,
-          fileSize: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-          uploadDate: new Date().toLocaleDateString('vi-VN'),
-          contractType: form.contractType,
-          startDate: form.startDate,
-          endDate: form.endDate,
-          status: 'active',
-          uploadedBy: 'Nguyễn Văn Admin',
-        },
-        ...prev,
-      ]);
-    }
-
-    setOpen(false);
+  const openDetail = (contractId: number) => {
+    setSelectedContractId(contractId);
+    setIsDetailModalOpen(true);
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('vi-VN');
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(amount);
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            Hợp đồng lao động
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center gap-2 text-muted-foreground py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span>Đang tải...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row justify-between items-center">
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          Hợp đồng lao động
-        </CardTitle>
-
-        <Button onClick={openCreate}>
-          <Upload className="h-4 w-4 mr-2" />
-          Thêm hợp đồng
-        </Button>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        {contracts.map(contract => (
-          <div
-            key={contract.id}
-            className="border rounded-lg p-4 grid grid-cols-12 gap-4 items-start"
-          >
-            {/* LEFT */}
-            <div className="col-span-5 space-y-2">
-              <div className="flex items-center gap-2">
-                <FileCheck className="h-5 w-5 text-blue-600" />
-                <h4 className="font-medium truncate">
-                  {contract.fileName}
-                </h4>
-              </div>
-
-              <p className="text-sm text-gray-600">
-                {contract.contractType}
+    <>
+      {/* Header Card */}
+      <Card className="mb-4">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Hợp đồng lao động
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tổng số: {contracts.length} hợp đồng
               </p>
-
-              <span
-                className={`inline-block text-xs px-2 py-1 rounded-full ${
-                  contract.status === 'active'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                {contract.status === 'active'
-                  ? 'Đang hiệu lực'
-                  : 'Hết hạn'}
-              </span>
             </div>
-
-            {/* RIGHT */}
-            <div className="col-span-6 grid grid-cols-2 gap-y-2 text-sm text-gray-600">
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                Bắt đầu: {contract.startDate}
-              </div>
-
-              {contract.endDate && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  Kết thúc: {contract.endDate}
-                </div>
-              )}
-
-              <div className="flex items-center gap-1">
-                <User className="h-3 w-3" />
-                {contract.uploadedBy}
-              </div>
-
-              <div>Kích thước: {contract.fileSize}</div>
-
-              <div className="col-span-2 text-xs text-gray-400">
-                Ngày upload: {contract.uploadDate}
-              </div>
-            </div>
-
-            {/* ACTIONS */}
-            <div className="col-span-1 flex flex-row gap-2 items-end">
-              <button onClick={() => openEdit(contract)}>
-                <Edit className="h-4 w-4 text-blue-600" />
-              </button>
-              <button>
-                <Download className="h-4 w-4 text-green-600" />
-              </button>
-              <button onClick={() =>
-                setContracts(c => c.filter(x => x.id !== contract.id))
-              }>
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </CardContent>
-
-      {/* MODAL */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? 'Chỉnh sửa hợp đồng' : 'Thêm hợp đồng'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-3">
-            <div>
-              <Label>Loại hợp đồng</Label>
-              <Input
-                value={form.contractType}
-                onChange={e =>
-                  setForm({ ...form, contractType: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Ngày bắt đầu</Label>
-              <Input
-                type="date"
-                value={form.startDate}
-                onChange={e =>
-                  setForm({ ...form, startDate: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Ngày kết thúc</Label>
-              <Input
-                type="date"
-                value={form.endDate}
-                onChange={e =>
-                  setForm({ ...form, endDate: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <Label>File hợp đồng</Label>
-              <Input
-                type="file"
-                onChange={e =>
-                  setForm({
-                    ...form,
-                    file: e.target.files?.[0] || null,
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Hủy
+            <Button onClick={openCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm hợp đồng
             </Button>
-            <Button onClick={handleSave}>Lưu</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table Card */}
+      <Card className="overflow-hidden">
+        <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
+          <table className="w-full">
+            <thead className="bg-muted sticky top-0 z-10">
+              <tr>
+                <th className="text-center p-3 text-sm font-semibold w-16">STT</th>
+                <th className="text-left p-3 text-sm font-semibold">Loại hợp đồng</th>
+                <th className="text-left p-3 text-sm font-semibold">Ngày bắt đầu</th>
+                <th className="text-left p-3 text-sm font-semibold">Ngày kết thúc</th>
+                <th className="text-left p-3 text-sm font-semibold">Lương cơ bản</th>
+                <th className="text-left p-3 text-sm font-semibold">File đính kèm</th>
+                <th className="text-center p-3 text-sm font-semibold">Trạng thái</th>
+                <th className="text-center p-3 text-sm font-semibold w-32">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                    <p className="text-gray-500">Chưa có hợp đồng nào</p>
+                  </td>
+                </tr>
+              ) : (
+                paginatedContracts.map((contract: Contract, index) => {
+                  const status = getContractStatus(contract);
+                  const statusConfig = getStatusBadge(status);
+                  const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
+
+                  return (
+                    <tr
+                      key={contract.id}
+                      className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => openDetail(contract.id)}
+                    >
+                      <td className="p-3 text-center text-sm text-muted-foreground">
+                        {globalIndex}
+                      </td>
+                      <td className="p-3">
+                        <p className="font-medium text-sm">
+                          {getContractTypeName(contract.contractType)}
+                        </p>
+                      </td>
+                      <td className="p-3">
+                        <p className="text-sm">{formatDate(contract.startDate)}</p>
+                      </td>
+                      <td className="p-3">
+                        <p className="text-sm">
+                          {contract.endDate ? formatDate(contract.endDate) : 'Không xác định'}
+                        </p>
+                      </td>
+                      <td className="p-3">
+                        <p className="text-sm font-medium">{formatCurrency(contract.salary)}</p>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          {contract.fileName ? (
+                            <>
+                              <FileText className="h-4 w-4 text-blue-600" />
+                              <p className="text-sm truncate max-w-[150px]" title={contract.fileName}>
+                                {contract.fileName}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-400">Không có file</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        <Badge variant={statusConfig.variant as any}>
+                          {statusConfig.label}
+                        </Badge>
+                      </td>
+                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-1 justify-center">
+                          <Button2
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => openEdit(contract, e)}
+                            title="Chỉnh sửa"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button2>
+                          <Button2
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleDelete(contract.id, e)}
+                            title="Xóa"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button2>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Pagination */}
+      {contracts.length > 0 && (
+        <Card className="mt-4">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Hiển thị</span>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => {
+                    setItemsPerPage(Number(value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">mục</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  Đầu
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Trước
+                </Button>
+
+                <span className="text-sm px-4">
+                  Trang {currentPage} / {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Sau
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  Cuối
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Form Modal */}
+      <ContractFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => {
+          setIsFormModalOpen(false);
+          setSelectedContract(null);
+        }}
+        contract={selectedContract}
+        onSuccess={() => {
+          setIsFormModalOpen(false);
+          setSelectedContract(null);
+          refetch();
+        }}
+      />
+
+      {/* Detail Modal */}
+      <ContractDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedContractId(null);
+        }}
+        contractId={selectedContractId}
+      />
+    </>
   );
 }

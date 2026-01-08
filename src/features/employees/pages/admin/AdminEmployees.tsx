@@ -64,6 +64,11 @@ import TransferTab from '../../components/TransferTab';
 import SalaryAdjustmentTab from '../../components/SalaryAdjustmentTab';
 import DegreeTab from '../../components/DegreeTab';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import { exportEmployeesToExcel } from '@/shared/helper/src/utils/exportEmployeeExcel';
+import { culturalLevelApi, degreeApi, ethnicityApi, itLevelApi, jobTitleApi, laborContractTypeApi, languageLevelApi, militaryRankApi, nationalityApi, policyFamilyApi, politicalTheoryApi, professionalLevelApi, provinceCityApi, socialInsuranceJobApi, specialtyApi, trainingInstitutionApi, trainingMajorApi, trainingTypeApi, wardApi } from '@/features/categories/api/categoriesApi';
+import { toast } from '@/shared/hooks/use-toast';
+import EmployeeFamilyVisitTab from '../../components/VistFamilyTab';
+import InsuranceTab from '../../components/InsuranceTab';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -516,22 +521,92 @@ export default function Employees() {
 
   const handleExportExcel = async () => {
     try {
-      const ids = filteredEmployees.map((e) => e.id);
-      const res = await employeeApi.exportExcel(ids);
-
-      const blob = new Blob([res.data], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // Hiển thị loading
+      const loadingToast = toast({
+        title: 'Đang xử lý...',
+        description: 'Đang tải dữ liệu và tạo file Excel'
       });
 
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'employees.xlsx';
-      link.click();
-      window.URL.revokeObjectURL(url);
+      // Lấy tất cả danh mục cần thiết - PHẢI CÓ AWAIT
+      const [
+        positions,
+        laborContractTypes,
+        nationalities,
+        ethnicities,
+        policyFamilies,
+        provinceCities,
+        wards,
+        degrees,
+        culturalLevels,
+        professionalLevels,
+        specialties,
+        itLevels,
+        languageLevels,
+        politicalTheories,
+        trainingInstitutions,
+        trainingMajors,
+        trainingTypes,
+        socialInsuranceJobs,
+        militaryRanks,
+      ] = await Promise.all([
+        jobTitleApi.getAll(),
+        laborContractTypeApi.getAll(),
+        nationalityApi.getAll(),
+        ethnicityApi.getAll(),
+        policyFamilyApi.getAll(),
+        provinceCityApi.getAll(),
+        wardApi.getAll(),
+        degreeApi.getAll(),
+        culturalLevelApi.getAll(),
+        professionalLevelApi.getAll(),
+        specialtyApi.getAll(),
+        itLevelApi.getAll(),
+        languageLevelApi.getAll(),
+        politicalTheoryApi.getAll(),
+        trainingInstitutionApi.getAll(),
+        trainingMajorApi.getAll(),
+        trainingTypeApi.getAll(),
+        socialInsuranceJobApi.getAll(),
+        militaryRankApi.getAll(),
+      ]);
+
+      const categories = {
+        departments: departments || [],
+        positions,
+        laborContractTypes,
+        nationalities,
+        ethnicities,
+        policyFamilies,
+        provinceCities,
+        wards,
+        degrees,
+        culturalLevels,
+        professionalLevels,
+        specialties,
+        itLevels,
+        languageLevels,
+        politicalTheories,
+        trainingInstitutions,
+        trainingMajors,
+        trainingTypes,
+        socialInsuranceJobs,
+        militaryRanks,
+      };
+
+      // Gọi hàm export
+      await exportEmployeesToExcel(filteredEmployees, categories);
+
+      toast({
+        title: 'Thành công',
+        description: 'Đã tải xuống file Excel với đầy đủ thông tin'
+      });
     } catch (error) {
-      console.error(error);
-      alert('Xuất file thất bại');
+      console.error('Export error:', error);
+      toast({
+        title: 'Lỗi',
+        description: error?.message || 'Xuất file thất bại',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -1434,7 +1509,7 @@ export default function Employees() {
                                 />
                               )}
                               {subTab === 'contracts' && (
-                                <ContractsTab></ContractsTab>
+                                <ContractsTab employeeId={Number(selectedEmployeeId)} />
                               )}
                               {subTab === 'medical' && (
                                 <div className="space-y-4">
@@ -1572,14 +1647,13 @@ export default function Employees() {
                             {/* Content */}
                             <div>
                               {subTab === 'insurance' && (
-                                <InfoTab
-                                  userData={employeeDetailData}
+                                <InsuranceTab
+                                  userData={userDetailData}
                                   employeeId={selectedEmployeeId}
                                 />
                               )}
                               {subTab === 'visit' && (
-                                <InfoTab
-                                  userData={employeeDetailData}
+                                <EmployeeFamilyVisitTab
                                   employeeId={selectedEmployeeId}
                                 />
                               )}

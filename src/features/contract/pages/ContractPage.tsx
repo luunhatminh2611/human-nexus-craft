@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, FileText, AlertCircle, Trash2 } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, FileText, AlertCircle, Trash2, Download, Upload } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -21,21 +21,42 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import { 
-  mockContracts, 
-  type Contract,
-  calculateContractStatistics,
-  getActiveContracts,
-  getInactiveContracts,
-  statusLabels,
-  contractTypeLabels,
-  getDaysUntilExpiry
-} from '../../../mock/contract';
+import { contractApi } from '../api/contractApi';
+import { toast } from '@/shared/components/ui/use-toast';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
 import ContractFormModal from '../components/ContractFormModal';
 import ContractDetailModal from '../components/ContractDetailModal';
-import RenewalModal from '../components/RenewalModal';
-import SuspendTerminateModal from '../components/SuspendTerminateModal';
-import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import { Tabs, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+import { categoriesApi } from '@/features/categories/api/categoriesApi';
+
+
+interface Contract {
+  id: number;
+  employee: {
+    id: number;
+    code: string;
+    fullName: string;
+    department?: {
+      id: number;
+      name: string;
+    };
+    position?: {
+      id: number;
+      name: string;
+    };
+  };
+  contractType: string;
+  startDate: string;
+  endDate: string;
+  salary: number;
+  notes?: string;
+  fileName?: string;
+  fileType?: string;
+  attachmentData?: string;
+  status?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function ContractPage() {
   const { user } = useAuthStore();
@@ -43,143 +64,138 @@ export default function ContractPage() {
 
   const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
-  const [contracts, setContracts] = useState<Contract[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
+  const [contractTypes, setContractTypes] = useState<{ id: number, name: string }[]>([]);
+
+  const [contractsData, setContractsData] = useState<Contract[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
 
-  const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false);
-  const [renewalContract, setRenewalContract] = useState<Contract | null>(null);
+  // Fetch contracts
+  useEffect(() => {
+    const fetchContracts = async () => {
+      setIsLoading(true);
+      try {
+        const data = await contractApi.getAll();
+        setContractsData(data);
+      } catch (error) {
+        console.error('Error fetching contracts:', error);
+        toast({
+          title: 'Lỗi',
+          description: 'Không thể tải danh sách hợp đồng',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const [isSuspendTerminateModalOpen, setIsSuspendTerminateModalOpen] = useState(false);
-  const [suspendTerminateContract, setSuspendTerminateContract] = useState<Contract | null>(null);
-  const [suspendTerminateAction, setSuspendTerminateAction] = useState<'suspend' | 'terminate'>('suspend');
+    fetchContracts();
+  }, [refreshKey]);
 
   useEffect(() => {
-    fetchContracts();
-  }, [page, pageSize, searchTerm, typeFilter, statusFilter, departmentFilter, refreshKey, activeTab]);
+    const fetchContractTypes = async () => {
+      try {
+        const response = await categoriesApi.laborContractType.getAll();
+        setContractTypes(response);
+      } catch (error) {
+        console.error('Error fetching contract types:', error);
+      }
+    };
+    fetchContractTypes();
+  }, []);
 
-  const fetchContracts = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+  // Tính toán trạng thái hợp đồng
+  const getContractStatus = (contract: Contract) => {
+    if (!contract.endDate) return 'ACTIVE';
 
-    // Lọc theo tab
-    let filtered = activeTab === 'active' 
-      ? getActiveContracts(mockContracts)
-      : getInactiveContracts(mockContracts);
+    const now = new Date();
+    const endDate = new Date(contract.endDate);
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (typeFilter !== 'ALL') {
-      filtered = filtered.filter(c => c.contractType === typeFilter);
-    }
+    if (daysUntilExpiry < 0) return 'EXPIRED';
+    if (daysUntilExpiry <= 30) return 'EXPIRING_SOON';
+    return 'ACTIVE';
+  };
 
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(c => c.status === statusFilter);
-    }
+  const getContractTypeName = (contractTypeId: string | number) => {
+    const type = contractTypes.find(t => t.id === Number(contractTypeId));
+    return type?.name || contractTypeId; // Fallback to ID if not found
+  };
 
-    if (departmentFilter !== 'ALL') {
-      filtered = filtered.filter(c => c.departmentName === departmentFilter);
-    }
+  // Lọc và phân trang
+  const filteredContracts = contractsData.filter((contract: Contract) => {
+    const status = getContractStatus(contract);
+    const isActive = status === 'ACTIVE' || status === 'EXPIRING_SOON';
 
+    // Filter by tab
+    if (activeTab === 'active' && !isActive) return false;
+    if (activeTab === 'inactive' && isActive) return false;
+
+    // Filter by search
     if (searchTerm) {
-      filtered = filtered.filter(c =>
-        c.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.contractNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.position.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchLower = searchTerm.toLowerCase();
+      const matchesEmployee = contract.employee?.fullName?.toLowerCase().includes(searchLower);
+      const matchesCode = contract.employee?.code?.toLowerCase().includes(searchLower);
+      const matchesPosition = contract.employee?.position?.name?.toLowerCase().includes(searchLower);
+
+      if (!matchesEmployee && !matchesCode && !matchesPosition) return false;
     }
 
-    setTotalItems(filtered.length);
+    // Filter by type
+    if (typeFilter && !contract.contractType?.toLowerCase().includes(typeFilter.toLowerCase())) return false;
 
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setContracts(filtered.slice(start, end));
+    // Filter by department
+    if (departmentFilter !== 'ALL' && contract.employee?.department?.name !== departmentFilter) return false;
 
-    setIsLoading(false);
+    // Filter by status
+    if (statusFilter !== 'ALL' && status !== statusFilter) return false;
+
+    return true;
+  });
+
+  const totalItems = filteredContracts.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = page * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalItems);
+  const paginatedContracts = filteredContracts.slice(startIndex, endIndex);
+
+  // Get unique departments
+  const departments = Array.from(
+    new Set(contractsData.map((c: Contract) => c.employee?.department?.name).filter(Boolean))
+  );
+
+  // Count active/inactive
+  const activeCount = contractsData.filter((c: Contract) => {
+    const status = getContractStatus(c);
+    return status === 'ACTIVE' || status === 'EXPIRING_SOON';
+  }).length;
+
+  const inactiveCount = contractsData.length - activeCount;
+
+  const getDaysUntilExpiry = (endDate: string) => {
+    if (!endDate) return null;
+    const now = new Date();
+    const end = new Date(endDate);
+    return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const handleOpenFormModal = (contract?: Contract) => {
-    setSelectedContract(contract || null);
-    setIsFormModalOpen(true);
-  };
+  const getStatusBadge = (contract: Contract) => {
+    const status = getContractStatus(contract);
 
-  const handleCloseFormModal = () => {
-    setIsFormModalOpen(false);
-    setSelectedContract(null);
-  };
-
-  const handleFormSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseFormModal();
-  };
-
-  const handleOpenDetailModal = (id: string) => {
-    setSelectedContractId(id);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedContractId(null);
-  };
-
-  const handleOpenRenewalModal = (contract: Contract) => {
-    setRenewalContract(contract);
-    setIsRenewalModalOpen(true);
-  };
-
-  const handleCloseRenewalModal = () => {
-    setIsRenewalModalOpen(false);
-    setRenewalContract(null);
-  };
-
-  const handleRenewalSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseRenewalModal();
-  };
-
-  const handleOpenSuspendTerminateModal = (contract: Contract, action: 'suspend' | 'terminate') => {
-    setSuspendTerminateContract(contract);
-    setSuspendTerminateAction(action);
-    setIsSuspendTerminateModalOpen(true);
-  };
-
-  const handleCloseSuspendTerminateModal = () => {
-    setIsSuspendTerminateModalOpen(false);
-    setSuspendTerminateContract(null);
-  };
-
-  const handleSuspendTerminateSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseSuspendTerminateModal();
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa hợp đồng này?')) {
-      console.log('Delete contract:', id);
-      setRefreshKey(prev => prev + 1);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'ACTIVE': { label: statusLabels.ACTIVE, className: 'bg-green-100 text-green-800' },
-      'EXPIRING_SOON': { label: statusLabels.EXPIRING_SOON, className: 'bg-orange-100 text-orange-800' },
-      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-red-100 text-red-800' },
-      'SUSPENDED': { label: statusLabels.SUSPENDED, className: 'bg-yellow-100 text-yellow-800' },
-      'TERMINATED': { label: statusLabels.TERMINATED, className: 'bg-gray-100 text-gray-800' },
-      'RENEWED': { label: statusLabels.RENEWED, className: 'bg-blue-100 text-blue-800' },
-      'REPLACED': { label: statusLabels.REPLACED, className: 'bg-purple-100 text-purple-800' },
+      'ACTIVE': { label: 'Đang hiệu lực', className: 'bg-green-100 text-green-800' },
+      'EXPIRING_SOON': { label: 'Sắp hết hạn', className: 'bg-orange-100 text-orange-800' },
+      'EXPIRED': { label: 'Đã hết hạn', className: 'bg-red-100 text-red-800' },
     };
 
     const config = statusConfig[status] || { label: status, className: '' };
@@ -198,14 +214,71 @@ export default function ContractPage() {
     }).format(amount);
   };
 
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = page * pageSize + 1;
-  const endIndex = Math.min((page + 1) * pageSize, totalItems);
+  const handleOpenFormModal = (contract?: Contract) => {
+    setSelectedContract(contract || null);
+    setIsFormModalOpen(true);
+  };
 
-  const departments = Array.from(new Set(mockContracts.map(c => c.departmentName)));
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedContract(null);
+  };
+
+  const handleFormSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+    handleCloseFormModal();
+  };
+
+  const handleOpenDetailModal = (id: number) => {
+    setSelectedContractId(id);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedContractId(null);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm('Bạn có chắc chắn muốn xóa hợp đồng này?')) {
+      try {
+        await contractApi.delete(id);
+        toast({
+          title: 'Thành công',
+          description: 'Đã xóa hợp đồng',
+        });
+        setRefreshKey(prev => prev + 1);
+      } catch (error) {
+        console.error('Error deleting contract:', error);
+        toast({
+          title: 'Lỗi',
+          description: 'Không thể xóa hợp đồng',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      await contractApi.export();
+      toast({
+        title: 'Thành công',
+        description: 'Đã tải xuống file Excel',
+      });
+    } catch (error) {
+      console.error('Error exporting contracts:', error);
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể tải xuống file',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Quản lý Hợp đồng</h1>
@@ -213,49 +286,43 @@ export default function ContractPage() {
             Quản lý hợp đồng lao động của nhân viên
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={() => handleOpenFormModal()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tạo hợp đồng mới
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {isAdmin && (
+            <>
+              <Button variant="outline" onClick={handleExport}>
+                <Upload className="h-4 w-4 mr-1" />
+                Tải Lên
+              </Button>
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-1" />
+                Tải Xuống
+              </Button>
+              <Button onClick={() => handleOpenFormModal()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Tạo hợp đồng mới
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b">
-        <button
-          className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-            activeTab === 'active'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => {
-            setActiveTab('active');
-            setPage(0);
-          }}
-        >
-          Hợp đồng hiệu lực
-          <Badge className="ml-2 bg-green-100 text-green-800">
-            {getActiveContracts(mockContracts).length}
-          </Badge>
-        </button>
-        <button
-          className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-            activeTab === 'inactive'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-          onClick={() => {
-            setActiveTab('inactive');
-            setPage(0);
-          }}
-        >
-          Hợp đồng hết hiệu lực
-          <Badge className="ml-2 bg-gray-100 text-gray-800">
-            {getInactiveContracts(mockContracts).length}
-          </Badge>
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'active' | 'inactive')}>
+        <TabsList>
+          <TabsTrigger value="active">
+            Đang hiệu lực
+            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-primary/10">
+              {activeCount}
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="inactive">
+            Đã hết hạn
+            <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-primary/10">
+              {inactiveCount}
+            </span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
 
       {/* Filters */}
       <Card className="p-4">
@@ -263,61 +330,12 @@ export default function ContractPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, số hợp đồng, vị trí"
+              placeholder="Tìm kiếm theo tên nhân viên, mã NV, vị trí"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Phòng ban" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả phòng ban</SelectItem>
-              {departments.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Loại hợp đồng" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả loại</SelectItem>
-              <SelectItem value="INDEFINITE">Không xác định TH</SelectItem>
-              <SelectItem value="DEFINITE_1_YEAR">Xác định TH - 1 năm</SelectItem>
-              <SelectItem value="DEFINITE_2_YEAR">Xác định TH - 2 năm</SelectItem>
-              <SelectItem value="DEFINITE_3_YEAR">Xác định TH - 3 năm</SelectItem>
-              <SelectItem value="PROBATION">Thử việc</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              {activeTab === 'active' ? (
-                <>
-                  <SelectItem value="ACTIVE">Đang hiệu lực</SelectItem>
-                  <SelectItem value="EXPIRING_SOON">Sắp hết hạn</SelectItem>
-                  <SelectItem value="SUSPENDED">Tạm hoãn</SelectItem>
-                </>
-              ) : (
-                <>
-                  <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
-                  <SelectItem value="TERMINATED">Đã chấm dứt</SelectItem>
-                  <SelectItem value="RENEWED">Đã gia hạn</SelectItem>
-                  <SelectItem value="REPLACED">Đã thay thế</SelectItem>
-                </>
-              )}
-            </SelectContent>
-          </Select>
         </div>
       </Card>
 
@@ -328,12 +346,11 @@ export default function ContractPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nhân viên</TableHead>
-                <TableHead>Số hợp đồng</TableHead>
+                <TableHead>Mã NV</TableHead>
                 <TableHead>Loại hợp đồng</TableHead>
                 <TableHead>Thời hạn</TableHead>
                 <TableHead>Lương cơ bản</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead>Cảnh báo</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
@@ -347,7 +364,7 @@ export default function ContractPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : contracts.length === 0 ? (
+              ) : paginatedContracts.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -357,56 +374,50 @@ export default function ContractPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                contracts.map((contract) => {
+                paginatedContracts.map((contract: Contract) => {
                   const daysLeft = getDaysUntilExpiry(contract.endDate);
+                  const status = getContractStatus(contract);
+
                   return (
-                    <TableRow key={contract.id}>
+                    <TableRow key={`contract-${contract.id}-${contract.employee.id}`}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{contract.employeeName}</p>
-                          <p className="text-sm text-muted-foreground">{contract.departmentName}</p>
-                          <p className="text-xs text-muted-foreground">{contract.position}</p>
+                          <p className="font-medium">{contract.employee?.fullName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {contract.employee?.department?.name || 'Chưa có phòng ban'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {contract.employee?.position?.name || 'Chưa có chức vụ'}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium text-sm">{contract.contractNumber}</span>
+                        <span className="font-medium text-sm">{contract.employee?.code}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm">{contractTypeLabels[contract.contractType]}</span>
+                        <span className="text-sm">
+                          {getContractTypeName(contract.contractType)}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div>{new Date(contract.startDate).toLocaleDateString('vi-VN')}</div>
                           <div className="text-muted-foreground">
-                            {contract.endDate 
+                            {contract.endDate
                               ? new Date(contract.endDate).toLocaleDateString('vi-VN')
                               : 'Không xác định'}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-medium">{formatCurrency(contract.baseSalary)}</span>
+                        <span className="text-sm font-medium">{formatCurrency(contract.salary)}</span>
                       </TableCell>
                       <TableCell>
-                        {getStatusBadge(contract.status)}
-                      </TableCell>
-                      <TableCell>
-                        {daysLeft !== null && daysLeft >= 0 && daysLeft <= 30 && (
-                          <div className="flex items-center gap-1 text-orange-600">
-                            <AlertCircle className="h-4 w-4" />
-                            <span className="text-xs font-medium">Còn {daysLeft} ngày</span>
-                          </div>
-                        )}
-                        {contract.status === 'EXPIRED' && (
-                          <div className="flex items-center gap-1 text-red-600">
-                            <AlertCircle className="h-4 w-4" />
-                            <span className="text-xs font-medium">Cần gia hạn</span>
-                          </div>
-                        )}
+                        {getStatusBadge(contract)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-center">
-                          {isAdmin && activeTab === 'active' && contract.status !== 'SUSPENDED' && (
+                          {isAdmin && status === 'ACTIVE' && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -416,7 +427,7 @@ export default function ContractPage() {
                               <Edit className="h-4 w-4" />
                             </Button>
                           )}
-                          
+
                           <Button
                             variant="ghost"
                             size="sm"
@@ -426,44 +437,7 @@ export default function ContractPage() {
                             <Eye className="h-4 w-4" />
                           </Button>
 
-                          {isAdmin && activeTab === 'inactive' && 
-                           (contract.status === 'EXPIRED' || contract.status === 'EXPIRING_SOON') && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenRenewalModal(contract)}
-                              title="Gia hạn/Tái ký"
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          )}
-
-                          {isAdmin && activeTab === 'active' && 
-                           (contract.status === 'ACTIVE' || contract.status === 'EXPIRING_SOON') && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenSuspendTerminateModal(contract, 'suspend')}
-                                title="Tạm hoãn"
-                                className="text-yellow-600 hover:text-yellow-700"
-                              >
-                                <AlertCircle className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenSuspendTerminateModal(contract, 'terminate')}
-                                title="Chấm dứt"
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-
-                          {isAdmin && contract.status !== 'ACTIVE' && contract.status !== 'EXPIRING_SOON' && (
+                          {isAdmin && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -485,10 +459,10 @@ export default function ContractPage() {
         </div>
 
         {/* Pagination */}
-        {!isLoading && contracts.length > 0 && (
+        {!isLoading && paginatedContracts.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <div className="text-sm text-muted-foreground">
-              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
+              Hiển thị {startIndex + 1} - {endIndex} trong tổng số {totalItems}
             </div>
 
             <div className="flex items-center gap-2">
@@ -554,6 +528,7 @@ export default function ContractPage() {
         )}
       </Card>
 
+      {/* Modals */}
       <ContractFormModal
         isOpen={isFormModalOpen}
         onClose={handleCloseFormModal}
@@ -565,21 +540,6 @@ export default function ContractPage() {
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
         contractId={selectedContractId}
-      />
-
-      <RenewalModal
-        isOpen={isRenewalModalOpen}
-        onClose={handleCloseRenewalModal}
-        contract={renewalContract}
-        onSuccess={handleRenewalSuccess}
-      />
-
-      <SuspendTerminateModal
-        isOpen={isSuspendTerminateModalOpen}
-        onClose={handleCloseSuspendTerminateModal}
-        contract={suspendTerminateContract}
-        action={suspendTerminateAction}
-        onSuccess={handleSuspendTerminateSuccess}
       />
     </div>
   );

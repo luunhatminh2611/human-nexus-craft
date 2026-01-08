@@ -64,6 +64,7 @@ export const ROUTES = {
   EMPLOYEE_FILE_MANAGEMENT: '/file',
   SOCIAL_INSURANCE: '/social-insurance',
   SALARY_ADJUST: '/salary-adjust',
+  VISIT_MANAGEMENT: '/visit-health',
   ROOT: '/',
   NOT_FOUND: '*',
 };

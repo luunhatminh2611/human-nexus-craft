@@ -34,7 +34,7 @@ import { Checkbox } from '@/shared/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { employeeApi } from '../../api/employeeApi';
 import { toast } from '@/shared/components/ui/use-toast';
-import { Loader2, X, Search, Check, ChevronsUpDown, Upload, Download } from 'lucide-react';
+import { Loader2, X, Search, Check, ChevronsUpDown, Upload, Download, ChevronUp } from 'lucide-react';
 import GenericSearchSelect from "@/features/employees/components/GenericSearchSelect";
 import { categoryConfigs } from "@/features/employees/components/CategoriesConfig";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/tables/table';
@@ -56,6 +56,20 @@ export default function BulkEditEmployeeModal({
     const [selectedEmployees, setSelectedEmployees] = useState([]);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchValue, setSearchValue] = useState('');
+
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+    const toggleRowExpansion = (employeeId: number) => {
+        setExpandedRows(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(employeeId)) {
+                newSet.delete(employeeId);
+            } else {
+                newSet.add(employeeId);
+            }
+            return newSet;
+        });
+    };
 
     const [viewMode, setViewMode] = useState<'table' | 'expanded'>('table');
     const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set([
@@ -445,6 +459,7 @@ export default function BulkEditEmployeeModal({
     const handleClose = () => {
         setSelectedEmployees([]);
         setSearchValue('');
+        setExpandedRows(new Set());
         onClose();
     };
 
@@ -1128,7 +1143,7 @@ export default function BulkEditEmployeeModal({
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
                 <DialogHeader>
-                    <DialogTitle>Chỉnh sửa hàng loạt nhân viên</DialogTitle>
+                    <DialogTitle>Chỉnh sửa</DialogTitle>
                     <DialogDescription>
                         Tìm kiếm và chọn nhân viên để chỉnh sửa thông tin. Các trường được đánh dấu (*) là bắt buộc.
                     </DialogDescription>
@@ -1237,7 +1252,6 @@ export default function BulkEditEmployeeModal({
                             <div className="text-center py-12 text-muted-foreground">
                                 <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
                                 <p>Chưa có nhân viên nào được chọn</p>
-                                <p className="text-sm">Sử dụng ô tìm kiếm ở trên để thêm nhân viên</p>
                             </div>
                         ) : viewMode === 'table' ? (
                             // TABLE VIEW
@@ -1246,8 +1260,8 @@ export default function BulkEditEmployeeModal({
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-12 sticky left-0 bg-background z-10">#</TableHead>
-                                            <TableHead className="w-12 sticky left-12 bg-background z-10">
-                                                Xóa
+                                            <TableHead className="w-24 text-center sticky left-12 bg-background z-10">
+                                                Thao tác
                                             </TableHead>
                                             {allColumns.required.map(col => (
                                                 <TableHead key={col.key} className="whitespace-nowrap">
@@ -1265,32 +1279,55 @@ export default function BulkEditEmployeeModal({
                                     </TableHeader>
                                     <TableBody>
                                         {selectedEmployees.map((employee, index) => (
-                                            <TableRow key={employee.id}>
-                                                <TableCell className="sticky left-0 bg-background z-10 border-r">
-                                                    <span className="font-medium">{index + 1}</span>
-                                                </TableCell>
-                                                <TableCell className="sticky left-12 bg-background z-10 border-r">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => handleRemoveEmployee(employee.id)}
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                                {allColumns.required.map(col => (
-                                                    <TableCell key={col.key}>
-                                                        {renderTableCell(employee, col.key)}
+                                            <>
+                                                <TableRow key={employee.id}>
+                                                    <TableCell className="sticky left-0 bg-background z-10 border-r">
+                                                        <span className="font-medium">{index + 1}</span>
                                                     </TableCell>
-                                                ))}
-                                                {allColumns.optional
-                                                    .filter(col => visibleColumns.has(col.key))
-                                                    .map(col => (
+                                                    <TableCell className="sticky left-12 bg-background z-10 border-r">
+                                                        <div className="flex gap-1">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => toggleRowExpansion(employee.id)}
+                                                                title={expandedRows.has(employee.id) ? "Thu gọn" : "Mở rộng"}
+                                                            >
+                                                                {expandedRows.has(employee.id) ?
+                                                                    <ChevronUp className="h-4 w-4" /> :
+                                                                    <ChevronDown className="h-4 w-4" />
+                                                                }
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleRemoveEmployee(employee.id)}
+                                                                title="Xóa"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                    {allColumns.required.map(col => (
                                                         <TableCell key={col.key}>
                                                             {renderTableCell(employee, col.key)}
                                                         </TableCell>
                                                     ))}
-                                            </TableRow>
+                                                    {allColumns.optional
+                                                        .filter(col => visibleColumns.has(col.key))
+                                                        .map(col => (
+                                                            <TableCell key={col.key}>
+                                                                {renderTableCell(employee, col.key)}
+                                                            </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                                {expandedRows.has(employee.id) && (
+                                                    <TableRow>
+                                                        <TableCell colSpan={2 + allColumns.required.length + allColumns.optional.filter(col => visibleColumns.has(col.key)).length}>
+                                                            {renderEmployeeFieldsExpanded(employee, index)}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </>
                                         ))}
                                     </TableBody>
                                 </Table>

@@ -1,24 +1,19 @@
 // components/ContractDetailModal.tsx
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { X, Download, FileText, Calendar, DollarSign, User } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Label } from '@/shared/components/ui/label';
 import { Badge } from '@/shared/components/ui/badge';
-import { 
-  mockContracts,
-  type Contract,
-  statusLabels,
-  contractTypeLabels,
-  terminationTypeLabels,
-  suspensionReasonLabels,
-  getDaysUntilExpiry
-} from '../../../mock/contract';
+import { contractApi } from '../api/contractApi';
+import { toast } from '@/shared/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import { categoriesApi } from '@/features/categories/api/categoriesApi';
 
 interface ContractDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  contractId: string | null;
+  contractId: number | null;
 }
 
 export default function ContractDetailModal({
@@ -26,36 +21,55 @@ export default function ContractDetailModal({
   onClose,
   contractId,
 }: ContractDetailModalProps) {
-  const [contract, setContract] = useState<Contract | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch contract detail
+  const { data: contractData, isLoading } = useQuery({
+    queryKey: ['contract', contractId],
+    queryFn: () => contractApi.getById(contractId!),
+    enabled: isOpen && contractId !== null,
+  });
+
+  const [contractTypes, setContractTypes] = useState<{ id: number, name: string }[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
-    if (isOpen && contractId) {
-      fetchContractDetail();
-    }
-  }, [isOpen, contractId]);
+    const fetchContractTypes = async () => {
+      try {
+        const response = await categoriesApi.laborContractType.getAll();
+        setContractTypes(response);
+      } catch (error) {
+        console.error('Error fetching contract types:', error);
+      }
+    };
+    fetchContractTypes();
+  }, []);
 
-  const fetchContractDetail = async () => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+  const contract = contractData?.data || contractData;
 
-    const found = mockContracts.find(c => c.id === contractId);
-    if (found) {
-      setContract(found);
-    }
+  const getContractStatus = (contract: any) => {
+    if (!contract?.endDate) return 'ACTIVE';
 
-    setIsLoading(false);
+    const now = new Date();
+    const endDate = new Date(contract.endDate);
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilExpiry < 0) return 'EXPIRED';
+    if (daysUntilExpiry <= 30) return 'EXPIRING_SOON';
+    return 'ACTIVE';
+  };
+
+  const getDaysUntilExpiry = (endDate: string) => {
+    if (!endDate) return null;
+    const now = new Date();
+    const end = new Date(endDate);
+    return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'ACTIVE': { label: statusLabels.ACTIVE, className: 'bg-green-100 text-green-800' },
-      'EXPIRING_SOON': { label: statusLabels.EXPIRING_SOON, className: 'bg-orange-100 text-orange-800' },
-      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-red-100 text-red-800' },
-      'SUSPENDED': { label: statusLabels.SUSPENDED, className: 'bg-yellow-100 text-yellow-800' },
-      'TERMINATED': { label: statusLabels.TERMINATED, className: 'bg-gray-100 text-gray-800' },
-      'RENEWED': { label: statusLabels.RENEWED, className: 'bg-blue-100 text-blue-800' },
-      'REPLACED': { label: statusLabels.REPLACED, className: 'bg-purple-100 text-purple-800' },
+      'ACTIVE': { label: 'Đang hiệu lực', className: 'bg-green-100 text-green-800' },
+      'EXPIRING_SOON': { label: 'Sắp hết hạn', className: 'bg-orange-100 text-orange-800' },
+      'EXPIRED': { label: 'Đã hết hạn', className: 'bg-red-100 text-red-800' },
     };
 
     const config = statusConfig[status] || { label: status, className: '' };
@@ -65,6 +79,95 @@ export default function ContractDetailModal({
         {config.label}
       </Badge>
     );
+  };
+
+  const getContractTypeName = (contractTypeId: string | number) => {
+    const type = contractTypes.find(t => t.id === Number(contractTypeId));
+    return type?.name || contractTypeId;
+  };
+
+  const handleDownload = async () => {
+    if (!contract?.id || !contract?.fileName) {
+      toast({
+        title: 'Lỗi',
+        description: 'Không tìm thấy file đính kèm',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+
+    try {
+      // Phương pháp 1: Nếu có attachmentData (Base64)
+      if (contract.attachmentData) {
+        console.log('📥 Downloading from Base64 data');
+        
+        // Decode Base64 và tạo Blob
+        const byteCharacters = atob(contract.attachmentData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: contract.fileType || 'application/pdf' });
+        
+        // Tạo URL và download
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = contract.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        toast({
+          title: 'Thành công',
+          description: 'Đã tải xuống file hợp đồng',
+        });
+        return;
+      }
+      
+      // Phương pháp 2: Download trực tiếp từ API
+      console.log('📥 Downloading from API endpoint');
+      
+      const response = await fetch(`/api/contract/${contract.id}/download`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Không thể tải file từ server');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = contract.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Thành công',
+        description: 'Đã tải xuống file hợp đồng',
+      });
+      
+    } catch (error) {
+      console.error('❌ Error downloading contract:', error);
+      toast({
+        title: 'Lỗi',
+        description: error instanceof Error ? error.message : 'Không thể tải xuống file',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -89,6 +192,7 @@ export default function ContractDetailModal({
     );
   }
 
+  const status = getContractStatus(contract);
   const daysLeft = getDaysUntilExpiry(contract.endDate);
 
   return (
@@ -98,7 +202,7 @@ export default function ContractDetailModal({
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold">Chi tiết hợp đồng</h2>
-            {getStatusBadge(contract.status)}
+            {getStatusBadge(status)}
           </div>
           <button
             onClick={onClose}
@@ -119,20 +223,12 @@ export default function ContractDetailModal({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm text-blue-700">Số hợp đồng</Label>
-                  <p className="font-medium text-blue-900">{contract.contractNumber}</p>
+                  <Label className="text-sm text-blue-700">ID Hợp đồng</Label>
+                  <p className="font-medium text-blue-900">#{contract.id}</p>
                 </div>
                 <div>
                   <Label className="text-sm text-blue-700">Loại hợp đồng</Label>
-                  <p className="text-blue-900">{contractTypeLabels[contract.contractType]}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-blue-700">Ngày ký</Label>
-                  <p className="text-blue-900">{new Date(contract.signDate).toLocaleDateString('vi-VN')}</p>
-                </div>
-                <div>
-                  <Label className="text-sm text-blue-700">Số lần gia hạn</Label>
-                  <p className="text-blue-900">{contract.renewalCount} lần</p>
+                  <p className="text-blue-900">{getContractTypeName(contract.contractType)}</p>
                 </div>
               </div>
             </div>
@@ -145,16 +241,20 @@ export default function ContractDetailModal({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
+                  <Label className="text-sm text-gray-600">Mã nhân viên</Label>
+                  <p className="font-medium">{contract.employee?.code}</p>
+                </div>
+                <div>
                   <Label className="text-sm text-gray-600">Tên nhân viên</Label>
-                  <p className="font-medium">{contract.employeeName}</p>
+                  <p className="font-medium">{contract.employee?.fullName}</p>
                 </div>
                 <div>
                   <Label className="text-sm text-gray-600">Phòng ban</Label>
-                  <p>{contract.departmentName}</p>
+                  <p>{contract.employee?.department?.name || 'Chưa có'}</p>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <Label className="text-sm text-gray-600">Vị trí</Label>
-                  <p>{contract.position}</p>
+                  <p>{contract.employee?.position?.name || 'Chưa có'}</p>
                 </div>
               </div>
             </div>
@@ -175,7 +275,7 @@ export default function ContractDetailModal({
                 <div>
                   <Label className="text-sm text-green-700">Ngày kết thúc</Label>
                   <p className="font-medium text-green-900">
-                    {contract.endDate 
+                    {contract.endDate
                       ? new Date(contract.endDate).toLocaleDateString('vi-VN')
                       : 'Không xác định'}
                   </p>
@@ -183,9 +283,8 @@ export default function ContractDetailModal({
               </div>
               {daysLeft !== null && daysLeft >= 0 && (
                 <div className="mt-3 pt-3 border-t border-green-300">
-                  <p className={`text-sm font-medium ${
-                    daysLeft <= 30 ? 'text-orange-600' : 'text-green-700'
-                  }`}>
+                  <p className={`text-sm font-medium ${daysLeft <= 30 ? 'text-orange-600' : 'text-green-700'
+                    }`}>
                     Còn {daysLeft} ngày đến hết hạn
                   </p>
                 </div>
@@ -196,123 +295,17 @@ export default function ContractDetailModal({
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <DollarSign className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-purple-900">Lương & Phúc lợi</h3>
+                <h3 className="font-semibold text-purple-900">Lương</h3>
               </div>
               <div className="space-y-2">
                 <div>
                   <Label className="text-sm text-purple-700">Lương cơ bản</Label>
                   <p className="text-lg font-bold text-purple-900">
-                    {formatCurrency(contract.baseSalary)}
+                    {formatCurrency(contract.salary)}
                   </p>
                 </div>
-                {contract.allowances && (
-                  <div>
-                    <Label className="text-sm text-purple-700">Phụ cấp</Label>
-                    <p className="text-purple-900">{contract.allowances}</p>
-                  </div>
-                )}
               </div>
             </div>
-
-            {/* Suspension Info */}
-            {contract.currentSuspension && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h3 className="font-semibold text-yellow-900 mb-3">Thông tin tạm hoãn hiện tại</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-yellow-700">Lý do</Label>
-                    <p className="text-yellow-900">
-                      {suspensionReasonLabels[contract.currentSuspension.reason]}
-                    </p>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      {contract.currentSuspension.reasonDetail}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-yellow-700">Thời gian</Label>
-                    <p className="text-yellow-900">
-                      {new Date(contract.currentSuspension.startDate).toLocaleDateString('vi-VN')} -{' '}
-                      {contract.currentSuspension.endDate 
-                        ? new Date(contract.currentSuspension.endDate).toLocaleDateString('vi-VN')
-                        : 'Chưa xác định'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Termination Info */}
-            {contract.terminationInfo && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <h3 className="font-semibold text-red-900 mb-3">Thông tin chấm dứt hợp đồng</h3>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-sm text-red-700">Loại chấm dứt</Label>
-                      <p className="font-medium text-red-900">
-                        {terminationTypeLabels[contract.terminationInfo.terminationType]}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="text-sm text-red-700">Ngày chấm dứt</Label>
-                      <p className="text-red-900">
-                        {new Date(contract.terminationInfo.terminationDate).toLocaleDateString('vi-VN')}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-red-700">Lý do</Label>
-                    <p className="text-sm text-red-900">{contract.terminationInfo.reason}</p>
-                  </div>
-                  {contract.terminationInfo.severancePay && (
-                    <div>
-                      <Label className="text-sm text-red-700">Trợ cấp thôi việc</Label>
-                      <p className="font-medium text-red-900">
-                        {formatCurrency(contract.terminationInfo.severancePay)}
-                      </p>
-                    </div>
-                  )}
-                  {contract.terminationInfo.notes && (
-                    <div>
-                      <Label className="text-sm text-red-700">Ghi chú</Label>
-                      <p className="text-sm text-red-900">{contract.terminationInfo.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Suspension History */}
-            {contract.suspensionHistory.length > 0 && (
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Lịch sử tạm hoãn</h3>
-                <div className="space-y-3">
-                  {contract.suspensionHistory.map((sus) => (
-                    <div key={sus.id} className="bg-gray-50 p-3 rounded border">
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                          <span className="text-gray-600">Lý do:</span>{' '}
-                          <span className="font-medium">
-                            {suspensionReasonLabels[sus.reason]}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Thời gian:</span>{' '}
-                          <span>
-                            {new Date(sus.startDate).toLocaleDateString('vi-VN')} -{' '}
-                            {sus.actualEndDate 
-                              ? new Date(sus.actualEndDate).toLocaleDateString('vi-VN')
-                              : sus.endDate
-                              ? new Date(sus.endDate).toLocaleDateString('vi-VN')
-                              : 'Đang diễn ra'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Notes */}
             {contract.notes && (
@@ -322,31 +315,55 @@ export default function ContractDetailModal({
               </div>
             )}
 
+            {/* File Info */}
+            {contract.fileName && (
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <Label className="text-sm text-gray-600">File đính kèm</Label>
+                    <p className="text-sm mt-1 font-medium">{contract.fileName}</p>
+                    {contract.fileType && (
+                      <p className="text-xs text-gray-500 mt-1">{contract.fileType}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? (
+                      <>
+                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Đang tải...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Tải xuống
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Created Info */}
             <div className="border-t pt-4 text-sm text-gray-500">
               <p>
-                Được tạo bởi <span className="font-medium">{contract.createdByName}</span> vào{' '}
-                {new Date(contract.createdDate).toLocaleDateString('vi-VN')}
+                Được tạo vào{' '}
+                {new Date(contract.createdAt).toLocaleDateString('vi-VN')}
               </p>
-              {contract.updatedBy && (
-                <p className="mt-1">
-                  Cập nhật lần cuối bởi <span className="font-medium">{contract.updatedByName}</span> vào{' '}
-                  {contract.updatedDate && new Date(contract.updatedDate).toLocaleDateString('vi-VN')}
-                </p>
-              )}
+              <p className="mt-1">
+                Cập nhật lần cuối vào{' '}
+                {new Date(contract.updatedAt).toLocaleDateString('vi-VN')}
+              </p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
-          <Button
-            variant="outline"
-            onClick={() => window.open(contract.fileUrl, '_blank')}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Tải xuống hợp đồng
-          </Button>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t bg-gray-50">
           <Button onClick={onClose}>
             Đóng
           </Button>
