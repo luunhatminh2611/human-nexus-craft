@@ -68,6 +68,8 @@ export const ROUTES = {
   EXTEND_DECISION_MANAGEMENT: '/admin/contract-resign',
   TERMINATE_DECISION_MANAGEMENT: '/contract-unsign',
   FAMILY_MANAGEMENT: '/admin/family',
+  MEDICAL_PROFILE:'/admin/employees/health',
+  RECRUITMENT_MANAGEMENT: '/admin/recruitment',
   ROOT: '/',
   NOT_FOUND: '*',
 };

@@ -30,7 +30,6 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
   const fetchDegreeDetail = async () => {
     setIsLoading(true);
     
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const foundDegree = mockDegrees.find(d => d.id === degreeId);
@@ -40,23 +39,6 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
     setHistory(degreeHistory);
     
     setIsLoading(false);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
-      'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
-      'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
   };
 
   const getTypeBadge = (type: string) => {
@@ -80,11 +62,16 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
     const actionLabels = {
       'CREATED': 'Tạo mới',
       'UPDATED': 'Cập nhật',
-      'APPROVED': 'Phê duyệt',
-      'REJECTED': 'Từ chối',
-      'EXPIRED': 'Hết hạn',
+      'DELETED': 'Xóa',
     };
     return actionLabels[action] || action;
+  };
+
+  const handleDownload = () => {
+    if (degree?.documentUrl) {
+      console.log('Downloading:', degree.documentUrl);
+      alert(`Đang tải xuống tài liệu: ${degree.name}`);
+    }
   };
 
   if (!degree && !isLoading) {
@@ -114,7 +101,6 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   {getTypeBadge(degree.type)}
-                  {getStatusBadge(degree.status)}
                 </div>
                 <h3 className="text-xl font-semibold">{degree.name}</h3>
                 {degree.major && (
@@ -131,6 +117,7 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
                   <span>Nhân viên</span>
                 </div>
                 <p className="font-medium">{degree.employeeName}</p>
+                <p className="text-sm text-muted-foreground">{degree.employeeCode}</p>
                 <p className="text-sm text-muted-foreground">{degree.department} - {degree.position}</p>
               </div>
 
@@ -168,9 +155,19 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Award className="h-4 w-4" />
-                    <span>Bằng cấp/chứng chỉ</span>
+                    <span>Số bằng cấp/chứng chỉ</span>
                   </div>
                   <p className="font-medium">{degree.certificateNumber}</p>
+                </div>
+              )}
+
+              {degree.level && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Award className="h-4 w-4" />
+                    <span>Trình độ</span>
+                  </div>
+                  <p className="font-medium">{degree.level}</p>
                 </div>
               )}
             </div>
@@ -188,7 +185,7 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleDownload}>
                     <Download className="h-4 w-4 mr-2" />
                     Tải xuống
                   </Button>
@@ -196,32 +193,36 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
               </div>
             )}
 
-            {/* Review Info */}
-            {degree.reviewedBy && (
-              <div className="border rounded-lg p-4 bg-muted/50">
-                <h4 className="font-semibold mb-3">Thông tin phê duyệt</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Người duyệt:</span>
-                    <span className="font-medium">{degree.reviewedBy}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Ngày duyệt:</span>
-                    <span className="font-medium">
-                      {degree.reviewedDate ? new Date(degree.reviewedDate).toLocaleString('vi-VN') : '-'}
-                    </span>
-                  </div>
+            {/* Creation Info */}
+            <div className="border rounded-lg p-4 bg-muted/50">
+              <h4 className="font-semibold mb-3">Thông tin lưu trữ</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Người tạo:</span>
+                  <span className="font-medium">{degree.createdBy}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ngày tạo:</span>
+                  <span className="font-medium">
+                    {new Date(degree.createdDate).toLocaleString('vi-VN')}
+                  </span>
+                </div>
+                {degree.updatedDate && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Người cập nhật:</span>
+                      <span className="font-medium">{degree.updatedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Ngày cập nhật:</span>
+                      <span className="font-medium">
+                        {new Date(degree.updatedDate).toLocaleString('vi-VN')}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
-            )}
-
-            {/* Rejection Reason */}
-            {degree.status === 'REJECTED' && degree.rejectionReason && (
-              <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-                <h4 className="font-semibold text-red-800 mb-2">Lý do từ chối</h4>
-                <p className="text-red-700">{degree.rejectionReason}</p>
-              </div>
-            )}
+            </div>
 
             {/* Notes */}
             {degree.notes && (

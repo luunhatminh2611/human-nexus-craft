@@ -172,14 +172,14 @@ export default function OrgChart() {
             >
               <Edit className="h-3 w-3" />
             </button>
-            {dept.parentId && (
+            {/* {dept.parentId && (
               <button
                 className="p-1 bg-white rounded-md shadow hover:bg-red-100"
                 onClick={() => onDelete(dept)}
               >
                 <Trash2 className="h-3 w-3 text-red-500" />
               </button>
-            )}
+            )} */}
           </div>
         </div>
 

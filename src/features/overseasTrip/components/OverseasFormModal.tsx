@@ -19,38 +19,52 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Calendar } from 'lucide-react';
-import { type OverseasTrip } from '../../../mock/overseasTrip';
+import { Calendar, AlertCircle, Search, Upload, X, FileText } from 'lucide-react';
+import { type OverseasTrip, mockOverseasTrips } from '../../../mock/overseasTrip';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
 interface OverseasFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   trip?: OverseasTrip | null;
   onSuccess: () => void;
-  isAdmin?: boolean;
 }
+
+// Mock data nhân viên
+const mockEmployees = [
+  { id: 'EMP001', name: 'Nguyễn Văn An', code: 'NV001', department: 'Phòng Kỹ thuật', position: 'Trưởng phòng' },
+  { id: 'EMP002', name: 'Lê Thị Hương', code: 'NV002', department: 'Phòng Nhân sự', position: 'Nhân viên' },
+  { id: 'EMP003', name: 'Phạm Minh Tuấn', code: 'NV003', department: 'Phòng Kinh doanh', position: 'Giám đốc' },
+  { id: 'EMP004', name: 'Hoàng Văn Đức', code: 'NV004', department: 'Phòng Kỹ thuật', position: 'Nhân viên' },
+  { id: 'EMP005', name: 'Đỗ Thị Mai', code: 'NV005', department: 'Phòng Marketing', position: 'Trưởng phòng' },
+];
 
 export default function OverseasFormModal({
   isOpen,
   onClose,
   trip,
   onSuccess,
-  isAdmin = false,
 }: OverseasFormModalProps) {
+  const { user } = useAuthStore();
+  const isEdit = !!trip;
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createAsApproved, setCreateAsApproved] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const [showEmployeeList, setShowEmployeeList] = useState(false);
 
   const [formData, setFormData] = useState({
     employeeId: '',
     employeeName: '',
+    employeeCode: '',
     departmentName: '',
     positionName: '',
     country: '',
     purpose: '',
-    fundingSource: '',
-    plannedDepartureDate: '',
-    plannedReturnDate: '',
+    fundingSource: '' as 'COMPANY' | 'PERSONAL' | 'PARTNER' | '',
+    departureDate: '',
+    returnDate: '',
     estimatedCost: '',
+    actualCost: '',
     decisionNumber: '',
     decisionDate: '',
     notes: '',
@@ -59,43 +73,81 @@ export default function OverseasFormModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (trip) {
+    if (isOpen && trip) {
       setFormData({
         employeeId: trip.employeeId,
         employeeName: trip.employeeName,
+        employeeCode: trip.employeeCode,
         departmentName: trip.departmentName,
         positionName: trip.positionName,
         country: trip.country,
         purpose: trip.purpose,
         fundingSource: trip.fundingSource,
-        plannedDepartureDate: trip.plannedDepartureDate,
-        plannedReturnDate: trip.plannedReturnDate,
+        departureDate: trip.departureDate,
+        returnDate: trip.returnDate,
         estimatedCost: trip.estimatedCost.toString(),
-        decisionNumber: trip.decisionNumber || '',
-        decisionDate: trip.decisionDate || '',
+        actualCost: trip.actualCost?.toString() || '',
+        decisionNumber: trip.decisionNumber,
+        decisionDate: trip.decisionDate,
         notes: trip.notes || '',
       });
-    } else {
-      // Reset form
+      setEmployeeSearch(trip.employeeName);
+      setUploadedFiles([]);
+    } else if (isOpen) {
       setFormData({
-        employeeId: isAdmin ? '' : 'CURRENT_USER',
-        employeeName: isAdmin ? '' : 'Lê Thị Hương',
-        departmentName: isAdmin ? '' : 'Phòng Nhân sự',
-        positionName: isAdmin ? '' : 'Nhân viên',
+        employeeId: '',
+        employeeName: '',
+        employeeCode: '',
+        departmentName: '',
+        positionName: '',
         country: '',
         purpose: '',
         fundingSource: '',
-        plannedDepartureDate: '',
-        plannedReturnDate: '',
+        departureDate: '',
+        returnDate: '',
         estimatedCost: '',
+        actualCost: '',
         decisionNumber: '',
         decisionDate: '',
         notes: '',
       });
-      setCreateAsApproved(false);
+      setEmployeeSearch('');
+      setUploadedFiles([]);
     }
     setErrors({});
-  }, [trip, isOpen, isAdmin]);
+    setShowEmployeeList(false);
+  }, [trip, isOpen]);
+
+  const filteredEmployees = mockEmployees.filter(emp =>
+    emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+    emp.code.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+    emp.department.toLowerCase().includes(employeeSearch.toLowerCase())
+  );
+
+  const handleEmployeeSelect = (employee: typeof mockEmployees[0]) => {
+    setFormData(prev => ({
+      ...prev,
+      employeeId: employee.id,
+      employeeName: employee.name,
+      employeeCode: employee.code,
+      departmentName: employee.department,
+      positionName: employee.position,
+    }));
+    setEmployeeSearch(employee.name);
+    setShowEmployeeList(false);
+    if (errors.employeeId) {
+      setErrors(prev => ({ ...prev, employeeId: '' }));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setUploadedFiles(prev => [...prev, ...files]);
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -104,11 +156,21 @@ export default function OverseasFormModal({
     }
   };
 
+  const calculateDuration = () => {
+    if (formData.departureDate && formData.returnDate) {
+      const start = new Date(formData.departureDate);
+      const end = new Date(formData.returnDate);
+      const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      return days > 0 ? days : 0;
+    }
+    return 0;
+  };
+
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (isAdmin && !formData.employeeName) {
-      newErrors.employeeName = 'Vui lòng chọn nhân viên';
+    if (!formData.employeeId) {
+      newErrors.employeeId = 'Vui lòng chọn nhân viên';
     }
     if (!formData.country) {
       newErrors.country = 'Vui lòng nhập quốc gia';
@@ -116,29 +178,25 @@ export default function OverseasFormModal({
     if (!formData.purpose) {
       newErrors.purpose = 'Vui lòng nhập mục đích';
     }
-    if (!formData.plannedDepartureDate) {
-      newErrors.plannedDepartureDate = 'Vui lòng chọn ngày đi';
+    if (!formData.fundingSource) {
+      newErrors.fundingSource = 'Vui lòng chọn nguồn tài trợ';
     }
-    if (!formData.plannedReturnDate) {
-      newErrors.plannedReturnDate = 'Vui lòng chọn ngày về';
+    if (!formData.departureDate) {
+      newErrors.departureDate = 'Vui lòng chọn ngày xuất cảnh';
     }
-    if (formData.plannedDepartureDate && formData.plannedReturnDate) {
-      if (new Date(formData.plannedReturnDate) <= new Date(formData.plannedDepartureDate)) {
-        newErrors.plannedReturnDate = 'Ngày về phải sau ngày đi';
+    if (!formData.returnDate) {
+      newErrors.returnDate = 'Vui lòng chọn ngày về';
+    }
+    if (formData.departureDate && formData.returnDate) {
+      if (new Date(formData.returnDate) <= new Date(formData.departureDate)) {
+        newErrors.returnDate = 'Ngày về phải sau ngày xuất cảnh';
       }
     }
     if (!formData.estimatedCost || parseFloat(formData.estimatedCost) <= 0) {
-      newErrors.estimatedCost = 'Vui lòng nhập chi phí hợp lệ';
+      newErrors.estimatedCost = 'Vui lòng nhập chi phí dự toán hợp lệ';
     }
-
-    // Validation cho Admin khi tạo đơn đã duyệt
-    if (isAdmin && createAsApproved && !trip) {
-      if (!formData.decisionNumber) {
-        newErrors.decisionNumber = 'Vui lòng nhập số quyết định';
-      }
-      if (!formData.decisionDate) {
-        newErrors.decisionDate = 'Vui lòng chọn ngày quyết định';
-      }
+    if (formData.actualCost && parseFloat(formData.actualCost) < 0) {
+      newErrors.actualCost = 'Chi phí thực tế không hợp lệ';
     }
 
     setErrors(newErrors);
@@ -151,123 +209,150 @@ export default function OverseasFormModal({
     if (!validate()) return;
 
     setIsSubmitting(true);
-
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    console.log('Submit form:', {
-      ...formData,
-      isUpdate: !!trip,
-      createAsApproved: isAdmin && createAsApproved,
-    });
+    try {
+      const durationDays = calculateDuration();
+      
+      if (isEdit && trip) {
+        const index = mockOverseasTrips.findIndex(t => t.id === trip.id);
+        if (index > -1) {
+          mockOverseasTrips[index] = {
+            ...mockOverseasTrips[index],
+            employeeId: formData.employeeId,
+            employeeName: formData.employeeName,
+            employeeCode: formData.employeeCode,
+            departmentName: formData.departmentName,
+            positionName: formData.positionName,
+            country: formData.country,
+            purpose: formData.purpose,
+            fundingSource: formData.fundingSource as OverseasTrip['fundingSource'],
+            departureDate: formData.departureDate,
+            returnDate: formData.returnDate,
+            durationDays,
+            estimatedCost: parseFloat(formData.estimatedCost),
+            actualCost: formData.actualCost ? parseFloat(formData.actualCost) : null,
+            decisionNumber: formData.decisionNumber,
+            decisionDate: formData.decisionDate,
+            notes: formData.notes || undefined,
+            updatedBy: user?.employeeId || 'ADMIN',
+            updatedByName: user?.name || 'Admin',
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      } else {
+        const newTrip: OverseasTrip = {
+          id: `${mockOverseasTrips.length + 1}`,
+          employeeId: formData.employeeId,
+          employeeName: formData.employeeName,
+          employeeCode: formData.employeeCode,
+          departmentId: 'DEPT001',
+          departmentName: formData.departmentName,
+          positionId: 'POS001',
+          positionName: formData.positionName,
+          country: formData.country,
+          purpose: formData.purpose,
+          fundingSource: formData.fundingSource as OverseasTrip['fundingSource'],
+          departureDate: formData.departureDate,
+          returnDate: formData.returnDate,
+          durationDays,
+          estimatedCost: parseFloat(formData.estimatedCost),
+          actualCost: formData.actualCost ? parseFloat(formData.actualCost) : null,
+          decisionNumber: formData.decisionNumber,
+          decisionDate: formData.decisionDate,
+          attachments: uploadedFiles.map(f => f.name),
+          notes: formData.notes || undefined,
+          createdBy: user?.employeeId || 'ADMIN',
+          createdByName: user?.name || 'Admin',
+          createdAt: new Date().toISOString(),
+        };
 
-    setIsSubmitting(false);
-    onSuccess();
+        mockOverseasTrips.push(newTrip);
+      }
+
+      onSuccess();
+    } catch (error) {
+      console.error('Error saving trip:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const isEditMode = !!trip;
-  const canEditDecisionInfo = isAdmin && trip?.status === 'PENDING';
-  const showDecisionFields = isAdmin && ((createAsApproved && !isEditMode) || canEditDecisionInfo);
+  const duration = calculateDuration();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditMode ? 'Chỉnh sửa chuyến đi' : 'Đăng ký chuyến đi'}
+            {isEdit ? 'Chỉnh sửa lịch sử xuất cảnh' : 'Thêm lịch sử xuất cảnh'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Employee Info - Chỉ hiện khi Admin tạo mới */}
-          {isAdmin && !isEditMode && (
-            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium">Thông tin nhân viên</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Nhân viên *</Label>
-                  <Select
-                    value={formData.employeeId}
-                    onValueChange={(value) => {
-                      handleChange('employeeId', value);
-                      // TODO: Load employee info
-                      handleChange('employeeName', 'Nguyễn Văn An');
-                      handleChange('departmentName', 'Phòng Kỹ thuật');
-                      handleChange('positionName', 'Trưởng phòng');
-                    }}
-                  >
-                    <SelectTrigger className={errors.employeeName ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Chọn nhân viên" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="EMP001">Nguyễn Văn An - NV001</SelectItem>
-                      <SelectItem value="EMP002">Lê Thị Hương - NV002</SelectItem>
-                      <SelectItem value="EMP003">Phạm Minh Tuấn - NV003</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.employeeName && (
-                    <p className="text-sm text-red-500 mt-1">{errors.employeeName}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>Phòng ban</Label>
-                  <Input value={formData.departmentName} disabled />
-                </div>
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+          <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-blue-800">
+            <p className="font-medium">Lưu ý:</p>
+            <p>Lịch sử xuất cảnh sẽ được lưu trữ vào hồ sơ của nhân viên và nhân viên có thể xem được thông tin này.</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          {/* Employee Selection */}
+          <div className="space-y-2">
+            <Label>Nhân viên <span className="text-red-500">*</span></Label>
+            <div className="relative">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={employeeSearch}
+                  onChange={(e) => {
+                    setEmployeeSearch(e.target.value);
+                    setShowEmployeeList(true);
+                  }}
+                  onFocus={() => setShowEmployeeList(true)}
+                  placeholder="Tìm kiếm nhân viên theo tên, mã hoặc phòng ban"
+                  className={`pl-10 ${errors.employeeId ? 'border-red-500' : ''}`}
+                />
               </div>
-            </div>
-          )}
 
-          {/* Admin option: Create as approved */}
-          {isAdmin && !isEditMode && (
-            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-              <input
-                type="checkbox"
-                id="createAsApproved"
-                checked={createAsApproved}
-                onChange={(e) => setCreateAsApproved(e.target.checked)}
-                className="h-4 w-4"
-              />
-              <label htmlFor="createAsApproved" className="text-sm font-medium cursor-pointer">
-                Tạo đơn đã phê duyệt (nhập số quyết định ngay)
-              </label>
-            </div>
-          )}
-
-          {/* Decision Info - Chỉ hiện khi cần */}
-          {showDecisionFields && (
-            <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-medium">Thông tin quyết định</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Số quyết định *</Label>
-                  <Input
-                    value={formData.decisionNumber}
-                    onChange={(e) => handleChange('decisionNumber', e.target.value)}
-                    placeholder="QĐ-001/2024"
-                    className={errors.decisionNumber ? 'border-red-500' : ''}
-                  />
-                  {errors.decisionNumber && (
-                    <p className="text-sm text-red-500 mt-1">{errors.decisionNumber}</p>
+              {showEmployeeList && employeeSearch && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {filteredEmployees.length > 0 ? (
+                    filteredEmployees.map((emp) => (
+                      <button
+                        key={emp.id}
+                        type="button"
+                        onClick={() => handleEmployeeSelect(emp)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      >
+                        <div className="font-medium">{emp.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {emp.code} • {emp.department} • {emp.position}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Không tìm thấy nhân viên
+                    </div>
                   )}
                 </div>
-                <div>
-                  <Label>Ngày quyết định *</Label>
-                  <div className="relative">
-                    <Input
-                      type="date"
-                      value={formData.decisionDate}
-                      onChange={(e) => handleChange('decisionDate', e.target.value)}
-                      className={errors.decisionDate ? 'border-red-500' : ''}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              )}
+
+              {formData.employeeId && formData.employeeName && (
+                <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
+                  <div className="font-medium">{formData.employeeName}</div>
+                  <div className="text-muted-foreground">
+                    {formData.employeeCode} • {formData.departmentName} • {formData.positionName}
                   </div>
-                  {errors.decisionDate && (
-                    <p className="text-sm text-red-500 mt-1">{errors.decisionDate}</p>
-                  )}
                 </div>
-              </div>
+              )}
             </div>
-          )}
+            {errors.employeeId && (
+              <p className="text-sm text-red-500">{errors.employeeId}</p>
+            )}
+          </div>
 
           {/* Trip Info */}
           <div className="space-y-4">
@@ -275,7 +360,7 @@ export default function OverseasFormModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Quốc gia *</Label>
+                <Label>Quốc gia <span className="text-red-500">*</span></Label>
                 <Input
                   value={formData.country}
                   onChange={(e) => handleChange('country', e.target.value)}
@@ -287,16 +372,28 @@ export default function OverseasFormModal({
                 )}
               </div>
               <div>
-                <Label>Nguồn tài trợ</Label>
-                <Input
+                <Label>Nguồn tài trợ <span className="text-red-500">*</span></Label>
+                <Select
                   value={formData.fundingSource}
-                  onChange={(e) => handleChange('fundingSource', e.target.value)} 
-                />
+                  onValueChange={(value) => handleChange('fundingSource', value)}
+                >
+                  <SelectTrigger className={errors.fundingSource ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Chọn nguồn" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="COMPANY">Công ty</SelectItem>
+                    <SelectItem value="PERSONAL">Cá nhân</SelectItem>
+                    <SelectItem value="PARTNER">Đối tác</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.fundingSource && (
+                  <p className="text-sm text-red-500 mt-1">{errors.fundingSource}</p>
+                )}
               </div>
             </div>
 
             <div>
-              <Label>Mục đích chuyến đi *</Label>
+              <Label>Mục đích chuyến đi <span className="text-red-500">*</span></Label>
               <Textarea
                 value={formData.purpose}
                 onChange={(e) => handleChange('purpose', e.target.value)}
@@ -311,50 +408,125 @@ export default function OverseasFormModal({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Ngày xuất cảnh dự kiến *</Label>
+                <Label>Ngày xuất cảnh <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   <Input
                     type="date"
-                    value={formData.plannedDepartureDate}
-                    onChange={(e) => handleChange('plannedDepartureDate', e.target.value)}
-                    className={errors.plannedDepartureDate ? 'border-red-500' : ''}
+                    value={formData.departureDate}
+                    onChange={(e) => handleChange('departureDate', e.target.value)}
+                    className={errors.departureDate ? 'border-red-500' : ''}
                   />
                   <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
-                {errors.plannedDepartureDate && (
-                  <p className="text-sm text-red-500 mt-1">{errors.plannedDepartureDate}</p>
+                {errors.departureDate && (
+                  <p className="text-sm text-red-500 mt-1">{errors.departureDate}</p>
                 )}
               </div>
               <div>
-                <Label>Ngày về dự kiến *</Label>
+                <Label>Ngày về <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   <Input
                     type="date"
-                    value={formData.plannedReturnDate}
-                    onChange={(e) => handleChange('plannedReturnDate', e.target.value)}
-                    className={errors.plannedReturnDate ? 'border-red-500' : ''}
+                    value={formData.returnDate}
+                    onChange={(e) => handleChange('returnDate', e.target.value)}
+                    className={errors.returnDate ? 'border-red-500' : ''}
                   />
                   <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
-                {errors.plannedReturnDate && (
-                  <p className="text-sm text-red-500 mt-1">{errors.plannedReturnDate}</p>
+                {errors.returnDate && (
+                  <p className="text-sm text-red-500 mt-1">{errors.returnDate}</p>
                 )}
               </div>
             </div>
 
-            <div>
-              <Label>Chi phí ước tính (VNĐ) *</Label>
-              <Input
-                type="number"
-                value={formData.estimatedCost}
-                onChange={(e) => handleChange('estimatedCost', e.target.value)}
-                placeholder="50000000"
-                className={errors.estimatedCost ? 'border-red-500' : ''}
-              />
-              {errors.estimatedCost && (
-                <p className="text-sm text-red-500 mt-1">{errors.estimatedCost}</p>
-              )}
+            {duration > 0 && (
+              <div className="p-3 bg-blue-50 rounded border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>Thời gian xuất cảnh:</strong> {duration} ngày
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Chi phí dự toán (VNĐ) <span className="text-red-500">*</span></Label>
+                <Input
+                  type="number"
+                  value={formData.estimatedCost}
+                  onChange={(e) => handleChange('estimatedCost', e.target.value)}
+                  placeholder="50000000"
+                  className={errors.estimatedCost ? 'border-red-500' : ''}
+                />
+                {errors.estimatedCost && (
+                  <p className="text-sm text-red-500 mt-1">{errors.estimatedCost}</p>
+                )}
+              </div>
+              <div>
+                <Label>Chi phí thực tế (VNĐ)</Label>
+                <Input
+                  type="number"
+                  value={formData.actualCost}
+                  onChange={(e) => handleChange('actualCost', e.target.value)}
+                  placeholder="48000000"
+                  className={errors.actualCost ? 'border-red-500' : ''}
+                />
+                {errors.actualCost && (
+                  <p className="text-sm text-red-500 mt-1">{errors.actualCost}</p>
+                )}
+              </div>
             </div>
+
+            {/* File Upload */}
+            {!isEdit && (
+              <div>
+                <Label>Tài liệu đính kèm</Label>
+                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer flex flex-col items-center gap-2"
+                  >
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Nhấn để chọn file</p>
+                      <p className="text-xs text-muted-foreground">
+                        hoặc kéo thả file vào đây
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 border rounded">
+                        <FileText className="h-6 w-6 text-blue-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(file.size / 1024).toFixed(2)} KB
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div>
               <Label>Ghi chú</Label>
@@ -372,7 +544,7 @@ export default function OverseasFormModal({
               Hủy
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Đang xử lý...' : isEditMode ? 'Cập nhật' : 'Tạo mới'}
+              {isSubmitting ? 'Đang xử lý...' : isEdit ? 'Cập nhật' : 'Thêm mới'}
             </Button>
           </DialogFooter>
         </form>

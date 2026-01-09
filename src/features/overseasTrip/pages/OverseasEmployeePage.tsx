@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plane, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Eye, Plane, Download, AlertCircle } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -25,123 +25,67 @@ import {
   mockOverseasTrips, 
   type OverseasTrip, 
   fundingSourceLabels,
-  statusLabels 
 } from '../../../mock/overseasTrip';
-import OverseasViewModal from '../components/OverseasDetailModal';
-import OverseasFormModal from '../components/OverseasFormModal';
-
-// Mock user hiện tại
-const CURRENT_USER_ID = 'EMP002';
+import OverseasDetailModal from '../components/OverseasDetailModal';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
 export default function OverseasEmployeePage() {
+  const { user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [yearFilter, setYearFilter] = useState<string>('ALL');
   const [trips, setTrips] = useState<OverseasTrip[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedTrip, setSelectedTrip] = useState<OverseasTrip | null>(null);
-
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTrips();
-  }, [page, pageSize, searchTerm, statusFilter, refreshKey]);
+  }, [searchTerm, yearFilter, user]);
 
   const fetchTrips = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Chỉ lấy chuyến đi của nhân viên hiện tại
-    let filtered = mockOverseasTrips.filter(t => t.employeeId === CURRENT_USER_ID);
+    let filtered = [...mockOverseasTrips];
+    
+    // Lọc theo user hiện tại
+    if (user?.employeeId) {
+      filtered = filtered.filter(t => t.employeeId === user.employeeId);
+    }
 
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(t => t.status === statusFilter);
+    if (yearFilter !== 'ALL') {
+      filtered = filtered.filter(t => new Date(t.departureDate).getFullYear().toString() === yearFilter);
     }
 
     if (searchTerm) {
       filtered = filtered.filter(t =>
         t.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (t.decisionNumber && t.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+        t.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    setTotalItems(filtered.length);
+    // Sort by departure date (newest first)
+    filtered.sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
 
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setTrips(filtered.slice(start, end));
-
+    setTrips(filtered);
     setIsLoading(false);
   };
 
-  const handleOpenFormModal = (trip?: OverseasTrip) => {
-    setSelectedTrip(trip || null);
-    setIsFormModalOpen(true);
-  };
-
-  const handleCloseFormModal = () => {
-    setIsFormModalOpen(false);
-    setSelectedTrip(null);
-  };
-
-  const handleFormSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseFormModal();
-  };
-
-  const handleOpenViewModal = (id: string) => {
+  const handleOpenDetailModal = (id: string) => {
     setSelectedTripId(id);
-    setIsViewModalOpen(true);
+    setIsDetailModalOpen(true);
   };
 
-  const handleCloseViewModal = () => {
-    setIsViewModalOpen(false);
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
     setSelectedTripId(null);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa chuyến đi này?')) return;
-    
-    // TODO: Call API to delete
-    console.log('Delete trip:', id);
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const canEdit = (trip: OverseasTrip) => {
-    return trip.status === 'PENDING';
-  };
-
-  const canDelete = (trip: OverseasTrip) => {
-    return trip.status === 'PENDING';
-  };
-
-  const canUpdateActualDates = (trip: OverseasTrip) => {
-    return trip.status === 'APPROVED' || trip.status === 'IN_PROGRESS';
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'PENDING': { label: statusLabels.PENDING, className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: statusLabels.APPROVED, className: 'bg-blue-100 text-blue-800' },
-      'IN_PROGRESS': { label: statusLabels.IN_PROGRESS, className: 'bg-purple-100 text-purple-800' },
-      'COMPLETED': { label: statusLabels.COMPLETED, className: 'bg-green-100 text-green-800' },
-      'REJECTED': { label: statusLabels.REJECTED, className: 'bg-red-100 text-red-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
+  const handleDownload = (trip: OverseasTrip) => {
+    console.log('Download documents for trip:', trip.id);
+    alert(`Đang tải xuống tài liệu cho chuyến đi: ${trip.country}`);
   };
 
   const getFundingBadge = (fundingSource: string) => {
@@ -168,34 +112,36 @@ export default function OverseasEmployeePage() {
     }).format(amount);
   };
 
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = page * pageSize + 1;
-  const endIndex = Math.min((page + 1) * pageSize, totalItems);
-
-  // Thống kê của cá nhân
-  const myTrips = mockOverseasTrips.filter(t => t.employeeId === CURRENT_USER_ID);
-  const myStats = {
-    total: myTrips.length,
-    pending: myTrips.filter(t => t.status === 'PENDING').length,
-    approved: myTrips.filter(t => t.status === 'APPROVED').length,
-    inProgress: myTrips.filter(t => t.status === 'IN_PROGRESS').length,
-    completed: myTrips.filter(t => t.status === 'COMPLETED').length,
+  const stats = {
+    total: trips.length,
+    totalDays: trips.reduce((sum, t) => sum + t.durationDays, 0),
+    thisYear: trips.filter(t => new Date(t.departureDate).getFullYear() === new Date().getFullYear()).length,
+    countries: new Set(trips.map(t => t.country)).size,
   };
+
+  const years = Array.from(new Set(trips.map(t => new Date(t.departureDate).getFullYear()))).sort((a, b) => b - a);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý xuất cảnh</h1>
+          <h1 className="text-3xl font-bold">Lịch sử xuất cảnh</h1>
           <p className="text-muted-foreground">
-            Quản lý thông tin các chuyến xuất cảnh của bạn
+            Xem lịch sử các chuyến xuất cảnh của bạn
           </p>
         </div>
-        <Button onClick={() => handleOpenFormModal()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Đăng ký chuyến đi
-        </Button>
       </div>
+
+      {/* Info banner */}
+      <Card className="p-4 bg-blue-50 border-blue-200">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">Thông tin quan trọng</p>
+            <p>Lịch sử xuất cảnh của bạn được quản lý bởi phòng Nhân sự. Nếu có thắc mắc hoặc cần cập nhật thông tin, vui lòng liên hệ với phòng Nhân sự.</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Filters */}
       <Card className="p-4">
@@ -210,17 +156,15 @@ export default function OverseasEmployeePage() {
             />
           </div>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Trạng thái" />
+          <Select value={yearFilter} onValueChange={setYearFilter}>
+            <SelectTrigger className="w-full md:w-[150px]">
+              <SelectValue placeholder="Năm" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-              <SelectItem value="IN_PROGRESS">Đang thực hiện</SelectItem>
-              <SelectItem value="COMPLETED">Hoàn thành</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
+              <SelectItem value="ALL">Tất cả năm</SelectItem>
+              {years.map(year => (
+                <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -234,18 +178,16 @@ export default function OverseasEmployeePage() {
               <TableRow>
                 <TableHead>Quốc gia</TableHead>
                 <TableHead>Mục đích</TableHead>
-                <TableHead>Thời gian dự kiến</TableHead>
-                <TableHead>Số QĐ</TableHead>
-                <TableHead>Chi phí ước tính</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Chi phí</TableHead>
                 <TableHead>Nguồn</TableHead>
-                <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -254,19 +196,11 @@ export default function OverseasEmployeePage() {
                 </TableRow>
               ) : trips.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Plane className="h-8 w-8" />
-                      <p>Bạn chưa có chuyến đi nào</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleOpenFormModal()}
-                        className="mt-2"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Đăng ký chuyến đi đầu tiên
-                      </Button>
+                      <p>Bạn chưa có lịch sử xuất cảnh nào</p>
+                      <p className="text-sm">Liên hệ phòng Nhân sự để cập nhật lịch sử xuất cảnh của bạn</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -281,64 +215,43 @@ export default function OverseasEmployeePage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{new Date(trip.plannedDepartureDate).toLocaleDateString('vi-VN')}</div>
+                        <div>{new Date(trip.departureDate).toLocaleDateString('vi-VN')}</div>
                         <div className="text-muted-foreground">
-                          đến {new Date(trip.plannedReturnDate).toLocaleDateString('vi-VN')}
+                          đến {new Date(trip.returnDate).toLocaleDateString('vi-VN')}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ({trip.durationDays} ngày)
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {trip.decisionNumber ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{trip.decisionNumber}</div>
-                          <div className="text-muted-foreground">
-                            {trip.decisionDate && new Date(trip.decisionDate).toLocaleDateString('vi-VN')}
-                          </div>
+                      <div className="text-sm">
+                        <div className="font-medium">
+                          {formatCurrency(trip.actualCost || trip.estimatedCost)}
                         </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Chưa có</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-medium">
-                        {formatCurrency(trip.estimatedCost)}
-                      </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {getFundingBadge(trip.fundingSource)}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(trip.status)}
-                    </TableCell>
-                    <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {canEdit(trip) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenFormModal(trip)}
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenViewModal(trip.id)}
+                          onClick={() => handleOpenDetailModal(trip.id)}
                           title="Xem chi tiết"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {canDelete(trip) && (
+                        {trip.attachments && trip.attachments.length > 0 && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(trip.id)}
-                            title="Xóa"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDownload(trip)}
+                            title="Tải xuống tài liệu"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Download className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -349,87 +262,13 @@ export default function OverseasEmployeePage() {
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination */}
-        {!isLoading && trips.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <div className="text-sm text-muted-foreground">
-              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                >
-                  Đầu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p - 1)}
-                  disabled={page === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="px-3 text-sm">
-                  Trang {page + 1} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages - 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Cuối
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </Card>
 
-      <OverseasViewModal
-        isOpen={isViewModalOpen}
-        onClose={handleCloseViewModal}
+      {/* Detail Modal */}
+      <OverseasDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
         tripId={selectedTripId}
-      />
-
-      <OverseasFormModal
-        isOpen={isFormModalOpen}
-        onClose={handleCloseFormModal}
-        trip={selectedTrip}
-        onSuccess={handleFormSuccess}
       />
     </div>
   );

@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Plus, Edit2, Trash2, FileText, AlertCircle } from 'lucide-react';
+import { Search, FileText, AlertCircle, Eye, Download } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -19,39 +19,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import { mockDegrees, type Degree } from '../../../mock/degree';
-import DegreeFormModal from '../components/DegreeFormModal';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shared/components/ui/alert-dialog';
+import { mockDegrees, type Degree, calculateStatistics } from '../../../mock/degree';
+import DegreeDetailModal from '../components/DegreeDetailModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
 export default function DegreeEmployeePage() {
   const { user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [degrees, setDegrees] = useState<Degree[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [degreeToDelete, setDegreeToDelete] = useState<Degree | null>(null);
-
-  const isAdmin = user?.roles?.includes('ADMIN');
-  const isManager = user?.roles?.includes('MANAGER');
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDegreeId, setSelectedDegreeId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDegrees();
-  }, [searchTerm, typeFilter, statusFilter, user]);
+  }, [searchTerm, typeFilter, user]);
 
   const fetchDegrees = async () => {
     setIsLoading(true);
@@ -60,17 +44,13 @@ export default function DegreeEmployeePage() {
     
     let filtered = [...mockDegrees];
     
-    // Lọc theo user hiện tại (nếu không phải ADMIN)
-    if (!isAdmin && user?.employeeId) {
+    // Lọc theo user hiện tại
+    if (user?.employeeId) {
       filtered = filtered.filter(d => d.employeeId === user.employeeId);
     }
     
     if (typeFilter !== 'ALL') {
       filtered = filtered.filter(d => d.type === typeFilter);
-    }
-    
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.status === statusFilter);
     }
     
     if (searchTerm) {
@@ -84,68 +64,20 @@ export default function DegreeEmployeePage() {
     setIsLoading(false);
   };
 
-  const handleOpenFormModal = (degree?: Degree) => {
-    setSelectedDegree(degree || null);
-    setIsFormModalOpen(true);
+  const handleOpenDetailModal = (id: string) => {
+    setSelectedDegreeId(id);
+    setIsDetailModalOpen(true);
   };
 
-  const handleCloseFormModal = () => {
-    setIsFormModalOpen(false);
-    setSelectedDegree(null);
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedDegreeId(null);
   };
 
-  const handleFormSuccess = () => {
-    fetchDegrees();
-    handleCloseFormModal();
-  };
-
-  const handleDeleteClick = (degree: Degree) => {
-    setDegreeToDelete(degree);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!degreeToDelete) return;
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Remove from mockDegrees
-    const index = mockDegrees.findIndex(d => d.id === degreeToDelete.id);
-    if (index > -1) {
-      mockDegrees.splice(index, 1);
-    }
-    
-    setIsDeleteDialogOpen(false);
-    setDegreeToDelete(null);
-    fetchDegrees();
-  };
-
-  const canEdit = (degree: Degree) => {
-    if (isAdmin) return true;
-    return degree.status === 'PENDING' || degree.status === 'REJECTED';
-  };
-
-  const canDelete = (degree: Degree) => {
-    if (isAdmin) return true;
-    return degree.status === 'PENDING' || degree.status === 'REJECTED';
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
-      'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
-      'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
+  const handleDownload = (degree: Degree) => {
+    // Simulate download
+    console.log('Downloading document:', degree.documentUrl);
+    alert(`Đang tải xuống tài liệu: ${degree.name}`);
   };
 
   const getTypeBadge = (type: string) => {
@@ -172,7 +104,16 @@ export default function DegreeEmployeePage() {
     const expiryDate = new Date(degree.expiryDate);
     const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (daysUntilExpiry <= 30 && daysUntilExpiry > 0) {
+    if (daysUntilExpiry < 0) {
+      return (
+        <div className="flex items-center gap-1 text-red-600 text-xs mt-1">
+          <AlertCircle className="h-3 w-3" />
+          <span>Đã hết hạn</span>
+        </div>
+      );
+    }
+
+    if (daysUntilExpiry <= 30) {
       return (
         <div className="flex items-center gap-1 text-orange-600 text-xs mt-1">
           <AlertCircle className="h-3 w-3" />
@@ -184,52 +125,30 @@ export default function DegreeEmployeePage() {
     return null;
   };
 
-  const stats = {
-    total: degrees.length,
-    pending: degrees.filter(d => d.status === 'PENDING').length,
-    approved: degrees.filter(d => d.status === 'APPROVED').length,
-    rejected: degrees.filter(d => d.status === 'REJECTED').length,
-  };
+  const stats = calculateStatistics(degrees);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">
-            {isAdmin ? 'Quản lý bằng cấp' : 'Bằng cấp của tôi'}
-          </h1>
+          <h1 className="text-3xl font-bold">Bằng cấp của tôi</h1>
           <p className="text-muted-foreground">
-            {isAdmin 
-              ? 'Quản lý bằng cấp của tất cả nhân viên'
-              : 'Quản lý bằng cấp, chứng chỉ và giấy phép của bạn'
-            }
+            Xem danh sách bằng cấp, chứng chỉ và giấy phép của bạn
           </p>
         </div>
-        <Button onClick={() => handleOpenFormModal()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm bằng cấp
-        </Button>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Tổng số</div>
-          <div className="text-2xl font-bold mt-1">{stats.total}</div>
-        </Card>
-        <Card className="p-4 border-yellow-200 bg-yellow-50">
-          <div className="text-sm text-muted-foreground">Chờ duyệt</div>
-          <div className="text-2xl font-bold mt-1 text-yellow-600">{stats.pending}</div>
-        </Card>
-        <Card className="p-4 border-green-200 bg-green-50">
-          <div className="text-sm text-muted-foreground">Hoàn thành</div>
-          <div className="text-2xl font-bold mt-1 text-green-600">{stats.approved}</div>
-        </Card>
-        <Card className="p-4 border-red-200 bg-red-50">
-          <div className="text-sm text-muted-foreground">Từ chối</div>
-          <div className="text-2xl font-bold mt-1 text-red-600">{stats.rejected}</div>
-        </Card>
-      </div>
+      {/* Info banner */}
+      <Card className="p-4 bg-blue-50 border-blue-200">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">Thông tin quan trọng</p>
+            <p>Bằng cấp của bạn được quản lý bởi phòng Nhân sự. Nếu có thắc mắc hoặc cần cập nhật thông tin, vui lòng liên hệ với phòng Nhân sự.</p>
+          </div>
+        </div>
+      </Card>
+
 
       {/* Filters */}
       <Card className="p-4">
@@ -249,23 +168,10 @@ export default function DegreeEmployeePage() {
               <SelectValue placeholder="Loại" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Tất cả loại bằng cấp</SelectItem>
+              <SelectItem value="ALL">Tất cả loại</SelectItem>
               <SelectItem value="EDUCATION">Học vấn</SelectItem>
               <SelectItem value="CERTIFICATION">Chứng chỉ</SelectItem>
               <SelectItem value="LICENSE">Giấy phép</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Hoàn thành</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
-              <SelectItem value="EXPIRED">Hết hạn</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -277,13 +183,13 @@ export default function DegreeEmployeePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Loại bằng cấp</TableHead>
+                <TableHead>Loại</TableHead>
                 <TableHead>Tên bằng cấp</TableHead>
                 <TableHead>Tổ chức cấp</TableHead>
+                <TableHead>Số bằng cấp</TableHead>
                 <TableHead>Ngày cấp</TableHead>
-                <TableHead>Thời gian hiệu lực</TableHead>
-                <TableHead>Trạng thái</TableHead>
-                <TableHead className="text-right">Thao tác</TableHead>
+                <TableHead>Ngày hết hạn</TableHead>
+                <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -302,15 +208,7 @@ export default function DegreeEmployeePage() {
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-8 w-8" />
                       <p>Chưa có bằng cấp nào</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleOpenFormModal()}
-                        className="mt-2"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Thêm bằng cấp đầu tiên
-                      </Button>
+                      <p className="text-sm">Liên hệ phòng Nhân sự để cập nhật bằng cấp của bạn</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -326,15 +224,13 @@ export default function DegreeEmployeePage() {
                         {degree.major && (
                           <p className="text-xs text-muted-foreground">{degree.major}</p>
                         )}
-                        {degree.certificateNumber && (
-                          <p className="text-xs text-muted-foreground">
-                            Số: {degree.certificateNumber}
-                          </p>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{degree.institution}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{degree.certificateNumber || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
@@ -356,42 +252,24 @@ export default function DegreeEmployeePage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        {getStatusBadge(degree.status)}
-                        {degree.status === 'REJECTED' && degree.rejectionReason && (
-                          <p className="text-xs text-red-600 mt-1">
-                            {degree.rejectionReason}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 justify-end">
-                        {canEdit(degree) && (
+                      <div className="flex gap-1 justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDetailModal(degree.id)}
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {degree.documentUrl && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenFormModal(degree)}
-                            title="Chỉnh sửa"
+                            onClick={() => handleDownload(degree)}
+                            title="Tải xuống"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Download className="h-4 w-4" />
                           </Button>
-                        )}
-                        {canDelete(degree) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(degree)}
-                            title="Xóa"
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {!canEdit(degree) && !canDelete(degree) && (
-                          <span className="text-xs text-muted-foreground px-2">
-                            Không thể sửa
-                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -403,35 +281,12 @@ export default function DegreeEmployeePage() {
         </div>
       </Card>
 
-      {/* Form Modal */}
-      <DegreeFormModal
-        isOpen={isFormModalOpen}
-        onClose={handleCloseFormModal}
-        degree={selectedDegree}
-        onSuccess={handleFormSuccess}
+      {/* Detail Modal */}
+      <DegreeDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        degreeId={selectedDegreeId}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa bằng cấp "{degreeToDelete?.name}"? 
-              Hành động này không thể hoàn tác.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Xóa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

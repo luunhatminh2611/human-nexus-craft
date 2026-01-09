@@ -47,6 +47,7 @@ export default function EmployeeWorkSchedule() {
   });
 
   const [employeeId, setEmployeeId] = useState<number | null>(null);
+  const [departmentId, setDepartmentId] = useState(null);
   const [rawWorkSchedules, setRawWorkSchedules] = useState<ApiWorkSchedule[]>([]);
   const [expandedSchedules, setExpandedSchedules] = useState<DaySchedule[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,6 +128,8 @@ export default function EmployeeWorkSchedule() {
       }
 
       const employeeData = await employeeApi.getProfile(user?.userId);
+
+      setDepartmentId(employeeData?.departmentId)
       
       if (employeeData?.id) {
         setEmployeeId(employeeData.id);
@@ -332,7 +335,7 @@ export default function EmployeeWorkSchedule() {
       setShowModal(false);
     } catch (err) {
       console.error("Lỗi khi lưu lịch công tác:", err);
-      alert(err?.message || "Có lỗi xảy ra khi lưu lịch công tác");
+      alert(err?.data?.message || "Có lỗi xảy ra khi lưu lịch công tác");
     } finally {
       setLoading(false);
     }
@@ -511,6 +514,7 @@ export default function EmployeeWorkSchedule() {
         editingSchedule={editingSchedule}
         selectedDay={selectedDay}
         isFromDayCell={isFromDayCell}
+        currentDepartmentId={departmentId}
       />
     </div>
   );

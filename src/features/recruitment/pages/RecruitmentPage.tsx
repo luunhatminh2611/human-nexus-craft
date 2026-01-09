@@ -1,3 +1,5 @@
+// pages/hr/recruitment/RecruitmentPage.tsx
+
 import { useState, useEffect } from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
@@ -8,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, AlertCircle, FileText, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Briefcase, Plus, Edit, Trash2, Users, FileText, EyeClosed } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -29,74 +31,98 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog';
-import { mockDegrees, type Degree, calculateStatistics } from '../../../mock/degree';
-import DegreeDetailModal from '../components/DegreeDetailModal';
-import DegreeFormModal from '../components/DegreeFormModal';
+import { 
+  mockJobPostings, 
+  type JobPosting,
+  calculateRecruitmentStatistics,
+  jobStatusLabels,
+  employmentTypeLabels,
+  levelLabels,
+} from '../../../mock/recruitment';
+import JobDetailModal from '../components/JobDetailModal';
+import JobFormModal from '../components/JobFormModal';
 
-export default function DegreeHRPage() {
+export default function RecruitmentPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
-  const [degrees, setDegrees] = useState<Degree[]>([]);
+  const [levelFilter, setLevelFilter] = useState<string>('ALL');
+  const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
-
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDegreeId, setSelectedDegreeId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [degreeToDelete, setDegreeToDelete] = useState<Degree | null>(null);
+  const [jobToDelete, setJobToDelete] = useState<JobPosting | null>(null);
 
   useEffect(() => {
-    fetchDegrees();
-  }, [page, pageSize, searchTerm, typeFilter, departmentFilter, refreshKey]);
+    fetchJobs();
+  }, [page, pageSize, searchTerm, statusFilter, departmentFilter, levelFilter, refreshKey]);
 
-  const fetchDegrees = async () => {
+  const fetchJobs = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    let filtered = [...mockDegrees];
+    let filtered = [...mockJobPostings];
 
-    if (typeFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.type === typeFilter);
+    if (statusFilter !== 'ALL') {
+      filtered = filtered.filter(j => j.status === statusFilter);
     }
 
     if (departmentFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.department === departmentFilter);
+      filtered = filtered.filter(j => j.department === departmentFilter);
+    }
+
+    if (levelFilter !== 'ALL') {
+      filtered = filtered.filter(j => j.level === levelFilter);
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(d =>
-        d.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.institution.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(j =>
+        j.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        j.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        j.location.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    // Sort by posted date (newest first)
+    filtered.sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime());
 
     setTotalItems(filtered.length);
 
     const start = page * pageSize;
     const end = start + pageSize;
-    setDegrees(filtered.slice(start, end));
+    setJobs(filtered.slice(start, end));
 
     setIsLoading(false);
   };
 
-  const handleOpenFormModal = (degree?: Degree) => {
-    setSelectedDegree(degree || null);
+  const handleOpenDetailModal = (id: string) => {
+    setSelectedJobId(id);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedJobId(null);
+  };
+
+  const handleOpenFormModal = (job?: JobPosting) => {
+    setSelectedJob(job || null);
     setIsFormModalOpen(true);
   };
 
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
-    setSelectedDegree(null);
+    setSelectedJob(null);
   };
 
   const handleFormSuccess = () => {
@@ -104,44 +130,34 @@ export default function DegreeHRPage() {
     handleCloseFormModal();
   };
 
-  const handleOpenDetailModal = (id: string) => {
-    setSelectedDegreeId(id);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedDegreeId(null);
-  };
-
-  const handleDeleteClick = (degree: Degree) => {
-    setDegreeToDelete(degree);
+  const handleDeleteClick = (job: JobPosting) => {
+    // setJobToDelete(job);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!degreeToDelete) return;
+    if (!jobToDelete) return;
     
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    const index = mockDegrees.findIndex(d => d.id === degreeToDelete.id);
+    const index = mockJobPostings.findIndex(j => j.id === jobToDelete.id);
     if (index > -1) {
-      mockDegrees.splice(index, 1);
+      mockJobPostings.splice(index, 1);
     }
     
     setIsDeleteDialogOpen(false);
-    setDegreeToDelete(null);
+    setJobToDelete(null);
     setRefreshKey(prev => prev + 1);
   };
 
-  const getTypeBadge = (type: string) => {
-    const typeConfig = {
-      'EDUCATION': { label: 'Học vấn', className: 'bg-blue-100 text-blue-800' },
-      'CERTIFICATION': { label: 'Chứng chỉ', className: 'bg-purple-100 text-purple-800' },
-      'LICENSE': { label: 'Giấy phép', className: 'bg-orange-100 text-orange-800' },
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'DRAFT': { label: jobStatusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
+      'ACTIVE': { label: jobStatusLabels.ACTIVE, className: 'bg-green-100 text-green-800' },
+      'CLOSED': { label: jobStatusLabels.CLOSED, className: 'bg-red-100 text-red-800' },
     };
 
-    const config = typeConfig[type];
+    const config = statusConfig[status];
     if (!config) return null;
 
     return (
@@ -151,57 +167,48 @@ export default function DegreeHRPage() {
     );
   };
 
-  const getExpiryWarning = (degree: Degree) => {
-    if (!degree.expiryDate) return null;
+  const getEmploymentTypeBadge = (type: string) => {
+    const typeConfig = {
+      'FULL_TIME': { className: 'bg-blue-100 text-blue-800' },
+      'PART_TIME': { className: 'bg-purple-100 text-purple-800' },
+      'CONTRACT': { className: 'bg-orange-100 text-orange-800' },
+      'INTERNSHIP': { className: 'bg-yellow-100 text-yellow-800' },
+    };
 
-    const now = new Date();
-    const expiryDate = new Date(degree.expiryDate);
-    const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const config = typeConfig[type];
+    if (!config) return null;
 
-    if (daysUntilExpiry < 0) {
-      return (
-        <div className="flex items-center gap-1 text-red-600 text-xs">
-          <AlertCircle className="h-3 w-3" />
-          <span>Đã hết hạn</span>
-        </div>
-      );
-    }
-
-    if (daysUntilExpiry <= 30) {
-      return (
-        <div className="flex items-center gap-1 text-orange-600 text-xs">
-          <AlertCircle className="h-3 w-3" />
-          <span>Còn {daysUntilExpiry} ngày</span>
-        </div>
-      );
-    }
-
-    return null;
+    return (
+      <Badge className={config.className} variant="outline">
+        {employmentTypeLabels[type]}
+      </Badge>
+    );
   };
 
-  const stats = calculateStatistics(mockDegrees);
+  // Calculate statistics
+  const stats = calculateRecruitmentStatistics(mockJobPostings);
+
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = page * pageSize + 1;
   const endIndex = Math.min((page + 1) * pageSize, totalItems);
 
-  const departments = Array.from(new Set(mockDegrees.map(d => d.department)));
+  const departments = Array.from(new Set(mockJobPostings.map(j => j.department)));
+  const levels = ['INTERN', 'JUNIOR', 'MIDDLE', 'SENIOR', 'LEAD', 'MANAGER'];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý bằng cấp</h1>
+          <h1 className="text-3xl font-bold">Quản lý tuyển dụng</h1>
           <p className="text-muted-foreground">
-            Lưu trữ và quản lý bằng cấp của tất cả nhân viên
+            Quản lý tin tuyển dụng và hồ sơ ứng viên
           </p>
         </div>
         <Button onClick={() => handleOpenFormModal()}>
           <Plus className="h-4 w-4 mr-2" />
-          Thêm bằng cấp
+          Tạo tin tuyển dụng
         </Button>
       </div>
-
- 
 
       {/* Filters */}
       <Card className="p-4">
@@ -209,12 +216,24 @@ export default function DegreeHRPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, mã nhân viên, tên bằng cấp..."
+              placeholder="Tìm kiếm theo vị trí, phòng ban hoặc địa điểm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-[150px]">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Tất cả</SelectItem>
+              <SelectItem value="DRAFT">Nháp</SelectItem>
+              <SelectItem value="ACTIVE">Đang tuyển</SelectItem>
+              <SelectItem value="CLOSED">Đã đóng</SelectItem>
+            </SelectContent>
+          </Select>
 
           <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
             <SelectTrigger className="w-full md:w-[180px]">
@@ -228,15 +247,15 @@ export default function DegreeHRPage() {
             </SelectContent>
           </Select>
 
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Loại" />
+          <Select value={levelFilter} onValueChange={setLevelFilter}>
+            <SelectTrigger className="w-full md:w-[150px]">
+              <SelectValue placeholder="Cấp bậc" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Tất cả loại</SelectItem>
-              <SelectItem value="EDUCATION">Học vấn</SelectItem>
-              <SelectItem value="CERTIFICATION">Chứng chỉ</SelectItem>
-              <SelectItem value="LICENSE">Giấy phép</SelectItem>
+              <SelectItem value="ALL">Tất cả cấp bậc</SelectItem>
+              {levels.map(level => (
+                <SelectItem key={level} value={level}>{levelLabels[level]}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -248,13 +267,13 @@ export default function DegreeHRPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nhân viên</TableHead>
-                <TableHead>Loại</TableHead>
-                <TableHead>Tên bằng cấp</TableHead>
-                <TableHead>Tổ chức cấp</TableHead>
-                <TableHead>Số bằng cấp</TableHead>
-                <TableHead>Ngày cấp</TableHead>
-                <TableHead>Ngày hết hạn</TableHead>
+                <TableHead>Vị trí tuyển dụng</TableHead>
+                <TableHead>Phòng ban</TableHead>
+                <TableHead>Loại hình</TableHead>
+                <TableHead>Lương</TableHead>
+                <TableHead>Hạn nộp</TableHead>
+                <TableHead>Ứng viên</TableHead>
+                <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
@@ -268,67 +287,68 @@ export default function DegreeHRPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : degrees.length === 0 ? (
+              ) : jobs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <FileText className="h-8 w-8" />
-                      <p>Không tìm thấy bằng cấp nào</p>
+                      <Briefcase className="h-8 w-8" />
+                      <p>Không tìm thấy tin tuyển dụng nào</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                degrees.map((degree) => (
-                  <TableRow key={degree.id}>
+                jobs.map((job) => (
+                  <TableRow key={job.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{degree.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{degree.employeeCode}</p>
-                        <p className="text-xs text-muted-foreground">{degree.department}</p>
+                        <p className="font-medium">{job.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {levelLabels[job.level]} • {job.location}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getTypeBadge(degree.type)}
+                      <span className="text-sm">{job.department}</span>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{degree.name}</p>
-                        {degree.major && (
-                          <p className="text-xs text-muted-foreground">{degree.major}</p>
-                        )}
+                      {getEmploymentTypeBadge(job.employmentType)}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-medium">{job.salaryRange}</span>
+                    </TableCell>
+                    <TableCell>
+                      {job.deadline ? (
+                        <div className="text-sm">
+                          <div>{new Date(job.deadline).toLocaleDateString('vi-VN')}</div>
+                          {(() => {
+                            const daysLeft = Math.ceil((new Date(job.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                            if (daysLeft < 0) {
+                              return <span className="text-xs text-red-600">Đã hết hạn</span>;
+                            } else if (daysLeft <= 7) {
+                              return <span className="text-xs text-orange-600">Còn {daysLeft} ngày</span>;
+                            }
+                            return <span className="text-xs text-muted-foreground">Còn {daysLeft} ngày</span>;
+                          })()}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Không giới hạn</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-blue-500" />
+                        <span className="font-semibold">{job.applicants.length}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">{degree.institution}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{degree.certificateNumber || '-'}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">
-                        {new Date(degree.issueDate).toLocaleDateString('vi-VN')}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        {degree.expiryDate ? (
-                          <>
-                            <span className="text-sm">
-                              {new Date(degree.expiryDate).toLocaleDateString('vi-VN')}
-                            </span>
-                            {getExpiryWarning(degree)}
-                          </>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Vô thời hạn</span>
-                        )}
-                      </div>
+                      {getStatusBadge(job.status)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenDetailModal(degree.id)}
+                          onClick={() => handleOpenDetailModal(job.id)}
                           title="Xem chi tiết"
                         >
                           <Eye className="h-4 w-4" />
@@ -336,7 +356,7 @@ export default function DegreeHRPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenFormModal(degree)}
+                          onClick={() => handleOpenFormModal(job)}
                           title="Chỉnh sửa"
                         >
                           <Edit className="h-4 w-4" />
@@ -344,11 +364,11 @@ export default function DegreeHRPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteClick(degree)}
+                          onClick={() => handleDeleteClick(job)}
                           title="Xóa"
                           className="text-red-600 hover:text-red-700"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <EyeClosed className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -360,7 +380,7 @@ export default function DegreeHRPage() {
         </div>
 
         {/* Pagination */}
-        {!isLoading && degrees.length > 0 && (
+        {!isLoading && jobs.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <div className="text-sm text-muted-foreground">
               Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
@@ -429,17 +449,19 @@ export default function DegreeHRPage() {
         )}
       </Card>
 
-      {/* Modals */}
-      <DegreeDetailModal
+      {/* Detail Modal */}
+      <JobDetailModal
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
-        degreeId={selectedDegreeId}
+        jobId={selectedJobId}
+        onRefresh={() => setRefreshKey(prev => prev + 1)}
       />
 
-      <DegreeFormModal
+      {/* Form Modal */}
+      <JobFormModal
         isOpen={isFormModalOpen}
         onClose={handleCloseFormModal}
-        degree={selectedDegree}
+        job={selectedJob}
         onSuccess={handleFormSuccess}
       />
 
@@ -447,10 +469,9 @@ export default function DegreeHRPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+            <AlertDialogTitle>Xác nhận đóng</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa bằng cấp "{degreeToDelete?.name}" của nhân viên {degreeToDelete?.employeeName}? 
-              Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn đóng tin tuyển dụng "{jobToDelete?.title}"? 
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Plus, Edit2, Trash2, FileText, AlertCircle, Award, BookOpen, FileCheck } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, FileText, AlertCircle, Award, BookOpen, FileCheck, Eye } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Label } from '@/shared/components/ui/label';
@@ -24,6 +24,7 @@ import {
 } from '@/shared/components/tables/table';
 import { mockDegrees, type Degree } from '../../../mock/degree';
 import DegreeFormModal from '../../degree/components/DegreeFormModal';
+import DegreeDetailModal from '../../degree/components/DegreeDetailModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,22 +46,22 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
   const { user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [degrees, setDegrees] = useState<Degree[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedDegreeId, setSelectedDegreeId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [degreeToDelete, setDegreeToDelete] = useState<Degree | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const isAdmin = user?.roles === 'ADMIN';
-  const isManager = user?.roles === 'MANAGER';
+  const isAdmin = user?.roles?.includes('ADMIN');
 
   useEffect(() => {
     fetchDegrees();
-  }, [employeeId, searchTerm, typeFilter, statusFilter, refreshKey]);
+  }, [employeeId, searchTerm, typeFilter, refreshKey]);
 
   const fetchDegrees = async () => {
     setIsLoading(true);
@@ -71,10 +72,6 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
     
     if (typeFilter !== 'ALL') {
       filtered = filtered.filter(d => d.type === typeFilter);
-    }
-    
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.status === statusFilter);
     }
     
     if (searchTerm) {
@@ -107,6 +104,16 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
     handleCloseFormModal();
   };
 
+  const handleOpenDetailModal = (id: string) => {
+    setSelectedDegreeId(id);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedDegreeId(null);
+  };
+
   const handleDeleteClick = (degree: Degree) => {
     setDegreeToDelete(degree);
     setIsDeleteDialogOpen(true);
@@ -125,35 +132,6 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
     setIsDeleteDialogOpen(false);
     setDegreeToDelete(null);
     setRefreshKey(prev => prev + 1);
-  };
-
-  const canEdit = (degree: Degree) => {
-    if (isAdmin) return true;
-    if (isManager) return true;
-    return degree.status === 'PENDING' || degree.status === 'REJECTED';
-  };
-
-  const canDelete = (degree: Degree) => {
-    if (isAdmin) return true;
-    if (isManager) return true;
-    return degree.status === 'PENDING' || degree.status === 'REJECTED';
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'PENDING': { label: 'Chờ duyệt', className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: 'Hoàn thành', className: 'bg-green-100 text-green-800' },
-      'REJECTED': { label: 'Từ chối', className: 'bg-red-100 text-red-800' },
-      'EXPIRED': { label: 'Hết hạn', className: 'bg-gray-100 text-gray-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
   };
 
   const getTypeBadge = (type: string) => {
@@ -210,12 +188,14 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
     education: degrees.filter(d => d.type === 'EDUCATION').length,
     certification: degrees.filter(d => d.type === 'CERTIFICATION').length,
     license: degrees.filter(d => d.type === 'LICENSE').length,
-    pending: degrees.filter(d => d.status === 'PENDING').length,
-    approved: degrees.filter(d => d.status === 'APPROVED').length,
     expiringSoon: degrees.filter(d => {
       if (!d.expiryDate) return false;
       const daysUntilExpiry = Math.floor((new Date(d.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
       return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+    }).length,
+    expired: degrees.filter(d => {
+      if (!d.expiryDate) return false;
+      return new Date(d.expiryDate) < new Date();
     }).length,
   };
 
@@ -227,22 +207,26 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
         <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h3 className="font-semibold text-blue-900 mb-2">Tóm tắt trình độ</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <h3 className="font-semibold text-blue-900 mb-2">Tóm tắt bằng cấp</h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
-                  <Label className="text-blue-600">Hoàn thành</Label>
-                  <p className="font-semibold text-green-600">{stats.approved}</p>
+                  <Label className="text-blue-600">Tổng số</Label>
+                  <p className="font-semibold text-blue-900">{stats.total}</p>
                 </div>
                 <div>
-                  <Label className="text-blue-600">Chờ duyệt</Label>
-                  <p className="font-semibold text-yellow-600">{stats.pending}</p>
+                  <Label className="text-blue-600">Học vấn</Label>
+                  <p className="font-semibold text-blue-700">{stats.education}</p>
+                </div>
+                <div>
+                  <Label className="text-blue-600">Chứng chỉ</Label>
+                  <p className="font-semibold text-purple-600">{stats.certification}</p>
                 </div>
                 <div>
                   <Label className="text-blue-600">Giấy phép</Label>
                   <p className="font-semibold text-orange-600">{stats.license}</p>
                 </div>
                 <div>
-                  <Label className="text-blue-600">Cảnh báo</Label>
+                  <Label className="text-blue-600">Sắp hết hạn</Label>
                   <p className="font-semibold text-red-600">{stats.expiringSoon}</p>
                 </div>
               </div>
@@ -277,20 +261,7 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Hoàn thành</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
-              <SelectItem value="EXPIRED">Hết hạn</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {(isAdmin) && (
+          {isAdmin && (
             <Button onClick={() => handleOpenFormModal()}>
               <Plus className="h-4 w-4 mr-2" />
               Thêm bằng cấp
@@ -308,9 +279,9 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
                 <TableHead>Loại</TableHead>
                 <TableHead>Tên bằng cấp</TableHead>
                 <TableHead>Tổ chức cấp</TableHead>
+                <TableHead>Số bằng cấp</TableHead>
                 <TableHead>Ngày cấp</TableHead>
-                <TableHead>Hiệu lực</TableHead>
-                <TableHead>Trạng thái</TableHead>
+                <TableHead>Ngày hết hạn</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
@@ -347,15 +318,18 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
                             Chuyên ngành: {degree.major}
                           </p>
                         )}
-                        {degree.certificateNumber && (
+                        {degree.level && (
                           <p className="text-xs text-muted-foreground">
-                            Số: {degree.certificateNumber}
+                            Trình độ: {degree.level}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{degree.institution}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{degree.certificateNumber || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm font-medium">
@@ -379,42 +353,35 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        {getStatusBadge(degree.status)}
-                        {degree.status === 'REJECTED' && degree.rejectionReason && (
-                          <p className="text-xs text-red-600 mt-1 line-clamp-1">
-                            {degree.rejectionReason}
-                          </p>
-                        )}
-                        {degree.status === 'PENDING' && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Chờ phê duyệt
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {canEdit(degree) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenFormModal(degree)}
-                            title="Chỉnh sửa"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete(degree) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteClick(degree)}
-                            title="Xóa"
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDetailModal(degree.id)}
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenFormModal(degree)}
+                              title="Chỉnh sửa"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteClick(degree)}
+                              title="Xóa"
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -425,6 +392,13 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
           </Table>
         </div>
       </Card>
+
+      {/* Detail Modal */}
+      <DegreeDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        degreeId={selectedDegreeId}
+      />
 
       {/* Form Modal */}
       <DegreeFormModal

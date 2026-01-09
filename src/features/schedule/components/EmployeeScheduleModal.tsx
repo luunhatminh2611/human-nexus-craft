@@ -1,5 +1,5 @@
 // EmployeeScheduleModal.tsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Button from "@/shared/components/ui/button/Button";
 import { Save, X, Edit, Plus } from "lucide-react";
 import {
@@ -8,6 +8,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/shared/components/ui/dialog";
+import { Input } from "@/shared/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select";
+import { employeeApi } from "@/features/employees";
 
 type DaySchedule = {
   id: number | string;
@@ -21,6 +30,12 @@ type DaySchedule = {
   raw?: any;
 };
 
+type Employee = {
+  id: number;
+  name: string;
+  position?: string;
+};
+
 type EmployeeScheduleModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -29,11 +44,14 @@ type EmployeeScheduleModalProps = {
     location: string,
     description: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    managerId: number
   ) => Promise<void>;
   editingSchedule: DaySchedule | null;
   selectedDay: string | null;
   isFromDayCell: boolean;
+  currentDepartmentId?: number; // ID phòng ban hiện tại
+  apiEndpoint?: string; // Endpoint API để lấy danh sách nhân viên
 };
 
 export default function EmployeeScheduleModal({
@@ -43,7 +61,43 @@ export default function EmployeeScheduleModal({
   editingSchedule,
   selectedDay,
   isFromDayCell,
+  currentDepartmentId,
 }: EmployeeScheduleModalProps) {
+  const [employees, setEmployees] = useState([]);
+  const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
+
+  // Fetch danh sách nhân viên theo phòng ban
+  useEffect(() => {
+    if (isOpen && currentDepartmentId) {
+      fetchEmployees();
+    }
+  }, [isOpen, currentDepartmentId]);
+
+  // Set manager mặc định khi edit
+  useEffect(() => {
+    if (editingSchedule?.raw?.managerId) {
+      setSelectedManagerId(editingSchedule.raw.managerId);
+    } else {
+      setSelectedManagerId(null);
+    }
+  }, [editingSchedule]);
+
+  const fetchEmployees = async () => {
+    setIsLoadingEmployees(true);
+    try {
+      const response = await employeeApi.getByDepartmentId(currentDepartmentId);
+
+      setEmployees(response.data || []);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      alert("Không thể tải danh sách nhân viên. Vui lòng thử lại.");
+      setEmployees([]);
+    } finally {
+      setIsLoadingEmployees(false);
+    }
+  };
+
   const handleSubmit = async () => {
     const title = (document.getElementById("modal-title") as HTMLInputElement)?.value;
     const location = (document.getElementById("modal-location") as HTMLInputElement)?.value;
@@ -66,9 +120,14 @@ export default function EmployeeScheduleModal({
       return;
     }
 
+    if (!selectedManagerId) {
+      alert("Vui lòng chọn người duyệt");
+      return;
+    }
+
     const finalEndDate = isFromDayCell ? startDate : (endDate || startDate);
 
-    await onSave(title, location, description, startDate, finalEndDate);
+    await onSave(title, location, description, startDate, finalEndDate, selectedManagerId);
   };
 
   return (
@@ -96,7 +155,7 @@ export default function EmployeeScheduleModal({
               <label className="text-sm font-semibold text-gray-700">
                 Tiêu đề <span className="text-red-500">*</span>
               </label>
-              <input
+              <Input
                 id="modal-title"
                 type="text"
                 className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
@@ -109,7 +168,7 @@ export default function EmployeeScheduleModal({
               <label className="text-sm font-semibold text-gray-700">
                 Địa điểm <span className="text-red-500">*</span>
               </label>
-              <input
+              <Input
                 id="modal-location"
                 type="text"
                 className="w-full border rounded-lg px-3 py-2 text-sm mt-1"
@@ -125,14 +184,14 @@ export default function EmployeeScheduleModal({
               <label className="text-sm font-semibold text-gray-700">
                 Ngày làm việc
               </label>
-              <input
+              <Input
                 id="modal-start-date"
                 type="date"
                 className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 mt-1"
                 defaultValue={selectedDay || ""}
                 readOnly
               />
-              <input
+              <Input
                 id="modal-end-date"
                 type="hidden"
                 value={selectedDay || ""}
@@ -144,7 +203,7 @@ export default function EmployeeScheduleModal({
                 <label className="text-sm font-semibold text-gray-700">
                   Ngày bắt đầu <span className="text-red-500">*</span>
                 </label>
-                <input
+                <Input
                   id="modal-start-date"
                   type="date"
                   className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 mt-1"
@@ -158,7 +217,7 @@ export default function EmployeeScheduleModal({
                 <label className="text-sm font-semibold text-gray-700">
                   Ngày kết thúc
                 </label>
-                <input
+                <Input
                   id="modal-end-date"
                   type="date"
                   className="w-full border rounded-lg px-3 py-2 text-sm bg-white mt-1"
@@ -177,6 +236,35 @@ export default function EmployeeScheduleModal({
             </div>
           )}
 
+          {/* Người duyệt - FULL WIDTH */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">
+              Người duyệt <span className="text-red-500">*</span>
+            </label>
+            <Select
+              value={selectedManagerId?.toString() || ""}
+              onValueChange={(value) => setSelectedManagerId(Number(value))}
+              disabled={isLoadingEmployees}
+            >
+              <SelectTrigger className="w-full mt-1">
+                <SelectValue placeholder={isLoadingEmployees ? "Đang tải..." : "Chọn người duyệt"} />
+              </SelectTrigger>
+              <SelectContent>
+                {employees.length > 0 ? (
+                  employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id.toString()}>
+                      {employee.fullName} {employee.position ? `(${employee.position})` : ""}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-employees" disabled>
+                    Không có nhân viên
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Mô tả - FULL WIDTH */}
           <div>
             <label className="text-sm font-semibold text-gray-700">
@@ -194,7 +282,7 @@ export default function EmployeeScheduleModal({
           {/* Thông báo trạng thái */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800">
             <p className="font-medium">📋 Lưu ý:</p>
-            <p>Lịch công tác sẽ ở trạng thái <strong>"Chờ xác nhận"</strong> cho đến khi trưởng phòng xác nhận.</p>
+            <p>Lịch công tác sẽ ở trạng thái <strong>"Chờ xác nhận"</strong> cho đến khi người duyệt xác nhận.</p>
           </div>
         </div>
 

@@ -24,6 +24,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/compo
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/components/tables/table';
 import CheckupDialog from './modal/CreateCheckUp';
 import { transferApi } from '@/features/transfer/api/transferApi';
+import { Input } from '@/shared/components/ui/input';
+import Label from '@/shared/components/form/Label';
 
 export default function MedicalTab({ userData }) {
   const [ehrProfile, setEhrProfile] = useState<any>(null);
@@ -442,8 +444,8 @@ export default function MedicalTab({ userData }) {
 
           <div className="grid grid-cols-2 gap-4 py-4">
             <div>
-              <label className="text-sm font-medium">Nhóm máu</label>
-              <input
+              <Label className="text-sm font-medium">Nhóm máu</Label>
+              <Input
                 className="input w-full"
                 value={profileForm.bloodType}
                 onChange={(e) =>
@@ -453,8 +455,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Ngày khám gần nhất</label>
-              <input
+              <Label className="text-sm font-medium">Ngày khám gần nhất</Label>
+              <Input
                 type="date"
                 className="input w-full"
                 value={profileForm.lastCheckDate}
@@ -465,8 +467,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Chiều cao (cm)</label>
-              <input
+              <Label className="text-sm font-medium">Chiều cao (cm)</Label>
+              <Input
                 type="number"
                 className="input w-full"
                 value={profileForm.height}
@@ -477,8 +479,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Cân nặng (kg)</label>
-              <input
+              <Label className="text-sm font-medium">Cân nặng (kg)</Label>
+              <Input
                 type="number"
                 className="input w-full"
                 value={profileForm.weight}
@@ -489,8 +491,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div className="col-span-2">
-              <label className="text-sm font-medium">Dị ứng</label>
-              <input
+              <Label className="text-sm font-medium">Dị ứng</Label>
+              <Input
                 className="input w-full"
                 placeholder="Ví dụ: Penicillin, Hải sản"
                 value={profileForm.allergy}
@@ -501,8 +503,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Bệnh mãn tính</label>
-              <input
+              <Label className="text-sm font-medium">Bệnh mãn tính</Label>
+              <Input
                 className="input w-full"
                 value={profileForm.chronicDisease}
                 onChange={(e) =>
@@ -512,8 +514,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Bệnh nghề nghiệp</label>
-              <input
+              <Label className="text-sm font-medium">Bệnh nghề nghiệp</Label>
+              <Input
                 className="input w-full"
                 value={profileForm.occupationalDisease}
                 onChange={(e) =>
@@ -523,8 +525,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div className="col-span-2">
-              <label className="text-sm font-medium">Thuốc đang sử dụng</label>
-              <input
+              <Label className="text-sm font-medium">Thuốc đang sử dụng</Label>
+              <Input
                 className="input w-full"
                 value={profileForm.medication}
                 onChange={(e) =>
@@ -534,8 +536,8 @@ export default function MedicalTab({ userData }) {
             </div>
 
             <div className="col-span-2">
-              <label className="text-sm font-medium">Phân loại sức khỏe</label>
-              <input
+              <Label className="text-sm font-medium">Phân loại sức khỏe</Label>
+              <Input
                 className="input w-full"
                 placeholder="I, II, III..."
                 value={profileForm.healthClassification}

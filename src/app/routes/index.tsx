@@ -33,6 +33,8 @@ import FamilyVisitList from '@/features/fanilyVisit/pages/VisitFamilyPage';
 import ExtensionDecisionPage from '@/features/contracDecision/pages/ExtensionDecisionPage';
 import TerminationDecisionPage from '@/features/contracDecision/pages/TerminationDecisionPage';
 import FamilyManagementPage from '@/features/fanilyVisit/pages/FamilyManagementPage';
+import MedicalHRPage from '@/features/medical/pages/admin/AdminMedicalRecord';
+import RecruitmentPage from '@/features/recruitment/pages/RecruitmentPage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -166,6 +168,8 @@ export const router = createBrowserRouter([
       { path: ROUTES.EXTEND_DECISION_MANAGEMENT.slice(1), element: <ExtensionDecisionPage /> },
       { path: ROUTES.TERMINATE_DECISION_MANAGEMENT.slice(1), element: <TerminationDecisionPage /> },
       { path: ROUTES.FAMILY_MANAGEMENT.slice(1), element: <FamilyManagementPage /> },
+      { path: ROUTES.MEDICAL_PROFILE.slice(1), element: <MedicalHRPage /> },
+      { path: ROUTES.RECRUITMENT_MANAGEMENT.slice(1), element: <RecruitmentPage /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]

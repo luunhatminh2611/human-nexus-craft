@@ -77,6 +77,7 @@ import ExtensionTab from '../../components/ExtensionTab';
 import EmployeeDocumentsTab from '../../components/EmployeeDocumentTab';
 import FamilyTab from '../../components/FamilyTab';
 import WorkScheduleTab from '../../components/WorkScheduleTab';
+import OverseasTab from '../../components/OverseasTab';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -1686,7 +1687,12 @@ export default function Employees() {
                               {subTab === 'leaves' && (
                                 <LeavesTab userData={employeeDetailData} />
                               )}
-                              {subTab === 'abroad' && <div>Nội dung Xuất cảnh</div>}
+                              {subTab === 'abroad' &&  (
+                                <OverseasTab 
+                                  userData={employeeDetailData}
+                                  employeeId={selectedEmployeeId}                                  
+                                />
+                              )}
                             </div>
                           </div>
                         )}

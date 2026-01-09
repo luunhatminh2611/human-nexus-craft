@@ -45,7 +45,7 @@ interface DegreeFormData {
   documentUrl: string;
 }
 
-// Mock data nhân viên để admin chọn
+// Mock data nhân viên
 const mockEmployees = [
   { id: 'EMP001', name: 'Nguyễn Văn An', code: 'NV001', department: 'Phòng IT', position: 'Trưởng phòng IT' },
   { id: 'EMP002', name: 'Trần Thị Bình', code: 'NV002', department: 'Phòng Nhân sự', position: 'Nhân viên HR' },
@@ -61,15 +61,14 @@ const mockEmployees = [
 
 export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: DegreeFormModalProps) {
   const { user } = useAuthStore();
-  const isAdmin = user?.roles?.includes('ADMIN');
   const isEdit = !!degree;
 
   const [formData, setFormData] = useState<DegreeFormData>({
-    employeeId: user?.employeeId || '',
-    employeeName: user?.name || '',
-    employeeCode: user?.employeeCode || '',
-    department: user?.department || '',
-    position: user?.position || '',
+    employeeId: '',
+    employeeName: '',
+    employeeCode: '',
+    department: '',
+    position: '',
     type: '',
     name: '',
     institution: '',
@@ -107,14 +106,15 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
         notes: degree.notes || '',
         documentUrl: degree.documentUrl || '',
       });
+      setEmployeeSearch(degree.employeeName);
       setUploadedFile(null);
     } else if (isOpen) {
       setFormData({
-        employeeId: user?.employeeId || '',
-        employeeName: user?.name || '',
-        employeeCode: user?.employeeCode || '',
-        department: user?.department || '',
-        position: user?.position || '',
+        employeeId: '',
+        employeeName: '',
+        employeeCode: '',
+        department: '',
+        position: '',
         type: '',
         name: '',
         institution: '',
@@ -126,12 +126,12 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
         notes: '',
         documentUrl: '',
       });
+      setEmployeeSearch('');
       setUploadedFile(null);
     }
     setErrors({});
-    setEmployeeSearch('');
     setShowEmployeeList(false);
-  }, [isOpen, degree, user]);
+  }, [isOpen, degree]);
 
   const filteredEmployees = mockEmployees.filter(emp =>
     emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
@@ -158,13 +158,11 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         setErrors(prev => ({ ...prev, documentUrl: 'Kích thước file không được vượt quá 10MB' }));
         return;
       }
 
-      // Validate file type
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
       if (!allowedTypes.includes(file.type)) {
         setErrors(prev => ({ ...prev, documentUrl: 'Chỉ chấp nhận file PDF, JPG, JPEG, PNG' }));
@@ -172,7 +170,6 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
       }
 
       setUploadedFile(file);
-      // Simulate upload to generate URL
       const fakeUrl = `/documents/degree-${Date.now()}.${file.name.split('.').pop()}`;
       setFormData(prev => ({ ...prev, documentUrl: fakeUrl }));
       if (errors.documentUrl) {
@@ -189,7 +186,7 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof DegreeFormData, string>> = {};
 
-    if (isAdmin && !formData.employeeId) {
+    if (!formData.employeeId) {
       newErrors.employeeId = 'Vui lòng chọn nhân viên';
     }
 
@@ -228,12 +225,10 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
 
     setIsSubmitting(true);
 
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
       if (isEdit && degree) {
-        // Update existing degree
         const index = mockDegrees.findIndex(d => d.id === degree.id);
         if (index > -1) {
           mockDegrees[index] = {
@@ -253,14 +248,11 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
             certificateNumber: formData.certificateNumber.trim() || undefined,
             notes: formData.notes.trim() || undefined,
             documentUrl: formData.documentUrl.trim() || undefined,
-            // Status: ADMIN keeps status, others reset to PENDING if was REJECTED
-            status: isAdmin
-              ? mockDegrees[index].status
-              : (mockDegrees[index].status === 'REJECTED' ? 'PENDING' : mockDegrees[index].status),
+            updatedDate: new Date().toISOString(),
+            updatedBy: user?.name || 'Admin',
           };
         }
       } else {
-        // Create new degree
         const newDegree: Degree = {
           id: `DEG${String(mockDegrees.length + 1).padStart(3, '0')}`,
           employeeId: formData.employeeId,
@@ -276,12 +268,10 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
           issueDate: formData.issueDate,
           expiryDate: formData.expiryDate || undefined,
           certificateNumber: formData.certificateNumber.trim() || undefined,
-          status: isAdmin ? 'APPROVED' : 'PENDING',
           documentUrl: formData.documentUrl.trim() || undefined,
-          submittedDate: new Date().toISOString(),
+          createdDate: new Date().toISOString(),
+          createdBy: user?.name || 'Admin',
           notes: formData.notes.trim() || undefined,
-          reviewedBy: isAdmin ? `${user?.name} (ADMIN)` : undefined,
-          reviewedDate: isAdmin ? new Date().toISOString() : undefined,
         };
 
         mockDegrees.push(newDegree);
@@ -311,143 +301,72 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
           </DialogTitle>
         </DialogHeader>
 
-        {!isAdmin && (
-          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
-            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-blue-800">
-              <p className="font-medium">Lưu ý:</p>
-              <p>Bằng cấp của bạn sẽ được gửi đến HR để phê duyệt. Bạn chỉ có thể chỉnh sửa hoặc xóa khi ở trạng thái "Chờ duyệt" hoặc "Từ chối".</p>
-            </div>
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+          <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-blue-800">
+            <p className="font-medium">Lưu ý:</p>
+            <p>Bằng cấp sẽ được lưu trữ vào hồ sơ của nhân viên và nhân viên có thể xem được thông tin này.</p>
           </div>
-        )}
-
-        {isAdmin && (
-          <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
-            <AlertCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <div className="text-green-800">
-              <p className="font-medium">Quyền Admin:</p>
-              <p>Bằng cấp bạn tạo sẽ được phê duyệt tự động và có thể chỉnh sửa bất cứ lúc nào.</p>
-            </div>
-          </div>
-        )}
+        </div>
 
         <div className="space-y-4 mt-4">
-          {/* Employee Selection - Only for Admin */}
-          {isAdmin ? (
-            <div className="space-y-2">
-              <Label htmlFor="employee">
-                Nhân viên <span className="text-red-500">*</span>
-              </Label>
+          {/* Employee Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="employee">
+              Nhân viên <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
               <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="employee"
-                    value={employeeSearch}
-                    onChange={(e) => {
-                      setEmployeeSearch(e.target.value);
-                      setShowEmployeeList(true);
-                    }}
-                    onFocus={() => setShowEmployeeList(true)}
-                    placeholder="Tìm kiếm nhân viên theo tên, mã hoặc phòng ban"
-                    className={`pl-10 ${errors.employeeId ? 'border-red-500' : ''}`}
-                  />
-                </div>
-
-                {showEmployeeList && employeeSearch && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredEmployees.length > 0 ? (
-                      filteredEmployees.map((emp) => (
-                        <button
-                          key={emp.id}
-                          onClick={() => handleEmployeeSelect(emp)}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                        >
-                          <div className="font-medium">{emp.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {emp.code} • {emp.department} • {emp.position}
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Không tìm thấy nhân viên
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {formData.employeeId && formData.employeeName && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
-                    <div className="font-medium">{formData.employeeName}</div>
-                    <div className="text-muted-foreground">
-                      {formData.employeeCode} • {formData.department} • {formData.position}
-                    </div>
-                  </div>
-                )}
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="employee"
+                  value={employeeSearch}
+                  onChange={(e) => {
+                    setEmployeeSearch(e.target.value);
+                    setShowEmployeeList(true);
+                  }}
+                  onFocus={() => setShowEmployeeList(true)}
+                  placeholder="Tìm kiếm nhân viên theo tên, mã hoặc phòng ban"
+                  className={`pl-10 ${errors.employeeId ? 'border-red-500' : ''}`}
+                />
               </div>
-              {errors.employeeId && (
-                <p className="text-sm text-red-500">{errors.employeeId}</p>
+
+              {showEmployeeList && employeeSearch && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {filteredEmployees.length > 0 ? (
+                    filteredEmployees.map((emp) => (
+                      <button
+                        key={emp.id}
+                        onClick={() => handleEmployeeSelect(emp)}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                      >
+                        <div className="font-medium">{emp.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {emp.code} • {emp.department} • {emp.position}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      Không tìm thấy nhân viên
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {formData.employeeId && formData.employeeName && (
+                <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
+                  <div className="font-medium">{formData.employeeName}</div>
+                  <div className="text-muted-foreground">
+                    {formData.employeeCode} • {formData.department} • {formData.position}
+                  </div>
+                </div>
               )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="employee">
-                Người duyệt <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="employee"
-                    value={employeeSearch}
-                    onChange={(e) => {
-                      setEmployeeSearch(e.target.value);
-                      setShowEmployeeList(true);
-                    }}
-                    onFocus={() => setShowEmployeeList(true)}
-                    placeholder="Tìm kiếm người duyệt"
-                    className={`pl-10 ${errors.employeeId ? 'border-red-500' : ''}`}
-                  />
-                </div>
-
-                {showEmployeeList && employeeSearch && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredEmployees.length > 0 ? (
-                      filteredEmployees.map((emp) => (
-                        <button
-                          key={emp.id}
-                          onClick={() => handleEmployeeSelect(emp)}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                        >
-                          <div className="font-medium">{emp.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {emp.code} • {emp.department} • {emp.position}
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Không tìm thấy người duyệt
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {formData.employeeId && formData.employeeName && (
-                  <div className="mt-2 p-2 bg-gray-50 rounded border text-sm">
-                    <div className="font-medium">{formData.employeeName}</div>
-                    <div className="text-muted-foreground">
-                      {formData.employeeCode} • {formData.department} • {formData.position}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {errors.employeeId && (
-                <p className="text-sm text-red-500">{errors.employeeId}</p>
-              )}
-            </div>
-          )}
+            {errors.employeeId && (
+              <p className="text-sm text-red-500">{errors.employeeId}</p>
+            )}
+          </div>
 
           {/* Type */}
           <div className="space-y-2">
@@ -518,12 +437,28 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
                   placeholder="VD: Khoa học Máy tính"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="level">Trình độ</Label>
+                <Select
+                  value={formData.level}
+                  onValueChange={(value) => handleChange('level', value)}
+                >
+                  <SelectTrigger id="level">
+                    <SelectValue placeholder="Chọn trình độ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cử nhân">Cử nhân</SelectItem>
+                    <SelectItem value="Thạc sĩ">Thạc sĩ</SelectItem>
+                    <SelectItem value="Tiến sĩ">Tiến sĩ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
           {/* Certificate Number */}
           <div className="space-y-2">
-            <Label htmlFor="certificateNumber">Bằng cấp/chứng chỉ</Label>
+            <Label htmlFor="certificateNumber">Số bằng cấp/chứng chỉ</Label>
             <Input
               id="certificateNumber"
               value={formData.certificateNumber}
@@ -536,7 +471,7 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="issueDate">
-                Ngày hiệu lực <span className="text-red-500">*</span>
+                Ngày cấp <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="issueDate"
@@ -553,11 +488,9 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
             <div className="space-y-2">
               <Label htmlFor="expiryDate">
                 Ngày hết hạn
-                {(formData.type === 'CERTIFICATION' || formData.type === 'LICENSE') && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    (để trống nếu vô thời hạn)
-                  </span>
-                )}
+                <span className="text-xs text-muted-foreground ml-1">
+                  (để trống nếu vô thời hạn)
+                </span>
               </Label>
               <Input
                 id="expiryDate"
@@ -660,7 +593,7 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
                   Đang lưu...
                 </>
               ) : (
-                isEdit ? 'Cập nhật' : 'Thêm mới'
+                isEdit ? 'Xác nhận' : 'Xác nhận'
               )}
             </Button>
           </div>

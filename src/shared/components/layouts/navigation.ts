@@ -169,9 +169,14 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Đào tạo, bồi dưỡng', icon: Mailbox, path: '/admin/training' },
       ]
     },
-
-    { label: 'KPI', path: '/admin/kpi' },
-    { label: 'Lương & Phúc lợi', path: '/admin/salary' },
+    {
+      label: 'Lương & KPI',
+      path: '/admin/salary',
+      submenu: [
+        { label: 'Lương', icon: Mailbox, path: '/admin/salary' },
+        { label: 'KPI', icon: History, path: '/admin/kpi' },
+      ]
+    },
     { label: 'Bảo hộ lao động', path: '/admin/safety-dashboard' },
     { label: 'Báo cáo', path: '/admin/reports' },
     {

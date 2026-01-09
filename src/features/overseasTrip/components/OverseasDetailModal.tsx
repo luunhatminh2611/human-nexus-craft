@@ -1,4 +1,4 @@
-// components/OverseasViewModal.tsx
+// components/OverseasDetailModal.tsx
 
 import { useState, useEffect } from 'react';
 import {
@@ -6,103 +6,60 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button/Button2';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
 import { Badge } from '@/shared/components/ui/badge';
-import { Calendar, User, Building, Briefcase, MapPin, DollarSign, Clock, FileText, AlertCircle, Save } from 'lucide-react';
-import { mockOverseasTrips, type OverseasTrip, fundingSourceLabels, statusLabels } from '../../../mock/overseasTrip';
+import { 
+  Calendar, 
+  User, 
+  Building, 
+  MapPin, 
+  DollarSign, 
+  Clock, 
+  FileText, 
+  X,
+  Download
+} from 'lucide-react';
+import { 
+  mockOverseasTrips, 
+  mockOverseasTripHistory,
+  type OverseasTrip, 
+  type OverseasTripHistory,
+  fundingSourceLabels 
+} from '../../../mock/overseasTrip';
 
-interface OverseasViewModalProps {
+interface OverseasDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   tripId: string | null;
 }
 
-export default function OverseasViewModal({
+export default function OverseasDetailModal({
   isOpen,
   onClose,
   tripId,
-}: OverseasViewModalProps) {
+}: OverseasDetailModalProps) {
   const [trip, setTrip] = useState<OverseasTrip | null>(null);
+  const [history, setHistory] = useState<OverseasTripHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [actualDepartureDate, setActualDepartureDate] = useState('');
-  const [actualReturnDate, setActualReturnDate] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen && tripId) {
-      fetchTrip();
+      fetchTripDetail();
     }
   }, [isOpen, tripId]);
 
-  const fetchTrip = async () => {
+  const fetchTripDetail = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const foundTrip = mockOverseasTrips.find(t => t.id === tripId);
     setTrip(foundTrip || null);
     
-    if (foundTrip) {
-      setActualDepartureDate(foundTrip.actualDepartureDate || '');
-      setActualReturnDate(foundTrip.actualReturnDate || '');
-    }
+    const tripHistory = mockOverseasTripHistory.filter(h => h.tripId === tripId);
+    setHistory(tripHistory);
     
     setIsLoading(false);
-    setIsEditing(false);
-  };
-
-  const canUpdateActualDates = trip && (trip.status === 'APPROVED' || trip.status === 'IN_PROGRESS');
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    setErrors({});
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    if (trip) {
-      setActualDepartureDate(trip.actualDepartureDate || '');
-      setActualReturnDate(trip.actualReturnDate || '');
-    }
-    setErrors({});
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (actualDepartureDate && actualReturnDate) {
-      if (new Date(actualReturnDate) <= new Date(actualDepartureDate)) {
-        newErrors.actualReturnDate = 'Ngày về phải sau ngày đi';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) return;
-
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    console.log('Update actual dates:', {
-      tripId,
-      actualDepartureDate,
-      actualReturnDate,
-    });
-
-    setIsSubmitting(false);
-    setIsEditing(false);
-    
-    // Refresh trip data
-    await fetchTrip();
   };
 
   const formatCurrency = (amount: number) => {
@@ -112,25 +69,31 @@ export default function OverseasViewModal({
     }).format(amount);
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'PENDING': { label: statusLabels.PENDING, className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: statusLabels.APPROVED, className: 'bg-blue-100 text-blue-800' },
-      'IN_PROGRESS': { label: statusLabels.IN_PROGRESS, className: 'bg-purple-100 text-purple-800' },
-      'COMPLETED': { label: statusLabels.COMPLETED, className: 'bg-green-100 text-green-800' },
-      'REJECTED': { label: statusLabels.REJECTED, className: 'bg-red-100 text-red-800' },
+  const getFundingBadge = (fundingSource: string) => {
+    const fundingConfig = {
+      'COMPANY': { label: fundingSourceLabels.COMPANY, className: 'bg-blue-100 text-blue-800' },
+      'PERSONAL': { label: fundingSourceLabels.PERSONAL, className: 'bg-gray-100 text-gray-800' },
+      'PARTNER': { label: fundingSourceLabels.PARTNER, className: 'bg-purple-100 text-purple-800' },
     };
 
-    const config = statusConfig[status] || { label: status, className: '' };
+    const config = fundingConfig[fundingSource];
+    if (!config) return null;
+
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
-  const calculateDuration = () => {
-    if (!actualDepartureDate || !actualReturnDate) return null;
-    const start = new Date(actualDepartureDate);
-    const end = new Date(actualReturnDate);
-    const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return days;
+  const getActionLabel = (action: string) => {
+    const actionLabels = {
+      'CREATED': 'Tạo mới',
+      'UPDATED': 'Cập nhật',
+      'DELETED': 'Xóa',
+    };
+    return actionLabels[action] || action;
+  };
+
+  const handleDownload = (filename: string) => {
+    console.log('Download file:', filename);
+    alert(`Đang tải xuống: ${filename}`);
   };
 
   if (isLoading) {
@@ -138,7 +101,7 @@ export default function OverseasViewModal({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-3xl">
           <div className="flex items-center justify-center py-8">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
           </div>
         </DialogContent>
       </Dialog>
@@ -150,7 +113,7 @@ export default function OverseasViewModal({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-3xl">
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Không tìm thấy thông tin chuyến đi</p>
+            <p className="text-muted-foreground">Không tìm thấy thông tin lịch sử xuất cảnh</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -162,36 +125,35 @@ export default function OverseasViewModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>Chi tiết chuyến đi</span>
-            {getStatusBadge(trip.status)}
+            <span>Chi tiết lịch sử xuất cảnh</span>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Status Info */}
-          {trip.status === 'PENDING' && (
-            <div className="flex items-start gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-yellow-900">Đang chờ phê duyệt</p>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Chuyến đi của bạn đang được xem xét. Bạn sẽ nhận được thông báo khi có kết quả.
-                </p>
+          {/* Employee Info */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-lg">Thông tin nhân viên</h3>
+            <div className="grid gap-4">
+              <div className="flex items-start gap-2">
+                <User className="h-4 w-4 text-muted-foreground mt-1" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Nhân viên</p>
+                  <p className="font-medium">{trip.employeeName}</p>
+                  <p className="text-sm text-muted-foreground">{trip.employeeCode}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Building className="h-4 w-4 text-muted-foreground mt-1" />
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Phòng ban - Chức vụ</p>
+                  <p className="font-medium">{trip.departmentName} - {trip.positionName}</p>
+                </div>
               </div>
             </div>
-          )}
-
-          {trip.status === 'REJECTED' && trip.rejectionReason && (
-            <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-              <div>
-                <p className="font-medium text-red-900">Chuyến đi bị từ chối</p>
-                <p className="text-sm text-red-700 mt-1">
-                  <strong>Lý do:</strong> {trip.rejectionReason}
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Trip Info */}
           <div className="space-y-3">
@@ -215,15 +177,15 @@ export default function OverseasViewModal({
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Chi phí ước tính</p>
-                    <p className="font-medium">{formatCurrency(trip.estimatedCost)}</p>
+                    <p className="text-sm text-muted-foreground">Nguồn tài trợ</p>
+                    {getFundingBadge(trip.fundingSource)}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Nguồn tài trợ</p>
-                    <p className="font-medium">{fundingSourceLabels[trip.fundingSource]}</p>
+                    <p className="text-sm text-muted-foreground">Thời gian</p>
+                    <p className="font-medium">{trip.durationDays} ngày</p>
                   </div>
                 </div>
               </div>
@@ -239,153 +201,149 @@ export default function OverseasViewModal({
             </div>
           </div>
 
-          {/* Planned Dates */}
+          {/* Dates */}
           <div className="space-y-3">
-            <h3 className="font-semibold">Thời gian dự kiến</h3>
+            <h3 className="font-semibold">Thời gian xuất cảnh</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Ngày đi</p>
-                  <p className="font-medium">{new Date(trip.plannedDepartureDate).toLocaleDateString('vi-VN')}</p>
+                  <p className="text-sm text-muted-foreground">Ngày xuất cảnh</p>
+                  <p className="font-medium">{new Date(trip.departureDate).toLocaleDateString('vi-VN')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Ngày về</p>
-                  <p className="font-medium">{new Date(trip.plannedReturnDate).toLocaleDateString('vi-VN')}</p>
+                  <p className="font-medium">{new Date(trip.returnDate).toLocaleDateString('vi-VN')}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Actual Dates */}
-          {canUpdateActualDates && (
-            <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Thời gian thực tế</h3>
-                {!isEditing && (
-                  <Button size="sm" variant="outline" onClick={handleEdit}>
-                    Cập nhật
-                  </Button>
-                )}
+          {/* Cost */}
+          <div className="space-y-3 p-4 bg-blue-50 rounded-lg">
+            <h3 className="font-semibold">Thông tin chi phí</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Chi phí dự toán</p>
+                <p className="font-medium text-lg">{formatCurrency(trip.estimatedCost)}</p>
               </div>
-              
-              {isEditing ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Ngày xuất cảnh thực tế</Label>
-                    <Input
-                      type="date"
-                      value={actualDepartureDate}
-                      onChange={(e) => setActualDepartureDate(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Ngày về thực tế</Label>
-                    <Input
-                      type="date"
-                      value={actualReturnDate}
-                      onChange={(e) => setActualReturnDate(e.target.value)}
-                      className={errors.actualReturnDate ? 'border-red-500' : ''}
-                    />
-                    {errors.actualReturnDate && (
-                      <p className="text-sm text-red-500 mt-1">{errors.actualReturnDate}</p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Ngày xuất cảnh</p>
-                    <p className="font-medium">
-                      {trip.actualDepartureDate 
-                        ? new Date(trip.actualDepartureDate).toLocaleDateString('vi-VN')
-                        : 'Chưa cập nhật'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Ngày về</p>
-                    <p className="font-medium">
-                      {trip.actualReturnDate 
-                        ? new Date(trip.actualReturnDate).toLocaleDateString('vi-VN')
-                        : 'Chưa cập nhật'}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {actualDepartureDate && actualReturnDate && (
-                <div className="mt-2 p-3 bg-white rounded border">
-                  <p className="text-sm text-muted-foreground">Thời gian xuất cảnh</p>
-                  <p className="font-medium text-lg">{calculateDuration()} ngày</p>
+              {trip.actualCost && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Chi phí thực tế</p>
+                  <p className="font-medium text-lg">{formatCurrency(trip.actualCost)}</p>
                 </div>
               )}
             </div>
-          )}
+            {trip.actualCost && trip.actualCost !== trip.estimatedCost && (
+              <div className="pt-2 border-t border-blue-200">
+                <p className="text-sm text-muted-foreground">Chênh lệch</p>
+                <p className={`font-medium ${trip.actualCost > trip.estimatedCost ? 'text-red-600' : 'text-green-600'}`}>
+                  {formatCurrency(Math.abs(trip.actualCost - trip.estimatedCost))}
+                  {trip.actualCost > trip.estimatedCost ? ' (vượt)' : ' (tiết kiệm)'}
+                </p>
+              </div>
+            )}
+          </div>
 
-          {trip.status === 'COMPLETED' && trip.durationDays && (
-            <div className="p-4 bg-green-50 rounded-lg">
-              <h3 className="font-semibold mb-3">Tổng kết chuyến đi</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Thời gian thực tế</p>
-                  <p className="font-medium">{trip.durationDays} ngày</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Ngày xuất cảnh</p>
-                  <p className="font-medium">
-                    {trip.actualDepartureDate && new Date(trip.actualDepartureDate).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Ngày về</p>
-                  <p className="font-medium">
-                    {trip.actualReturnDate && new Date(trip.actualReturnDate).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
+          {/* Attachments */}
+          {trip.attachments && trip.attachments.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-semibold">Tài liệu đính kèm</h3>
+              <div className="space-y-2">
+                {trip.attachments.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 border rounded">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-6 w-6 text-blue-600" />
+                      <div>
+                        <p className="font-medium text-sm">{file}</p>
+                        <p className="text-xs text-muted-foreground">Tài liệu đính kèm</p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDownload(file)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Tải xuống
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Decision Info */}
-          {trip.decisionNumber && (
-            <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-semibold">Thông tin quyết định</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Số quyết định</p>
-                  <p className="font-medium">{trip.decisionNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Ngày quyết định</p>
-                  <p className="font-medium">
-                    {trip.decisionDate && new Date(trip.decisionDate).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
+          {/* Creation Info */}
+          <div className="border rounded-lg p-4 bg-muted/50">
+            <h4 className="font-semibold mb-3">Thông tin lưu trữ</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Người tạo:</span>
+                <span className="font-medium">{trip.createdByName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Ngày tạo:</span>
+                <span className="font-medium">
+                  {new Date(trip.createdAt).toLocaleString('vi-VN')}
+                </span>
+              </div>
+              {trip.updatedAt && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Người cập nhật:</span>
+                    <span className="font-medium">{trip.updatedByName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Ngày cập nhật:</span>
+                    <span className="font-medium">
+                      {new Date(trip.updatedAt).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* History */}
+          {history.length > 0 && (
+            <div className="border rounded-lg p-4">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Lịch sử thay đổi
+              </h4>
+              <div className="space-y-3">
+                {history.map((item) => (
+                  <div key={item.id} className="flex gap-3 pb-3 border-b last:border-b-0 last:pb-0">
+                    <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-600 mt-2" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium">{getActionLabel(item.action)}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(item.performedDate).toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Bởi: {item.performedByName}
+                      </p>
+                      {item.notes && (
+                        <p className="text-sm mt-1">{item.notes}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </div>
 
-        <DialogFooter>
-          {isEditing ? (
-            <>
-              <Button variant="outline" onClick={handleCancel}>
-                Hủy
-              </Button>
-              <Button onClick={handleSave} disabled={isSubmitting}>
-                <Save className="h-4 w-4 mr-2" />
-                {isSubmitting ? 'Đang lưu...' : 'Xác nhận'}
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" onClick={onClose}>
-              Đóng
-            </Button>
-          )}
-        </DialogFooter>
+        <div className="flex justify-end pt-4">
+          <Button variant="outline" onClick={onClose}>
+            Đóng
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
