@@ -375,7 +375,7 @@ export default function SalaryAdjustmentDetailModal({
             {/* Attachments */}
             {adjustment.attachments.length > 0 && (
               <Card className="p-4">
-                <Label className="text-sm text-gray-600 mb-2 block flex items-center gap-2">
+                <Label className="text-sm text-gray-600 mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Tài liệu đính kèm
                 </Label>

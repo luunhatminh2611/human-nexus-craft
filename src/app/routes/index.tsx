@@ -35,6 +35,7 @@ import TerminationDecisionPage from '@/features/contracDecision/pages/Terminatio
 import FamilyManagementPage from '@/features/fanilyVisit/pages/FamilyManagementPage';
 import MedicalHRPage from '@/features/medical/pages/admin/AdminMedicalRecord';
 import RecruitmentPage from '@/features/recruitment/pages/RecruitmentPage';
+import PermissionManagementUI from '@/features/permission/pages/Permission';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -170,6 +171,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.FAMILY_MANAGEMENT.slice(1), element: <FamilyManagementPage /> },
       { path: ROUTES.MEDICAL_PROFILE.slice(1), element: <MedicalHRPage /> },
       { path: ROUTES.RECRUITMENT_MANAGEMENT.slice(1), element: <RecruitmentPage /> },
+      { path: ROUTES.PERMISSION_MANAGEMEN.slice(1), element: <PermissionManagementUI /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]

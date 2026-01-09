@@ -70,6 +70,7 @@ export const ROUTES = {
   FAMILY_MANAGEMENT: '/admin/family',
   MEDICAL_PROFILE:'/admin/employees/health',
   RECRUITMENT_MANAGEMENT: '/admin/recruitment',
+  PERMISSION_MANAGEMEN: '/admin/permission',
   ROOT: '/',
   NOT_FOUND: '*',
 };
