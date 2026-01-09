@@ -1,5 +1,3 @@
-// pages/hr/documents/EmployeeDocumentsPage.tsx
-
 import { useState, useEffect } from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
@@ -10,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plus, FileText, AlertCircle, Download, Trash2 } from 'lucide-react';
+import { Search, Eye, Plus, FileText, Download, Trash2, AlertCircle } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -23,27 +21,27 @@ import {
 } from '@/shared/components/tables/table';
 import { 
   mockEmployeeDocuments, 
-  type EmployeeDocument, 
-  calculateDocumentStatistics,
+  type EmployeeDocument,
   documentTypeLabels 
 } from '../../../mock/employeeFile';
-import DocumentDetailModal from '../components/DocumentDetailModal';
-import UploadDocumentModal from '../components/UploadDocumentModal';
+import DocumentDetailModal from '../../../features/employeeFile/components/DocumentDetailModal';
+import UploadDocumentModal from '../../../features/employeeFile/components/UploadDocumentModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 
-export default function EmployeeDocumentsPage() {
+interface EmployeeDocumentsTabProps {
+  userData: any;
+  employeeId: number | string;
+}
+
+export default function EmployeeDocumentsTab({ userData, employeeId }: EmployeeDocumentsTabProps) {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [employeeFilter, setEmployeeFilter] = useState<string>('ALL');
   const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -53,37 +51,34 @@ export default function EmployeeDocumentsPage() {
 
   useEffect(() => {
     fetchDocuments();
-  }, [page, pageSize, searchTerm, typeFilter, employeeFilter, refreshKey]);
+  }, [employeeId, searchTerm, typeFilter, refreshKey]);
 
   const fetchDocuments = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    let filtered = [...mockEmployeeDocuments];
+    // Filter documents for this specific employee
+    let filtered = mockEmployeeDocuments.filter(d => 
+      d.employeeId === employeeId.toString()
+    );
 
     if (typeFilter !== 'ALL') {
       filtered = filtered.filter(d => d.documentType === typeFilter);
     }
 
-    if (employeeFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.employeeId === employeeFilter);
-    }
-
     if (searchTerm) {
+      const keyword = searchTerm.toLowerCase();
       filtered = filtered.filter(d =>
-        d.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (d.decisionNumber && d.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+        d.documentName.toLowerCase().includes(keyword) ||
+        d.fileName.toLowerCase().includes(keyword) ||
+        (d.decisionNumber && d.decisionNumber.toLowerCase().includes(keyword))
       );
     }
 
-    setTotalItems(filtered.length);
+    // Sort by upload date (newest first)
+    filtered.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setDocuments(filtered.slice(start, end));
-
+    setDocuments(filtered);
     setIsLoading(false);
   };
 
@@ -112,6 +107,7 @@ export default function EmployeeDocumentsPage() {
   const handleDownload = (doc: EmployeeDocument) => {
     console.log('Downloading document:', doc.id);
     // Implement download logic
+    alert(`Đang tải xuống: ${doc.fileName}`);
   };
 
   const handleDelete = async (doc: EmployeeDocument) => {
@@ -119,6 +115,7 @@ export default function EmployeeDocumentsPage() {
       return;
     }
     console.log('Deleting document:', doc.id);
+    alert('Đã xóa tài liệu');
     setRefreshKey(prev => prev + 1);
   };
 
@@ -147,38 +144,39 @@ export default function EmployeeDocumentsPage() {
     return <FileText className="h-4 w-4" />;
   };
 
-  const stats = calculateDocumentStatistics(mockEmployeeDocuments);
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = page * pageSize + 1;
-  const endIndex = Math.min((page + 1) * pageSize, totalItems);
+  // Check for expiring documents
+  const expiringDocs = documents.filter(d => {
+    if (!d.expiryDate) return false;
+    const daysUntilExpiry = Math.ceil(
+      (new Date(d.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
+  });
 
-  const employees = Array.from(new Set(mockEmployeeDocuments.map(d => ({
-    id: d.employeeId,
-    name: d.employeeName
-  }))));
+  // Calculate statistics
+  const stats = {
+    total: documents.length,
+    byType: {
+      recruitment: documents.filter(d => d.documentType === 'RECRUITMENT').length,
+      contract: documents.filter(d => d.documentType === 'CONTRACT').length,
+      insurance: documents.filter(d => d.documentType === 'INSURANCE').length,
+      certificate: documents.filter(d => d.documentType === 'CERTIFICATE').length,
+      decision: documents.filter(d => d.documentType === 'DECISION').length,
+      training: documents.filter(d => d.documentType === 'TRAINING').length,
+      other: documents.filter(d => d.documentType === 'OTHER').length,
+    },
+    important: documents.filter(d => d.isImportant).length,
+    confidential: documents.filter(d => d.isConfidential).length,
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Quản lý Hồ sơ Nhân viên</h1>
-          <p className="text-muted-foreground">
-            Quản lý tài liệu và hồ sơ của tất cả nhân viên
-          </p>
-        </div>
-        {isAdmin && (
-          <Button onClick={handleOpenUploadModal}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tải lên tài liệu
-          </Button>
-        )}
-      </div>
-
-      {stats.expiringSoon > 0 && (
+    <div className="space-y-4">
+      {/* Alert for expiring documents */}
+      {expiringDocs.length > 0 && (
         <Alert className="border-orange-200 bg-orange-50">
           <AlertCircle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
-            Có {stats.expiringSoon} tài liệu sắp hết hạn trong vòng 30 ngày. Vui lòng kiểm tra và cập nhật.
+            Có {expiringDocs.length} tài liệu sắp hết hạn trong vòng 30 ngày. Vui lòng kiểm tra và cập nhật.
           </AlertDescription>
         </Alert>
       )}
@@ -189,40 +187,35 @@ export default function EmployeeDocumentsPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, tên tài liệu"
+              placeholder="Tìm kiếm theo tên tài liệu, tên file, số quyết định"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
 
-          <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Nhân viên" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả nhân viên</SelectItem>
-              {employees.map(emp => (
-                <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          {/* <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue placeholder="Loại tài liệu" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tất cả loại</SelectItem>
-              <SelectItem value="RECRUITMENT">Hồ sơ tuyển dụng</SelectItem>
-              <SelectItem value="CONTRACT">Hợp đồng</SelectItem>
-              <SelectItem value="INSURANCE">Bảo hiểm & Thuế</SelectItem>
-              <SelectItem value="CERTIFICATE">Bằng cấp</SelectItem>
-              <SelectItem value="DECISION">Quyết định</SelectItem>
-              <SelectItem value="TRAINING">Đào tạo</SelectItem>
-              <SelectItem value="OTHER">Khác</SelectItem>
+              <SelectItem value="RECRUITMENT">Hồ sơ tuyển dụng ({stats.byType.recruitment})</SelectItem>
+              <SelectItem value="CONTRACT">Hợp đồng ({stats.byType.contract})</SelectItem>
+              <SelectItem value="INSURANCE">Bảo hiểm & Thuế ({stats.byType.insurance})</SelectItem>
+              <SelectItem value="CERTIFICATE">Bằng cấp ({stats.byType.certificate})</SelectItem>
+              <SelectItem value="DECISION">Quyết định ({stats.byType.decision})</SelectItem>
+              <SelectItem value="TRAINING">Đào tạo ({stats.byType.training})</SelectItem>
+              <SelectItem value="OTHER">Khác ({stats.byType.other})</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
+
+          {isAdmin && (
+            <Button onClick={handleOpenUploadModal}>
+              <Plus className="h-4 w-4 mr-1" />
+              Tải lên tài liệu
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -233,7 +226,6 @@ export default function EmployeeDocumentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tên tài liệu</TableHead>
-                <TableHead>Nhân viên</TableHead>
                 <TableHead>Loại</TableHead>
                 <TableHead>File</TableHead>
                 <TableHead>Ngày upload</TableHead>
@@ -245,7 +237,7 @@ export default function EmployeeDocumentsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -254,16 +246,17 @@ export default function EmployeeDocumentsPage() {
                 </TableRow>
               ) : documents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-8 w-8" />
-                      <p>Không tìm thấy tài liệu nào</p>
+                      <p>Nhân viên này chưa có tài liệu nào</p>
+                     
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 documents.map((doc) => (
-                  <TableRow key={doc.id}>
+                  <TableRow key={doc.id} className="hover:bg-muted/50">
                     <TableCell>
                       <div className="flex items-start gap-2">
                         {getFileIcon(doc.fileType)}
@@ -277,15 +270,23 @@ export default function EmployeeDocumentsPage() {
                           {doc.expiryDate && (
                             <p className="text-xs text-muted-foreground">
                               HSD: {new Date(doc.expiryDate).toLocaleDateString('vi-VN')}
+                              {(() => {
+                                const daysUntilExpiry = Math.ceil(
+                                  (new Date(doc.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                                );
+                                if (daysUntilExpiry > 0 && daysUntilExpiry <= 30) {
+                                  return <span className="text-orange-600 font-medium"> (còn {daysUntilExpiry} ngày)</span>;
+                                }
+                                return null;
+                              })()}
+                            </p>
+                          )}
+                          {doc.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                              {doc.description}
                             </p>
                           )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{doc.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{doc.departmentName}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -293,7 +294,7 @@ export default function EmployeeDocumentsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <p className="font-mono text-xs truncate max-w-[150px]">
+                        <p className="font-mono text-xs truncate max-w-[150px]" title={doc.fileName}>
                           {doc.fileName}
                         </p>
                         <p className="text-muted-foreground">
@@ -312,12 +313,12 @@ export default function EmployeeDocumentsPage() {
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {doc.isImportant && (
-                          <Badge variant="outline" className="text-red-600 text-xs">
+                          <Badge variant="outline" className="text-red-600 text-xs w-fit">
                             Quan trọng
                           </Badge>
                         )}
                         {doc.isConfidential && (
-                          <Badge variant="outline" className="text-orange-600 text-xs">
+                          <Badge variant="outline" className="text-orange-600 text-xs w-fit">
                             Bảo mật
                           </Badge>
                         )}
@@ -360,77 +361,9 @@ export default function EmployeeDocumentsPage() {
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination */}
-        {!isLoading && documents.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <div className="text-sm text-muted-foreground">
-              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                >
-                  Đầu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p - 1)}
-                  disabled={page === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="px-3 text-sm">
-                  Trang {page + 1} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages - 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Cuối
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
       </Card>
 
+      {/* Modals */}
       <DocumentDetailModal
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}

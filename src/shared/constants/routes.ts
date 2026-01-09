@@ -65,6 +65,9 @@ export const ROUTES = {
   SOCIAL_INSURANCE: '/social-insurance',
   SALARY_ADJUST: '/salary-adjust',
   VISIT_MANAGEMENT: '/visit-health',
+  EXTEND_DECISION_MANAGEMENT: '/admin/contract-resign',
+  TERMINATE_DECISION_MANAGEMENT: '/contract-unsign',
+  FAMILY_MANAGEMENT: '/admin/family',
   ROOT: '/',
   NOT_FOUND: '*',
 };

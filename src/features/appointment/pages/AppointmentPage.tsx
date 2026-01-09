@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, UserCheck, AlertCircle } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, UserCheck } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -25,20 +25,17 @@ import {
   mockAppointments, 
   type Appointment, 
   calculateAppointmentStatistics,
-  statusLabels,
   appointmentTypeLabels
 } from '../../../mock/appointment';
 import AppointmentDetailModal from '../components/AppointmentDetailModal';
 import AppointmentFormModal from '../components/AppointmentFormModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
-import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 
 export default function AppointmentPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +52,7 @@ export default function AppointmentPage() {
 
   useEffect(() => {
     fetchAppointments();
-  }, [page, pageSize, searchTerm, statusFilter, typeFilter, refreshKey, isAdmin]);
+  }, [page, pageSize, searchTerm, typeFilter, refreshKey, isAdmin]);
 
   const fetchAppointments = async () => {
     setIsLoading(true);
@@ -65,11 +62,7 @@ export default function AppointmentPage() {
 
     // Nếu không phải admin, chỉ xem quyết định của chính mình
     if (!isAdmin && user?.id) {
-      filtered = filtered.filter(a => a.employeeId === user.id && a.status !== 'DRAFT');
-    }
-
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(a => a.status === statusFilter);
+      filtered = filtered.filter(a => a.employeeId === user.id);
     }
 
     if (typeFilter !== 'ALL') {
@@ -79,11 +72,14 @@ export default function AppointmentPage() {
     if (searchTerm) {
       filtered = filtered.filter(a =>
         a.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.newPosition.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        a.newDepartment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    // Sắp xếp theo ngày quyết định mới nhất
+    filtered.sort((a, b) => new Date(b.decisionDate).getTime() - new Date(a.decisionDate).getTime());
 
     setTotalItems(filtered.length);
 
@@ -124,27 +120,6 @@ export default function AppointmentPage() {
     handleCloseDetailModal();
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'DRAFT': { label: statusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
-      'PUBLISHED': { label: statusLabels.PUBLISHED, className: 'bg-blue-100 text-blue-800' },
-      'PENDING_EFFECTIVE': { label: statusLabels.PENDING_EFFECTIVE, className: 'bg-yellow-100 text-yellow-800' },
-      'IN_EFFECT': { label: statusLabels.IN_EFFECT, className: 'bg-green-100 text-green-800' },
-      'EXPIRING_SOON': { label: statusLabels.EXPIRING_SOON, className: 'bg-orange-100 text-orange-800' },
-      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-red-100 text-red-800' },
-      'REVOKED': { label: statusLabels.REVOKED, className: 'bg-red-100 text-red-800' },
-      'TERMINATED': { label: statusLabels.TERMINATED, className: 'bg-orange-100 text-orange-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
-  };
-
   const getTypeBadge = (type: string) => {
     const typeConfig = {
       'NEW': { label: appointmentTypeLabels.NEW, className: 'bg-blue-100 text-blue-800' },
@@ -154,6 +129,14 @@ export default function AppointmentPage() {
 
     const config = typeConfig[type];
     return config ? <Badge className={config.className}>{config.label}</Badge> : null;
+  };
+
+  const isExpiringSoon = (expiryDate?: string) => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const threeMonthsLater = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
+    return expiry > today && expiry <= threeMonthsLater;
   };
 
   const stats = calculateAppointmentStatistics(mockAppointments);
@@ -166,11 +149,11 @@ export default function AppointmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">
-            {isAdmin ? 'Quản lý bổ nhiệm' : 'Quyết định bổ nhiệm của tôi'}
+            {isAdmin ? 'Quản lý quyết định bổ nhiệm' : 'Quyết định bổ nhiệm của tôi'}
           </h1>
           <p className="text-muted-foreground">
             {isAdmin 
-              ? 'Tạo và quản lý quyết định bổ nhiệm nhân sự' 
+              ? 'Tạo và quản lý các quyết định bổ nhiệm nhân sự' 
               : 'Xem các quyết định bổ nhiệm liên quan đến bạn'}
           </p>
         </div>
@@ -181,15 +164,6 @@ export default function AppointmentPage() {
           </Button>
         )}
       </div>
-
-      {!isAdmin && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Bạn chỉ có thể xem các quyết định bổ nhiệm đã được ban hành liên quan đến bạn.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Filters */}
       <Card className="p-4">
@@ -215,23 +189,6 @@ export default function AppointmentPage() {
               <SelectItem value="CONCURRENT">Kiêm nhiệm</SelectItem>
             </SelectContent>
           </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              {isAdmin && <SelectItem value="DRAFT">Bản nháp</SelectItem>}
-              <SelectItem value="PUBLISHED">Đã ban hành</SelectItem>
-              <SelectItem value="PENDING_EFFECTIVE">Chờ có hiệu lực</SelectItem>
-              <SelectItem value="IN_EFFECT">Đang có hiệu lực</SelectItem>
-              <SelectItem value="EXPIRING_SOON">Sắp hết hạn</SelectItem>
-              <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
-              <SelectItem value="REVOKED">Đã hủy bỏ</SelectItem>
-              <SelectItem value="TERMINATED">Đã miễn nhiệm</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </Card>
 
@@ -242,20 +199,19 @@ export default function AppointmentPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nhân viên</TableHead>
-                <TableHead>Chức vụ mới</TableHead>
+                <TableHead>Chức vụ</TableHead>
                 <TableHead>Loại</TableHead>
                 <TableHead>Số QĐ</TableHead>
-                <TableHead>Ngày ban hành</TableHead>
-                <TableHead>Ngày có hiệu lực</TableHead>
+                <TableHead>Ngày QĐ</TableHead>
+                <TableHead>Ngày hiệu lực</TableHead>
                 <TableHead>Thời hạn</TableHead>
-                <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -264,7 +220,7 @@ export default function AppointmentPage() {
                 </TableRow>
               ) : appointments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <UserCheck className="h-8 w-8" />
                       <p>Không tìm thấy quyết định bổ nhiệm nào</p>
@@ -277,23 +233,17 @@ export default function AppointmentPage() {
                     <TableCell>
                       <div>
                         <p className="font-medium">{appointment.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{appointment.currentDepartment}</p>
-                        <p className="text-xs text-muted-foreground">{appointment.currentPosition}</p>
+                        <p className="text-sm text-muted-foreground">{appointment.department}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{appointment.newPosition}</p>
-                        <p className="text-sm text-muted-foreground">{appointment.newDepartment}</p>
-                      </div>
+                      <p className="font-medium">{appointment.position}</p>
                     </TableCell>
                     <TableCell>
                       {getTypeBadge(appointment.appointmentType)}
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium">{appointment.decisionNumber}</div>
-                      </div>
+                      <div className="text-sm font-medium">{appointment.decisionNumber}</div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
@@ -309,7 +259,14 @@ export default function AppointmentPage() {
                       <div className="text-sm">
                         {appointment.termMonths ? (
                           <>
-                            <div>{appointment.termMonths} tháng</div>
+                            <div className="flex items-center gap-2">
+                              <span>{appointment.termMonths} tháng</span>
+                              {isExpiringSoon(appointment.expiryDate) && (
+                                <Badge className="bg-orange-100 text-orange-800 text-xs">
+                                  Sắp hết hạn
+                                </Badge>
+                              )}
+                            </div>
                             {appointment.expiryDate && (
                               <div className="text-muted-foreground text-xs">
                                 đến {new Date(appointment.expiryDate).toLocaleDateString('vi-VN')}
@@ -322,11 +279,8 @@ export default function AppointmentPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(appointment.status)}
-                    </TableCell>
-                    <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {isAdmin && appointment.status === 'DRAFT' && (
+                        {isAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"

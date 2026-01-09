@@ -1,7 +1,7 @@
 // components/SalaryAdjustmentFormModal.tsx
 
 import { useState, useEffect } from 'react';
-import { X, Upload, Calculator } from 'lucide-react';
+import { X, Upload, Calculator, FileText, Trash2 } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
@@ -13,10 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { 
+import {
   type SalaryAdjustment,
   type AdjustmentType,
-  type SalaryComponent,
   adjustmentTypeLabels,
   calculateIncrease
 } from '../../../mock/salaryAdjustment';
@@ -26,7 +25,6 @@ interface SalaryAdjustmentFormModalProps {
   onClose: () => void;
   adjustment?: SalaryAdjustment | null;
   onSuccess: () => void;
-  isAdmin: boolean;
 }
 
 export default function SalaryAdjustmentFormModal({
@@ -34,21 +32,20 @@ export default function SalaryAdjustmentFormModal({
   onClose,
   adjustment,
   onSuccess,
-  isAdmin,
 }: SalaryAdjustmentFormModalProps) {
   const [formData, setFormData] = useState({
     employeeId: '',
     employeeName: '',
     adjustmentType: 'ANNUAL_INCREASE' as AdjustmentType,
     effectiveDate: '',
+    expiryDate: '',
     reason: '',
     performanceNote: '',
     newPosition: '',
-    
-    // Decision info (for Admin)
+
     decisionNumber: '',
     decisionDate: '',
-    
+
     // Current salary
     currentBaseSalary: '',
     currentPositionAllowance: '',
@@ -57,7 +54,7 @@ export default function SalaryAdjustmentFormModal({
     currentLunchAllowance: '',
     currentPhoneAllowance: '',
     currentOtherAllowance: '',
-    
+
     // New salary
     newBaseSalary: '',
     newPositionAllowance: '',
@@ -66,6 +63,8 @@ export default function SalaryAdjustmentFormModal({
     newLunchAllowance: '',
     newPhoneAllowance: '',
     newOtherAllowance: '',
+
+    notes: '',
   });
 
   const [files, setFiles] = useState<File[]>([]);
@@ -74,11 +73,11 @@ export default function SalaryAdjustmentFormModal({
 
   // Mock employees
   const mockEmployees = [
-    { id: 'EMP-001', name: 'Nguyễn Văn An', department: 'Phòng IT', position: 'Senior Developer', currentSalary: 26000000 },
-    { id: 'EMP-002', name: 'Lê Thị Cẩm', department: 'Phòng Kinh doanh', position: 'Sales Executive', currentSalary: 18000000 },
-    { id: 'EMP-003', name: 'Hoàng Minh F', department: 'Phòng Kế toán', position: 'Accountant', currentSalary: 19000000 },
-    { id: 'EMP-004', name: 'Đỗ Văn H', department: 'Phòng Hành chính', position: 'Admin Staff', currentSalary: 12000000 },
-    { id: 'EMP-005', name: 'Bùi Thị K', department: 'Phòng Marketing', position: 'Marketing Specialist', currentSalary: 20000000 },
+    { id: 'EMP-001', name: 'Nguyễn Văn An', department: 'Phòng IT', position: 'Senior Developer' },
+    { id: 'EMP-002', name: 'Lê Thị Cẩm', department: 'Phòng Kinh doanh', position: 'Sales Executive' },
+    { id: 'EMP-003', name: 'Hoàng Minh F', department: 'Phòng Kế toán', position: 'Accountant' },
+    { id: 'EMP-004', name: 'Đỗ Văn H', department: 'Phòng Hành chính', position: 'Admin Staff' },
+    { id: 'EMP-005', name: 'Bùi Thị K', department: 'Phòng Marketing', position: 'Marketing Specialist' },
   ];
 
   useEffect(() => {
@@ -89,13 +88,14 @@ export default function SalaryAdjustmentFormModal({
           employeeName: adjustment.employeeName,
           adjustmentType: adjustment.adjustmentType,
           effectiveDate: adjustment.effectiveDate,
+          expiryDate: adjustment.expiryDate || '',
           reason: adjustment.reason,
           performanceNote: adjustment.performanceNote || '',
           newPosition: adjustment.newPosition || '',
-          
+
           decisionNumber: adjustment.decisionNumber || '',
           decisionDate: adjustment.decisionDate || '',
-          
+
           currentBaseSalary: adjustment.currentSalary.baseSalary.toString(),
           currentPositionAllowance: (adjustment.currentSalary.allowances?.position || 0).toString(),
           currentResponsibilityAllowance: (adjustment.currentSalary.allowances?.responsibility || 0).toString(),
@@ -103,7 +103,7 @@ export default function SalaryAdjustmentFormModal({
           currentLunchAllowance: (adjustment.currentSalary.allowances?.lunch || 0).toString(),
           currentPhoneAllowance: (adjustment.currentSalary.allowances?.phone || 0).toString(),
           currentOtherAllowance: (adjustment.currentSalary.allowances?.other || 0).toString(),
-          
+
           newBaseSalary: adjustment.newSalary.baseSalary.toString(),
           newPositionAllowance: (adjustment.newSalary.allowances?.position || 0).toString(),
           newResponsibilityAllowance: (adjustment.newSalary.allowances?.responsibility || 0).toString(),
@@ -111,23 +111,26 @@ export default function SalaryAdjustmentFormModal({
           newLunchAllowance: (adjustment.newSalary.allowances?.lunch || 0).toString(),
           newPhoneAllowance: (adjustment.newSalary.allowances?.phone || 0).toString(),
           newOtherAllowance: (adjustment.newSalary.allowances?.other || 0).toString(),
+
+          notes: adjustment.notes || '',
         });
       } else {
         const today = new Date();
         const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-        
+
         setFormData({
           employeeId: '',
           employeeName: '',
           adjustmentType: 'ANNUAL_INCREASE',
           effectiveDate: nextMonth.toISOString().split('T')[0],
+          expiryDate: '',
           reason: '',
           performanceNote: '',
           newPosition: '',
-          
+
           decisionNumber: '',
           decisionDate: new Date().toISOString().split('T')[0],
-          
+
           currentBaseSalary: '',
           currentPositionAllowance: '0',
           currentResponsibilityAllowance: '0',
@@ -135,7 +138,7 @@ export default function SalaryAdjustmentFormModal({
           currentLunchAllowance: '0',
           currentPhoneAllowance: '0',
           currentOtherAllowance: '0',
-          
+
           newBaseSalary: '',
           newPositionAllowance: '0',
           newResponsibilityAllowance: '0',
@@ -143,6 +146,8 @@ export default function SalaryAdjustmentFormModal({
           newLunchAllowance: '0',
           newPhoneAllowance: '0',
           newOtherAllowance: '0',
+
+          notes: '',
         });
       }
       setFiles([]);
@@ -153,7 +158,7 @@ export default function SalaryAdjustmentFormModal({
   const handleEmployeeChange = (employeeId: string) => {
     const employee = mockEmployees.find(e => e.id === employeeId);
     if (employee) {
-      // Simulate loading current salary (in real app, fetch from API)
+      // Simulate loading current salary
       setFormData(prev => ({
         ...prev,
         employeeId: employee.id,
@@ -168,35 +173,39 @@ export default function SalaryAdjustmentFormModal({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setFiles(Array.from(e.target.files));
+      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
     }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const calculateCurrentTotal = () => {
     return Number(formData.currentBaseSalary || 0) +
-           Number(formData.currentPositionAllowance || 0) +
-           Number(formData.currentResponsibilityAllowance || 0) +
-           Number(formData.currentTransportationAllowance || 0) +
-           Number(formData.currentLunchAllowance || 0) +
-           Number(formData.currentPhoneAllowance || 0) +
-           Number(formData.currentOtherAllowance || 0);
+      Number(formData.currentPositionAllowance || 0) +
+      Number(formData.currentResponsibilityAllowance || 0) +
+      Number(formData.currentTransportationAllowance || 0) +
+      Number(formData.currentLunchAllowance || 0) +
+      Number(formData.currentPhoneAllowance || 0) +
+      Number(formData.currentOtherAllowance || 0);
   };
 
   const calculateNewTotal = () => {
     return Number(formData.newBaseSalary || 0) +
-           Number(formData.newPositionAllowance || 0) +
-           Number(formData.newResponsibilityAllowance || 0) +
-           Number(formData.newTransportationAllowance || 0) +
-           Number(formData.newLunchAllowance || 0) +
-           Number(formData.newPhoneAllowance || 0) +
-           Number(formData.newOtherAllowance || 0);
+      Number(formData.newPositionAllowance || 0) +
+      Number(formData.newResponsibilityAllowance || 0) +
+      Number(formData.newTransportationAllowance || 0) +
+      Number(formData.newLunchAllowance || 0) +
+      Number(formData.newPhoneAllowance || 0) +
+      Number(formData.newOtherAllowance || 0);
   };
 
   const currentTotal = calculateCurrentTotal();
   const newTotal = calculateNewTotal();
   const { increaseAmount, increasePercentage } = calculateIncrease(currentTotal, newTotal);
 
-  const validateForm = () => {
+  const validateForm = (isDraft: boolean) => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.employeeId) {
@@ -214,15 +223,12 @@ export default function SalaryAdjustmentFormModal({
     if (!formData.newBaseSalary || Number(formData.newBaseSalary) <= 0) {
       newErrors.newBaseSalary = 'Vui lòng nhập lương cơ bản mới';
     }
-    if (newTotal <= 0) {
-      newErrors.newTotal = 'Tổng lương mới phải lớn hơn 0';
-    }
     if (formData.adjustmentType === 'PROMOTION' && !formData.newPosition.trim()) {
       newErrors.newPosition = 'Vui lòng nhập chức vụ mới khi thăng chức';
     }
-    
-    // Admin phải nhập số QĐ và ngày QĐ
-    if (isAdmin) {
+
+    // Validate decision info if not draft
+    if (!isDraft) {
       if (!formData.decisionNumber.trim()) {
         newErrors.decisionNumber = 'Vui lòng nhập số quyết định';
       }
@@ -235,19 +241,11 @@ export default function SalaryAdjustmentFormModal({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (sendForApproval: boolean) => {
-    if (!validateForm()) return;
+  const handleSubmit = async (isDraft: boolean) => {
+    if (!validateForm(isDraft)) return;
 
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Admin tạo => tự động APPROVED với số QĐ
-    // Manager tạo => DRAFT hoặc PENDING_APPROVAL
-    const status = isAdmin 
-      ? 'APPROVED'  // Admin tự tạo tự duyệt
-      : sendForApproval 
-        ? 'PENDING_APPROVAL' 
-        : 'DRAFT';
 
     console.log('Salary adjustment data:', {
       ...formData,
@@ -256,8 +254,7 @@ export default function SalaryAdjustmentFormModal({
       increaseAmount,
       increasePercentage,
       files: files.map(f => f.name),
-      status,
-      isAdminCreated: isAdmin,
+      status: isDraft ? 'DRAFT' : 'ACTIVE',
     });
 
     setIsSubmitting(false);
@@ -278,10 +275,7 @@ export default function SalaryAdjustmentFormModal({
           <h2 className="text-xl font-semibold">
             {adjustment ? 'Chỉnh sửa quyết định điều chỉnh lương' : 'Tạo quyết định điều chỉnh lương'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -291,8 +285,8 @@ export default function SalaryAdjustmentFormModal({
           <form className="space-y-6">
             {/* Basic Info */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Thông tin cơ bản</h3>
-              
+              <h3 className="font-semibold text-lg border-b pb-2">Thông tin cơ bản</h3>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="employeeId">
@@ -325,7 +319,7 @@ export default function SalaryAdjustmentFormModal({
                   </Label>
                   <Select
                     value={formData.adjustmentType}
-                    onValueChange={(value: AdjustmentType) => 
+                    onValueChange={(value: AdjustmentType) =>
                       setFormData(prev => ({ ...prev, adjustmentType: value }))
                     }
                   >
@@ -350,9 +344,9 @@ export default function SalaryAdjustmentFormModal({
                     id="effectiveDate"
                     type="date"
                     value={formData.effectiveDate}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      effectiveDate: e.target.value 
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      effectiveDate: e.target.value
                     }))}
                     className={errors.effectiveDate ? 'border-red-500' : ''}
                   />
@@ -361,17 +355,33 @@ export default function SalaryAdjustmentFormModal({
                   )}
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="expiryDate">Ngày hết hiệu lực (nếu có)</Label>
+                  <Input
+                    id="expiryDate"
+                    type="date"
+                    value={formData.expiryDate}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      expiryDate: e.target.value
+                    }))}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Để trống nếu điều chỉnh có hiệu lực vĩnh viễn
+                  </p>
+                </div>
+
                 {formData.adjustmentType === 'PROMOTION' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 col-span-2">
                     <Label htmlFor="newPosition">
                       Chức vụ mới <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="newPosition"
                       value={formData.newPosition}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        newPosition: e.target.value 
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        newPosition: e.target.value
                       }))}
                       placeholder="VD: Senior Manager"
                       className={errors.newPosition ? 'border-red-500' : ''}
@@ -384,52 +394,50 @@ export default function SalaryAdjustmentFormModal({
               </div>
             </div>
 
-            {/* Decision Info - Only for Admin */}
-            {isAdmin && (
-              <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-lg text-blue-900">Thông tin quyết định</h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="decisionNumber">
-                      Số quyết định <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="decisionNumber"
-                      value={formData.decisionNumber}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        decisionNumber: e.target.value 
-                      }))}
-                      placeholder="VD: QĐ-TL-2025-001"
-                      className={errors.decisionNumber ? 'border-red-500' : ''}
-                    />
-                    {errors.decisionNumber && (
-                      <p className="text-sm text-red-500">{errors.decisionNumber}</p>
-                    )}
-                  </div>
+            {/* Decision Info */}
+            <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-lg text-blue-900">Thông tin quyết định</h3>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="decisionDate">
-                      Ngày quyết định <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="decisionDate"
-                      type="date"
-                      value={formData.decisionDate}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
-                        decisionDate: e.target.value 
-                      }))}
-                      className={errors.decisionDate ? 'border-red-500' : ''}
-                    />
-                    {errors.decisionDate && (
-                      <p className="text-sm text-red-500">{errors.decisionDate}</p>
-                    )}
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="decisionNumber">
+                    Số quyết định <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="decisionNumber"
+                    value={formData.decisionNumber}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      decisionNumber: e.target.value
+                    }))}
+                    placeholder="VD: QĐ-TL-2025-001"
+                    className={errors.decisionNumber ? 'border-red-500' : ''}
+                  />
+                  {errors.decisionNumber && (
+                    <p className="text-sm text-red-500">{errors.decisionNumber}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="decisionDate">
+                    Ngày quyết định <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="decisionDate"
+                    type="date"
+                    value={formData.decisionDate}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      decisionDate: e.target.value
+                    }))}
+                    className={errors.decisionDate ? 'border-red-500' : ''}
+                  />
+                  {errors.decisionDate && (
+                    <p className="text-sm text-red-500">{errors.decisionDate}</p>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
 
             {/* Salary Comparison */}
             <div className="space-y-4">
@@ -448,9 +456,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.currentBaseSalary}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          currentBaseSalary: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          currentBaseSalary: e.target.value
                         }))}
                         className={errors.currentBaseSalary ? 'border-red-500 mt-1' : 'mt-1'}
                       />
@@ -460,21 +468,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.currentPositionAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          currentPositionAllowance: e.target.value 
-                        }))}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm">PC trách nhiệm</Label>
-                      <Input
-                        type="number"
-                        value={formData.currentResponsibilityAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          currentResponsibilityAllowance: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          currentPositionAllowance: e.target.value
                         }))}
                         className="mt-1"
                       />
@@ -484,9 +480,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.currentTransportationAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          currentTransportationAllowance: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          currentTransportationAllowance: e.target.value
                         }))}
                         className="mt-1"
                       />
@@ -496,9 +492,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.currentLunchAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          currentLunchAllowance: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          currentLunchAllowance: e.target.value
                         }))}
                         className="mt-1"
                       />
@@ -519,9 +515,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.newBaseSalary}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          newBaseSalary: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          newBaseSalary: e.target.value
                         }))}
                         className={errors.newBaseSalary ? 'border-red-500 mt-1' : 'mt-1'}
                       />
@@ -531,21 +527,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.newPositionAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          newPositionAllowance: e.target.value 
-                        }))}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm">PC trách nhiệm</Label>
-                      <Input
-                        type="number"
-                        value={formData.newResponsibilityAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          newResponsibilityAllowance: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          newPositionAllowance: e.target.value
                         }))}
                         className="mt-1"
                       />
@@ -555,9 +539,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.newTransportationAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          newTransportationAllowance: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          newTransportationAllowance: e.target.value
                         }))}
                         className="mt-1"
                       />
@@ -567,9 +551,9 @@ export default function SalaryAdjustmentFormModal({
                       <Input
                         type="number"
                         value={formData.newLunchAllowance}
-                        onChange={(e) => setFormData(prev => ({ 
-                          ...prev, 
-                          newLunchAllowance: e.target.value 
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          newLunchAllowance: e.target.value
                         }))}
                         className="mt-1"
                       />
@@ -588,17 +572,15 @@ export default function SalaryAdjustmentFormModal({
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <div className="text-sm text-green-700">Số tiền tăng/giảm</div>
-                      <div className={`text-2xl font-bold ${
-                        increaseAmount >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <div className={`text-2xl font-bold ${increaseAmount >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {increaseAmount >= 0 ? '+' : ''}{formatCurrency(increaseAmount)}đ
                       </div>
                     </div>
                     <div>
                       <div className="text-sm text-green-700">Tỷ lệ</div>
-                      <div className={`text-2xl font-bold ${
-                        increasePercentage >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <div className={`text-2xl font-bold ${increasePercentage >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {increasePercentage >= 0 ? '+' : ''}{increasePercentage}%
                       </div>
                     </div>
@@ -622,9 +604,9 @@ export default function SalaryAdjustmentFormModal({
                 <Textarea
                   id="reason"
                   value={formData.reason}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    reason: e.target.value 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    reason: e.target.value
                   }))}
                   placeholder="Mô tả chi tiết lý do và căn cứ điều chỉnh lương..."
                   rows={3}
@@ -640,12 +622,26 @@ export default function SalaryAdjustmentFormModal({
                 <Textarea
                   id="performanceNote"
                   value={formData.performanceNote}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    performanceNote: e.target.value 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    performanceNote: e.target.value
                   }))}
                   placeholder="Đánh giá hiệu suất, đóng góp, thành tích..."
                   rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Ghi chú khác</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    notes: e.target.value
+                  }))}
+                  placeholder="Ghi chú bổ sung..."
+                  rows={2}
                 />
               </div>
             </div>
@@ -660,9 +656,7 @@ export default function SalaryAdjustmentFormModal({
                 >
                   <Upload className="h-5 w-5 text-gray-400" />
                   <span className="text-sm text-gray-600">
-                    {files.length > 0 
-                      ? `${files.length} file đã chọn` 
-                      : 'Tải lên đánh giá hiệu suất, báo cáo KPI...'}
+                    Tải lên đánh giá hiệu suất, báo cáo KPI, quyết định...
                   </span>
                 </label>
                 <input
@@ -671,14 +665,31 @@ export default function SalaryAdjustmentFormModal({
                   multiple
                   className="hidden"
                   onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.xls"
                 />
               </div>
               {files.length > 0 && (
-                <div className="mt-2 space-y-1">
+                <div className="mt-3 space-y-2">
                   {files.map((file, index) => (
-                    <div key={index} className="text-sm text-gray-600">
-                      • {file.name}
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md border"
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">{file.name}</span>
+                        <span className="text-xs text-gray-500">
+                          ({(file.size / 1024).toFixed(1)} KB)
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFile(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -690,9 +701,7 @@ export default function SalaryAdjustmentFormModal({
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50">
           <div className="text-sm text-muted-foreground">
-            {isAdmin 
-              ? 'Admin tạo quyết định sẽ tự động được phê duyệt'
-              : 'Lưu nháp để chỉnh sửa hoặc gửi phê duyệt cho Admin'}
+            Lưu nháp để chỉnh sửa sau hoặc tạo quyết định chính thức
           </div>
           <div className="flex gap-2">
             <Button
@@ -703,26 +712,16 @@ export default function SalaryAdjustmentFormModal({
             >
               Hủy
             </Button>
-            {!isAdmin && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleSubmit(false)}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Đang lưu...' : 'Lưu nháp'}
-              </Button>
-            )}
+
             <Button
               type="button"
               onClick={() => handleSubmit(true)}
               disabled={isSubmitting}
             >
-              {isSubmitting 
-                ? 'Đang xử lý...' 
-                : isAdmin 
-                  ? 'Tạo và phê duyệt' 
-                  : 'Gửi phê duyệt'}
+              {isSubmitting
+                ? 'Đang xử lý...'
+                : 'Xác nhận'
+              }
             </Button>
           </div>
         </div>

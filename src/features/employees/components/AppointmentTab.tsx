@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
-import { Search, Eye, Plus, Edit, TrendingUp, Briefcase, Calendar, DollarSign } from 'lucide-react';
+import { Search, Eye, Plus, Edit, TrendingUp, Briefcase } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Label } from '@/shared/components/ui/label';
@@ -15,8 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import { Appointment } from '../../../mock/appointment';
+import { mockAppointments, type Appointment } from '../../../mock/appointment';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import AppointmentFormModal from '../../appointment/components/AppointmentFormModal';
+import AppointmentDetailModal from '../../appointment/components/AppointmentDetailModal';
 
 interface AppointmentTabProps {
   userData: any;
@@ -29,10 +31,15 @@ export default function AppointmentTab({ userData, employeeId }: AppointmentTabP
   const isManager = user?.roles === 'MANAGER';
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [appointments, setAppointments] = useState([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAppointments();
@@ -42,29 +49,52 @@ export default function AppointmentTab({ userData, employeeId }: AppointmentTabP
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const employee = appointments.find(e => e.employeeId === employeeId.toString());
-    
-    if (employee) {
-      let filtered = employee.history.filter(h => h.type === 'APPOINTMENT');
+    // Filter appointments for this specific employee
+    let filtered = mockAppointments.filter(a => a.employeeId === employeeId.toString());
 
-      if (searchTerm) {
-        filtered = filtered.filter(a =>
-          a.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.reason.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-
-      // Sort by effective date (newest first)
-      filtered.sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
-
-      setAppointments(filtered);
-    } else {
-      setAppointments([]);
+    if (searchTerm) {
+      filtered = filtered.filter(a =>
+        a.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.reason.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
 
+    // Sort by effective date (newest first)
+    filtered.sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime());
+
+    setAppointments(filtered);
     setIsLoading(false);
+  };
+
+  const handleOpenFormModal = (appointment?: Appointment) => {
+    setSelectedAppointment(appointment || null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedAppointment(null);
+  };
+
+  const handleFormSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+    handleCloseFormModal();
+  };
+
+  const handleOpenDetailModal = (id: string) => {
+    setSelectedAppointmentId(id);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedAppointmentId(null);
+  };
+
+  const handleDetailSuccess = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   const formatCurrency = (amount: number) => {
@@ -74,7 +104,11 @@ export default function AppointmentTab({ userData, employeeId }: AppointmentTabP
     }).format(amount);
   };
 
-  const currentAppointment = appointments.find(a => !a.endDate);
+  // Find the most recent active appointment (no expiry or not yet expired)
+  const currentAppointment = appointments.find(a => {
+    if (!a.expiryDate) return true; // Vô thời hạn
+    return new Date(a.expiryDate) > new Date(); // Chưa hết hạn
+  });
 
   return (
     <div className="space-y-4">
@@ -137,6 +171,13 @@ export default function AppointmentTab({ userData, employeeId }: AppointmentTabP
               className="pl-10"
             />
           </div>
+          
+          {(isAdmin || isManager) && (
+            <Button onClick={() => handleOpenFormModal()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Thêm quyết định bổ nhiệm
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -149,7 +190,7 @@ export default function AppointmentTab({ userData, employeeId }: AppointmentTabP
                 <TableHead>Chức vụ</TableHead>
                 <TableHead>Phòng ban</TableHead>
                 <TableHead>Ngày hiệu lực</TableHead>
-                <TableHead>Ngày kết thúc</TableHead>
+                <TableHead>Thời hạn</TableHead>
                 <TableHead>Số quyết định</TableHead>
                 <TableHead>Lương & Phụ cấp</TableHead>
                 <TableHead>Lý do</TableHead>
@@ -177,189 +218,140 @@ export default function AppointmentTab({ userData, employeeId }: AppointmentTabP
                   </TableCell>
                 </TableRow>
               ) : (
-                appointments.map((appointment) => (
-                  <TableRow 
-                    key={appointment.id} 
-                    className={`hover:bg-muted/50 ${!appointment.endDate ? 'bg-green-50' : ''}`}
-                  >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{appointment.position}</p>
-                        {!appointment.endDate && (
-                          <Badge className="bg-green-500 text-white text-xs mt-1">
-                            Đang giữ chức
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{appointment.department}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p className="font-medium">
-                          {new Date(appointment.effectiveDate).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {appointment.endDate ? (
-                        <span className="text-sm">
-                          {new Date(appointment.endDate).toLocaleDateString('vi-VN')}
-                        </span>
-                      ) : (
-                        <Badge className="bg-blue-100 text-blue-800">Đang hiệu lực</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p className="font-medium">{appointment.decisionNumber}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {new Date(appointment.decisionDate).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {appointment.salary && (
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(appointment.salary)}
+                appointments.map((appointment) => {
+                  const isActive = !appointment.expiryDate || new Date(appointment.expiryDate) > new Date();
+                  const isExpiringSoon = appointment.expiryDate && 
+                    new Date(appointment.expiryDate) > new Date() &&
+                    new Date(appointment.expiryDate) <= new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
+                  return (
+                    <TableRow 
+                      key={appointment.id} 
+                      className={`hover:bg-muted/50 ${isActive ? 'bg-green-50' : ''}`}
+                    >
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{appointment.position}</p>
+                          {isActive && (
+                            <Badge className="bg-green-500 text-white text-xs mt-1">
+                              Đang giữ chức
+                            </Badge>
+                          )}
+                          {isExpiringSoon && (
+                            <Badge className="bg-orange-500 text-white text-xs mt-1">
+                              Sắp hết hạn
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{appointment.department}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">
+                            {new Date(appointment.effectiveDate).toLocaleDateString('vi-VN')}
                           </p>
-                        )}
-                        {appointment.allowance && (
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {appointment.termMonths ? (
+                            <>
+                              <div>{appointment.termMonths} tháng</div>
+                              {appointment.expiryDate && (
+                                <div className="text-muted-foreground text-xs">
+                                  đến {new Date(appointment.expiryDate).toLocaleDateString('vi-VN')}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">Vô thời hạn</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <p className="font-medium">{appointment.decisionNumber}</p>
                           <p className="text-muted-foreground text-xs">
-                            + PC: {formatCurrency(appointment.allowance)}
+                            {new Date(appointment.decisionDate).toLocaleDateString('vi-VN')}
                           </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm line-clamp-2 max-w-[200px]">
-                        {appointment.reason}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground">
-                        <p>Người quyết định:</p>
-                        <p className="font-medium text-foreground">{appointment.createdBy}</p>
-                        <p>{new Date(appointment.createdAt).toLocaleDateString('vi-VN')}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1 justify-center">
-                        {(isManager || isAdmin) && !appointment.endDate && (
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {appointment.salary && (
+                            <p className="font-semibold text-green-600">
+                              {formatCurrency(appointment.salary)}
+                            </p>
+                          )}
+                          {appointment.allowance && (
+                            <p className="text-muted-foreground text-xs">
+                              + PC: {formatCurrency(appointment.allowance)}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm line-clamp-2 max-w-[200px]">
+                          {appointment.reason}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs text-muted-foreground">
+                          <p>Người quyết định:</p>
+                          <p className="font-medium text-foreground">{appointment.createdBy}</p>
+                          <p>{new Date(appointment.createdAt).toLocaleDateString('vi-VN')}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 justify-center">
+                          {(isManager || isAdmin) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenFormModal(appointment)}
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => console.log('Edit', appointment.id)}
-                            title="Chỉnh sửa"
+                            onClick={() => handleOpenDetailModal(appointment.id)}
+                            title="Xem chi tiết"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedAppointment(appointment)}
-                          title="Xem chi tiết"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
       </Card>
 
-      {/* Detail View Modal */}
-      {selectedAppointment && (
-        <Card className="p-6 border-2 border-blue-300">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-lg font-bold">Chi tiết quyết định bổ nhiệm</h3>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => setSelectedAppointment(null)}
-            >
-              ✕
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-muted-foreground">Chức vụ</Label>
-              <p className="font-semibold text-lg">{selectedAppointment.position}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Phòng ban</Label>
-              <p className="font-semibold text-lg">{selectedAppointment.department}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Số quyết định</Label>
-              <p className="font-medium">{selectedAppointment.decisionNumber}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Ngày quyết định</Label>
-              <p className="font-medium">
-                {new Date(selectedAppointment.decisionDate).toLocaleDateString('vi-VN')}
-              </p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground">Ngày có hiệu lực</Label>
-              <p className="font-medium">
-                {new Date(selectedAppointment.effectiveDate).toLocaleDateString('vi-VN')}
-              </p>
-            </div>
-            {selectedAppointment.endDate && (
-              <div>
-                <Label className="text-muted-foreground">Ngày kết thúc</Label>
-                <p className="font-medium">
-                  {new Date(selectedAppointment.endDate).toLocaleDateString('vi-VN')}
-                </p>
-              </div>
-            )}
-            {selectedAppointment.salary && (
-              <div>
-                <Label className="text-muted-foreground">Lương chức vụ</Label>
-                <p className="font-semibold text-green-600 text-lg">
-                  {formatCurrency(selectedAppointment.salary)}
-                </p>
-              </div>
-            )}
-            {selectedAppointment.allowance && (
-              <div>
-                <Label className="text-muted-foreground">Phụ cấp chức vụ</Label>
-                <p className="font-semibold text-green-600 text-lg">
-                  {formatCurrency(selectedAppointment.allowance)}
-                </p>
-              </div>
-            )}
-            <div className="col-span-2">
-              <Label className="text-muted-foreground">Lý do bổ nhiệm</Label>
-              <p className="mt-1">{selectedAppointment.reason}</p>
-            </div>
-            {selectedAppointment.note && (
-              <div className="col-span-2">
-                <Label className="text-muted-foreground">Ghi chú</Label>
-                <p className="mt-1 text-muted-foreground italic">{selectedAppointment.note}</p>
-              </div>
-            )}
-            <div className="col-span-2 pt-4 border-t">
-              <Label className="text-muted-foreground">Thông tin người quyết định</Label>
-              <div className="flex items-center justify-between mt-2">
-                <p className="font-medium">{selectedAppointment.createdBy}</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(selectedAppointment.createdAt).toLocaleString('vi-VN')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
+      {/* Modals */}
+      {(isAdmin || isManager) && (
+        <AppointmentFormModal
+          isOpen={isFormModalOpen}
+          onClose={handleCloseFormModal}
+          appointment={selectedAppointment}
+          onSuccess={handleFormSuccess}
+        />
       )}
+
+      <AppointmentDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        appointmentId={selectedAppointmentId}
+        onSuccess={handleDetailSuccess}
+        isAdmin={isAdmin || isManager}
+      />
     </div>
   );
 }

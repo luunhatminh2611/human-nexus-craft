@@ -168,12 +168,11 @@ export default function MedicalTab({ userData }) {
             Hồ sơ sức khỏe
           </CardTitle>
           <Button
-            variant="outline"
             size="sm"
             onClick={handleOpenProfileDialog}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Cập nhật hồ sơ sức khỏe
+            {ehrProfile ? 'Cập nhật hồ sơ sức khỏe' : 'Thêm hồ sơ sức khỏe'}
           </Button>
         </CardHeader>
         <CardContent>
@@ -306,23 +305,14 @@ export default function MedicalTab({ userData }) {
           ) : (
             <div className="text-center py-12">
               <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">Chưa có hồ sơ sức khỏe</p>
-              {canManage && (
-                <Button
-                  size="sm"
-                  onClick={handleOpenProfileDialog}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Cập nhật hồ sơ sức khỏe
-                </Button>
-              )}
+              <p className="text-muted-foreground mb-4">Nhân viênn này chưa có hồ sơ sức khỏe</p>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Lịch sử khám sức khỏe - Checkup History */}
-      <Card>
+      {/* <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
@@ -367,22 +357,18 @@ export default function MedicalTab({ userData }) {
                     <TableRow key={checkup.id}>
                       <TableCell>{index + 1}</TableCell>
 
-                      {/* Ngày khám */}
                       <TableCell>
                         {new Date(checkup.date).toLocaleDateString("vi-VN")}
                       </TableCell>
 
-                      {/* Bệnh viện */}
                       <TableCell>
                         {checkup.hospitalName || "—"}
                       </TableCell>
 
-                      {/* Kết quả */}
                       <TableCell className="max-w-[250px] truncate">
                         {checkup.result || "—"}
                       </TableCell>
 
-                      {/* File */}
                       <TableCell className='text-center'>
                         {checkup.fileKey ? (
                           <Button
@@ -444,7 +430,7 @@ export default function MedicalTab({ userData }) {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
         <DialogContent className="max-w-2xl">
@@ -568,7 +554,7 @@ export default function MedicalTab({ userData }) {
               Hủy
             </Button>
             <Button onClick={handleSubmitProfile}>
-              Lưu hồ sơ
+              Xác nhận
             </Button>
           </div>
         </DialogContent>

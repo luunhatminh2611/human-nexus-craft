@@ -168,7 +168,7 @@ export const employeeApi = {
   // 🔽 EXPORT
   exportExcel: async (ids: number[]) => {
     return api.post('/employee/export',
-      { ids },
+      { payload: ids.map(String) },  // Convert [1,2,3] → ["1","2","3"]
       { responseType: 'blob' }
     );
   },

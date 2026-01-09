@@ -35,7 +35,6 @@ import { useAuthStore } from '@/features/employees/hooks/useAuth';
 export default function DisciplinePage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
-  const isManager = user?.roles === 'MANAGER';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -127,11 +126,8 @@ export default function DisciplinePage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'DRAFT': { label: statusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
-      'PENDING_EXPLANATION': { label: statusLabels.PENDING_EXPLANATION, className: 'bg-blue-100 text-blue-800' },
-      'PENDING_REVIEW': { label: statusLabels.PENDING_REVIEW, className: 'bg-yellow-100 text-yellow-800' },
-      'OVERDUE': { label: statusLabels.OVERDUE, className: 'bg-red-100 text-red-800' },
-      'COMPLETED': { label: statusLabels.COMPLETED, className: 'bg-green-100 text-green-800' },
-      'DISMISSED': { label: statusLabels.DISMISSED, className: 'bg-purple-100 text-purple-800' },
+      'ACTIVE': { label: statusLabels.ACTIVE, className: 'bg-green-100 text-green-800' },
+      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-gray-100 text-gray-600' },
     };
 
     const config = statusConfig[status] || { label: status, className: '' };
@@ -173,16 +169,14 @@ export default function DisciplinePage() {
           <h1 className="text-3xl font-bold">Quản lý kỷ luật</h1>
           <p className="text-muted-foreground">
             {isAdmin 
-              ? 'Xem xét và ra quyết định kỷ luật cho nhân viên vi phạm' 
-              : isManager 
-              ? 'Ghi nhận và quản lý vi phạm của nhân viên'
+              ? 'Ra quyết định kỷ luật cho nhân viên vi phạm' 
               : 'Xem thông tin kỷ luật'}
           </p>
         </div>
-        {(isManager || isAdmin) && (
+        {isAdmin && (
           <Button onClick={() => handleOpenFormModal()}>
             <Plus className="h-4 w-4 mr-2" />
-            Ghi nhận vi phạm
+            Tạo quyết định kỷ luật
           </Button>
         )}
       </div>
@@ -225,17 +219,13 @@ export default function DisciplinePage() {
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
+            <SelectTrigger className="w-full md:w-[160px]">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="DRAFT">Bản nháp</SelectItem>
-              <SelectItem value="PENDING_EXPLANATION">Chờ giải trình</SelectItem>
-              <SelectItem value="PENDING_REVIEW">Chờ xem xét</SelectItem>
-              <SelectItem value="OVERDUE">Quá hạn</SelectItem>
-              <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
-              <SelectItem value="DISMISSED">Đã bác bỏ</SelectItem>
+              <SelectItem value="ACTIVE">Đang hiệu lực</SelectItem>
+              <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -252,9 +242,8 @@ export default function DisciplinePage() {
                 <TableHead>Mô tả</TableHead>
                 <TableHead>Mức độ</TableHead>
                 <TableHead>Ngày vi phạm</TableHead>
-                <TableHead>Người ghi nhận</TableHead>
-                <TableHead>Hạn giải trình</TableHead>
                 <TableHead>Số QĐ</TableHead>
+                <TableHead>Ngày QĐ</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
@@ -262,7 +251,7 @@ export default function DisciplinePage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -271,7 +260,7 @@ export default function DisciplinePage() {
                 </TableRow>
               ) : disciplines.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <AlertTriangle className="h-8 w-8" />
                       <p>Không tìm thấy hồ sơ kỷ luật nào</p>
@@ -303,39 +292,19 @@ export default function DisciplinePage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <p>{discipline.createdByName}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {new Date(discipline.createdDate).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {discipline.explanationDeadline ? (
-                        <div className="text-sm">
-                          <div className={`font-medium ${
-                            new Date(discipline.explanationDeadline) < new Date() && 
-                            discipline.status === 'PENDING_EXPLANATION'
-                              ? 'text-red-600'
-                              : ''
-                          }`}>
-                            {new Date(discipline.explanationDeadline).toLocaleDateString('vi-VN')}
-                          </div>
-                        </div>
+                      {discipline.decisionNumber ? (
+                        <span className="text-sm font-medium">{discipline.decisionNumber}</span>
                       ) : (
-                        <span className="text-sm text-muted-foreground">Chưa gửi</span>
+                        <span className="text-sm text-muted-foreground">Chưa có</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      {discipline.decisionNumber ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{discipline.decisionNumber}</div>
-                          <div className="text-muted-foreground">
-                            {discipline.decisionDate && new Date(discipline.decisionDate).toLocaleDateString('vi-VN')}
-                          </div>
-                        </div>
+                      {discipline.decisionDate ? (
+                        <span className="text-sm">
+                          {new Date(discipline.decisionDate).toLocaleDateString('vi-VN')}
+                        </span>
                       ) : (
-                        <span className="text-sm text-muted-foreground">Chưa có</span>
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -343,7 +312,7 @@ export default function DisciplinePage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {(discipline.status === 'DRAFT' && (isManager || isAdmin)) && (
+                        {isAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -445,8 +414,6 @@ export default function DisciplinePage() {
         onClose={handleCloseDetailModal}
         disciplineId={selectedDisciplineId}
         onSuccess={handleDetailSuccess}
-        isAdmin={isAdmin}
-        isManager={isManager}
       />
 
       <DisciplineFormModal

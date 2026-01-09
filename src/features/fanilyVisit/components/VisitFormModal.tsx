@@ -423,7 +423,7 @@ export default function FamilyVisitFormModal({
             Hủy
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Đang lưu...' : visit ? 'Cập nhật' : 'Thêm mới'}
+            {isSubmitting ? 'Đang lưu...' : visit ? 'Xác nhận' : 'Xác nhận'}
           </Button>
         </DialogFooter>
       </DialogContent>

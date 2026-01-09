@@ -270,7 +270,7 @@ export default function FamilyModal({
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {mode === 'create' ? 'Thêm thân nhân' : 'Cập nhật'}
+              {mode === 'create' ? 'Xác nhận' : 'Xác nhận'}
             </Button>
           </DialogFooter>
         </form>

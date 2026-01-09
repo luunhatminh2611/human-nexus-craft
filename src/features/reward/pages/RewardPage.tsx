@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, Award } from 'lucide-react';
-import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
   Table,
@@ -25,9 +24,8 @@ import {
   mockRewards, 
   type Reward, 
   calculateRewardStatistics,
-  statusLabels 
 } from '../../../mock/reward';
-import RewardApprovalModal from '../components/RewardApprovalModal';
+import RewardDetailModal from '../components/RewardApprovalModal';
 import RewardFormModal from '../components/RewardFormModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
@@ -36,7 +34,6 @@ export default function RewardPage() {
   const isAdmin = user?.roles === 'ADMIN';
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,22 +45,18 @@ export default function RewardPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
 
-  const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedRewardId, setSelectedRewardId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRewards();
-  }, [page, pageSize, searchTerm, statusFilter, departmentFilter, refreshKey]);
+  }, [page, pageSize, searchTerm, departmentFilter, refreshKey]);
 
   const fetchRewards = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
     let filtered = [...mockRewards];
-
-    if (statusFilter !== 'ALL') {
-      filtered = filtered.filter(r => r.status === statusFilter);
-    }
 
     if (departmentFilter !== 'ALL') {
       filtered = filtered.filter(r => r.departmentName === departmentFilter);
@@ -74,7 +67,7 @@ export default function RewardPage() {
         r.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.rewardType.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.achievement.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (r.decisionNumber && r.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+        r.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -102,36 +95,14 @@ export default function RewardPage() {
     handleCloseFormModal();
   };
 
-  const handleOpenApprovalModal = (id: string) => {
+  const handleOpenDetailModal = (id: string) => {
     setSelectedRewardId(id);
-    setIsApprovalModalOpen(true);
+    setIsDetailModalOpen(true);
   };
 
-  const handleCloseApprovalModal = () => {
-    setIsApprovalModalOpen(false);
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
     setSelectedRewardId(null);
-  };
-
-  const handleApprovalSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseApprovalModal();
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'DRAFT': { label: statusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
-      'PENDING': { label: statusLabels.PENDING, className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: statusLabels.APPROVED, className: 'bg-green-100 text-green-800' },
-      'REJECTED': { label: statusLabels.REJECTED, className: 'bg-red-100 text-red-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
   };
 
   const formatCurrency = (amount: number) => {
@@ -154,13 +125,15 @@ export default function RewardPage() {
         <div>
           <h1 className="text-3xl font-bold">Quản lý khen thưởng</h1>
           <p className="text-muted-foreground">
-            {isAdmin ? 'Phê duyệt và quản lý khen thưởng của nhân viên' : 'Đề xuất khen thưởng cho nhân viên'}
+            Quản lý quyết định khen thưởng của nhân viên
           </p>
         </div>
-        <Button onClick={() => handleOpenFormModal()}>
-          <Plus className="h-4 w-4 mr-2" />
-          {isAdmin ? 'Tạo quyết định khen thưởng' : 'Đề xuất khen thưởng'}
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => handleOpenFormModal()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Tạo quyết định khen thưởng
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -177,7 +150,7 @@ export default function RewardPage() {
           </div>
 
           <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
+            <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue placeholder="Phòng ban" />
             </SelectTrigger>
             <SelectContent>
@@ -185,19 +158,6 @@ export default function RewardPage() {
               {departments.map(dept => (
                 <SelectItem key={dept} value={dept}>{dept}</SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="DRAFT">Bản nháp</SelectItem>
-              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -212,18 +172,17 @@ export default function RewardPage() {
                 <TableHead>Nhân viên</TableHead>
                 <TableHead>Loại khen thưởng</TableHead>
                 <TableHead>Thành tích</TableHead>
-                <TableHead>Người đề xuất</TableHead>
-                <TableHead>Ngày đề xuất</TableHead>
-                <TableHead>Số QĐ</TableHead>
+                <TableHead>Số quyết định</TableHead>
+                <TableHead>Ngày quyết định</TableHead>
                 <TableHead>Mức thưởng</TableHead>
-                <TableHead>Trạng thái</TableHead>
+                <TableHead>Người tạo</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -232,10 +191,10 @@ export default function RewardPage() {
                 </TableRow>
               ) : rewards.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Award className="h-8 w-8" />
-                      <p>Không tìm thấy đề xuất khen thưởng nào</p>
+                      <p>Không tìm thấy quyết định khen thưởng nào</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -257,46 +216,27 @@ export default function RewardPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <p>{reward.proposedBy}</p>
+                        <div className="font-medium">{reward.decisionNumber}</div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {new Date(reward.proposedDate).toLocaleDateString('vi-VN')}
+                        {new Date(reward.decisionDate).toLocaleDateString('vi-VN')}
                       </span>
                     </TableCell>
                     <TableCell>
-                      {reward.decisionNumber ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{reward.decisionNumber}</div>
-                          <div className="text-muted-foreground">
-                            {reward.decisionDate && new Date(reward.decisionDate).toLocaleDateString('vi-VN')}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Chưa có</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {reward.proposedAmount && (
-                          <div className="text-muted-foreground">
-                            ĐX: {formatCurrency(reward.proposedAmount)}
-                          </div>
-                        )}
-                        {reward.approvedAmount && (
-                          <div className="font-medium text-green-600">
-                            Duyệt: {formatCurrency(reward.approvedAmount)}
-                          </div>
-                        )}
+                      <div className="font-medium text-green-600">
+                        {formatCurrency(reward.amount)}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(reward.status)}
+                      <div className="text-sm">
+                        <p>{reward.createdBy}</p>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {(reward.status === 'DRAFT' || !isAdmin) && (
+                        {isAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -309,8 +249,8 @@ export default function RewardPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenApprovalModal(reward.id)}
-                          title={isAdmin ? "Xem và phê duyệt" : "Xem chi tiết"}
+                          onClick={() => handleOpenDetailModal(reward.id)}
+                          title="Xem chi tiết"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -393,20 +333,20 @@ export default function RewardPage() {
         )}
       </Card>
 
-      <RewardApprovalModal
-        isOpen={isApprovalModalOpen}
-        onClose={handleCloseApprovalModal}
+      <RewardDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
         rewardId={selectedRewardId}
-        onSuccess={handleApprovalSuccess}
-        isAdmin={isAdmin}
       />
 
-      <RewardFormModal
-        isOpen={isFormModalOpen}
-        onClose={handleCloseFormModal}
-        reward={selectedReward}
-        onSuccess={handleFormSuccess}
-      />
+      {isAdmin && (
+        <RewardFormModal
+          isOpen={isFormModalOpen}
+          onClose={handleCloseFormModal}
+          reward={selectedReward}
+          onSuccess={handleFormSuccess}
+        />
+      )}
     </div>
   );
 }

@@ -167,7 +167,7 @@ export default function InsuranceFormModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-xl font-semibold">
-            {record ? 'Chỉnh sửa hồ sơ BHXH' : 'Thêm hồ sơ BHXH mới'}
+            {record ? 'Chỉnh sửa hồ sơ BHXH' : 'Thêm hồ sơ BHXH'}
           </h2>
           <button
             onClick={onClose}
@@ -463,7 +463,7 @@ export default function InsuranceFormModal({
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Đang lưu...' : record ? 'Cập nhật' : 'Thêm hồ sơ'}
+            {isSubmitting ? 'Đang lưu...' : record ? 'Xác nhận' : 'Xác nhận'}
           </Button>
         </div>
       </div>

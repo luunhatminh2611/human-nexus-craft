@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, TrendingUp, FileText } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, TrendingUp } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -35,7 +35,6 @@ import { useAuthStore } from '@/features/employees/hooks/useAuth';
 export default function SalaryAdjustmentPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
-  const isManager = user?.roles === 'MANAGER';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -84,8 +83,8 @@ export default function SalaryAdjustmentPage() {
       );
     }
 
-    // Sort by proposedDate desc
-    filtered.sort((a, b) => new Date(b.proposedDate).getTime() - new Date(a.proposedDate).getTime());
+    // Sort by createdDate desc
+    filtered.sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
 
     setTotalItems(filtered.length);
 
@@ -128,10 +127,8 @@ export default function SalaryAdjustmentPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'DRAFT': { label: statusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
-      'PENDING_APPROVAL': { label: statusLabels.PENDING_APPROVAL, className: 'bg-yellow-100 text-yellow-800' },
-      'APPROVED': { label: statusLabels.APPROVED, className: 'bg-blue-100 text-blue-800' },
-      'REJECTED': { label: statusLabels.REJECTED, className: 'bg-red-100 text-red-800' },
-      'EFFECTIVE': { label: statusLabels.EFFECTIVE, className: 'bg-green-100 text-green-800' },
+      'ACTIVE': { label: statusLabels.ACTIVE, className: 'bg-green-100 text-green-800' },
+      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-gray-100 text-gray-600' },
     };
 
     const config = statusConfig[status] || { label: status, className: '' };
@@ -164,16 +161,14 @@ export default function SalaryAdjustmentPage() {
           <h1 className="text-3xl font-bold">Quản lý Điều chỉnh lương</h1>
           <p className="text-muted-foreground">
             {isAdmin 
-              ? 'Phê duyệt và tạo quyết định điều chỉnh lương'
-              : isManager
-              ? 'Đề xuất điều chỉnh lương cho nhân viên trong phòng'
+              ? 'Tạo quyết định điều chỉnh lương cho nhân viên'
               : 'Xem thông tin điều chỉnh lương'}
           </p>
         </div>
-        {(isAdmin || isManager) && (
+        {isAdmin && (
           <Button onClick={() => handleOpenFormModal()}>
             <Plus className="h-4 w-4 mr-2" />
-            {isAdmin ? 'Tạo quyết định' : 'Đề xuất điều chỉnh'}
+            Tạo quyết định điều chỉnh
           </Button>
         )}
       </div>
@@ -184,7 +179,7 @@ export default function SalaryAdjustmentPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, lý do hoặc số quyết định"
+              placeholder="Tìm kiếm theo tên nhân viên hoặc số quyết định"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -213,21 +208,8 @@ export default function SalaryAdjustmentPage() {
               <SelectItem value="PROMOTION">Thăng chức</SelectItem>
               <SelectItem value="PERFORMANCE_BONUS">Theo hiệu suất</SelectItem>
               <SelectItem value="PROBATION_END">Kết thúc thử việc</SelectItem>
+              <SelectItem value="DEMOTION">Giảm lương</SelectItem>
               <SelectItem value="OTHER">Khác</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="DRAFT">Bản nháp</SelectItem>
-              <SelectItem value="PENDING_APPROVAL">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
-              <SelectItem value="EFFECTIVE">Đã có hiệu lực</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -246,7 +228,6 @@ export default function SalaryAdjustmentPage() {
                 <TableHead>Tăng/Giảm</TableHead>
                 <TableHead>Ngày hiệu lực</TableHead>
                 <TableHead>Số QĐ</TableHead>
-                <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
@@ -305,15 +286,20 @@ export default function SalaryAdjustmentPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">
-                        {new Date(adjustment.effectiveDate).toLocaleDateString('vi-VN')}
-                      </span>
+                      <div className="text-sm">
+                        <div>{new Date(adjustment.effectiveDate).toLocaleDateString('vi-VN')}</div>
+                        {adjustment.expiryDate && (
+                          <div className="text-xs text-muted-foreground">
+                            → {new Date(adjustment.expiryDate).toLocaleDateString('vi-VN')}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {adjustment.decisionNumber ? (
                         <div className="text-sm">
                           <div className="font-medium">{adjustment.decisionNumber}</div>
-                          <div className="text-muted-foreground">
+                          <div className="text-muted-foreground text-xs">
                             {adjustment.decisionDate && new Date(adjustment.decisionDate).toLocaleDateString('vi-VN')}
                           </div>
                         </div>
@@ -322,11 +308,8 @@ export default function SalaryAdjustmentPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(adjustment.status)}
-                    </TableCell>
-                    <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {(adjustment.status === 'DRAFT' && (isManager || isAdmin)) && (
+                        {adjustment.status === 'DRAFT' && isAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -340,7 +323,7 @@ export default function SalaryAdjustmentPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleOpenDetailModal(adjustment.id)}
-                          title={isAdmin && adjustment.status === 'PENDING_APPROVAL' ? "Xem và phê duyệt" : "Xem chi tiết"}
+                          title="Xem chi tiết"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -428,7 +411,6 @@ export default function SalaryAdjustmentPage() {
         onClose={handleCloseFormModal}
         adjustment={selectedAdjustment}
         onSuccess={handleFormSuccess}
-        isAdmin={isAdmin}
       />
 
       <SalaryAdjustmentDetailModal
@@ -436,7 +418,6 @@ export default function SalaryAdjustmentPage() {
         onClose={handleCloseDetailModal}
         adjustmentId={selectedAdjustmentId}
         onSuccess={handleDetailSuccess}
-        isAdmin={isAdmin}
       />
     </div>
   );

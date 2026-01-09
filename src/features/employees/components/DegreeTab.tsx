@@ -290,7 +290,7 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
             </SelectContent>
           </Select>
 
-          {(isManager || isAdmin) && (
+          {(isAdmin) && (
             <Button onClick={() => handleOpenFormModal()}>
               <Plus className="h-4 w-4 mr-2" />
               Thêm bằng cấp
@@ -330,17 +330,6 @@ export default function DegreeTab({ userData, employeeId }: DegreeTabProps) {
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-8 w-8" />
                       <p>Nhân viên này chưa có bằng cấp nào</p>
-                      {(isManager || isAdmin) && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleOpenFormModal()}
-                          className="mt-2"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Thêm bằng cấp
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -299,7 +299,7 @@ export default function ContractPage() {
               </Button>
               <Button onClick={() => handleOpenFormModal()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Tạo hợp đồng mới
+                Thêm hợp đồng mới
               </Button>
             </>
           )}

@@ -1,17 +1,9 @@
-// pages/hr/appointment/EmployeeHistoryPage.tsx
+// pages/hr/termination/TerminationPage.tsx
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
-import { Search, Plus, Eye, History, UserCheck, Ban } from 'lucide-react';
-import { Badge } from '@/shared/components/ui/badge';
+import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, UserMinus } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
   Table,
@@ -21,105 +13,129 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import { mockEmployeeHistory, type EmployeeCareerTimeline } from '../../../mock/mockAppointmentHistory';
-import EmployeeHistoryDetailModal from '../components/AppointmentHistoryModal';
-import AddHistoryRecordModal from '../components/AddHistoryRecord';
+import { 
+  mockTerminations, 
+  type Termination, 
+  calculateTerminationStatistics
+} from '../../../mock/appointment';
+import TerminationDetailModal from '../components/TerminationDetailModal';
+import TerminationFormModal from '../components/TerminationFormModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
 
-export default function EmployeeHistoryPage() {
+export default function TerminationPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [employees, setEmployees] = useState<EmployeeCareerTimeline[]>([]);
+  const [terminations, setTerminations] = useState<Termination[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [selectedTermination, setSelectedTermination] = useState<Termination | null>(null);
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedTerminationId, setSelectedTerminationId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchEmployees();
-  }, [searchTerm, typeFilter, refreshKey]);
+    fetchTerminations();
+  }, [page, pageSize, searchTerm, refreshKey, isAdmin]);
 
-  const fetchEmployees = async () => {
+  const fetchTerminations = async () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    let filtered = [...mockEmployeeHistory];
+    let filtered = [...mockTerminations];
+
+    // Nếu không phải admin, chỉ xem quyết định của chính mình
+    if (!isAdmin && user?.id) {
+      filtered = filtered.filter(t => t.employeeId === user.id);
+    }
 
     if (searchTerm) {
-      filtered = filtered.filter(e =>
-        e.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.currentPosition?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        e.currentDepartment?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(t =>
+        t.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.appointmentDecisionNumber && t.appointmentDecisionNumber.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
-    // Filter theo loại record
-    if (typeFilter !== 'ALL') {
-      filtered = filtered.map(e => ({
-        ...e,
-        history: e.history.filter(h => h.type === typeFilter)
-      })).filter(e => e.history.length > 0);
-    }
+    // Sắp xếp theo ngày quyết định mới nhất
+    filtered.sort((a, b) => new Date(b.decisionDate).getTime() - new Date(a.decisionDate).getTime());
 
-    setEmployees(filtered);
+    setTotalItems(filtered.length);
+
+    const start = page * pageSize;
+    const end = start + pageSize;
+    setTerminations(filtered.slice(start, end));
+
     setIsLoading(false);
   };
 
-  const handleOpenDetailModal = (employeeId: string) => {
-    setSelectedEmployeeId(employeeId);
+  const handleOpenFormModal = (termination?: Termination) => {
+    setSelectedTermination(termination || null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setSelectedTermination(null);
+  };
+
+  const handleFormSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+    handleCloseFormModal();
+  };
+
+  const handleOpenDetailModal = (id: string) => {
+    setSelectedTerminationId(id);
     setIsDetailModalOpen(true);
   };
 
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
-    setSelectedEmployeeId(null);
+    setSelectedTerminationId(null);
   };
 
-  const handleOpenAddModal = () => {
-    setIsAddModalOpen(true);
-  };
-
-  const handleCloseAddModal = () => {
-    setIsAddModalOpen(false);
-  };
-
-  const handleSuccess = () => {
+  const handleDetailSuccess = () => {
     setRefreshKey(prev => prev + 1);
+    handleCloseDetailModal();
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
-  };
-
-  const getTypeBadge = (type: string) => {
-    if (type === 'APPOINTMENT') {
-      return <Badge className="bg-blue-100 text-blue-800">Bổ nhiệm</Badge>;
-    }
-    return <Badge className="bg-red-100 text-red-800">Miễn nhiệm</Badge>;
-  };
+  const stats = calculateTerminationStatistics(mockTerminations);
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = page * pageSize + 1;
+  const endIndex = Math.min((page + 1) * pageSize, totalItems);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Lịch sử Bổ nhiệm & Miễn nhiệm</h1>
+          <h1 className="text-3xl font-bold">
+            {isAdmin ? 'Quản lý quyết định miễn nhiệm' : 'Quyết định miễn nhiệm của tôi'}
+          </h1>
           <p className="text-muted-foreground">
-            Xem và quản lý lịch sử bổ nhiệm, miễn nhiệm của tất cả nhân viên
+            {isAdmin 
+              ? 'Tạo và quản lý các quyết định miễn nhiệm nhân sự' 
+              : 'Xem các quyết định miễn nhiệm liên quan đến bạn'}
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={handleOpenAddModal}>
+          <Button onClick={() => handleOpenFormModal()}>
             <Plus className="h-4 w-4 mr-2" />
-            Thêm bản ghi lịch sử
+            Tạo quyết định miễn nhiệm
           </Button>
         )}
       </div>
@@ -130,23 +146,12 @@ export default function EmployeeHistoryPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, chức vụ hoặc phòng ban"
+              placeholder="Tìm kiếm theo tên nhân viên, chức vụ, phòng ban hoặc số quyết định"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Loại bản ghi" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả</SelectItem>
-              <SelectItem value="APPOINTMENT">Bổ nhiệm</SelectItem>
-              <SelectItem value="TERMINATION">Miễn nhiệm</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </Card>
 
@@ -157,134 +162,178 @@ export default function EmployeeHistoryPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nhân viên</TableHead>
-                <TableHead>Chức vụ hiện tại</TableHead>
-                <TableHead>Số bản ghi</TableHead>
-                <TableHead>Lần bổ nhiệm gần nhất</TableHead>
-                <TableHead>Trạng thái</TableHead>
+                <TableHead>Chức vụ miễn nhiệm</TableHead>
+                <TableHead>Số QĐ miễn nhiệm</TableHead>
+                <TableHead>Số QĐ bổ nhiệm</TableHead>
+                <TableHead>Ngày QĐ</TableHead>
+                <TableHead>Ngày hiệu lực</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : employees.length === 0 ? (
+              ) : terminations.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <History className="h-8 w-8" />
-                      <p>Không tìm thấy lịch sử nào</p>
+                      <UserMinus className="h-8 w-8" />
+                      <p>Không tìm thấy quyết định miễn nhiệm nào</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                employees.map((employee) => {
-                  const latestRecord = employee.history[employee.history.length - 1];
-                  const appointmentCount = employee.history.filter(h => h.type === 'APPOINTMENT').length;
-                  const terminationCount = employee.history.filter(h => h.type === 'TERMINATION').length;
-
-                  return (
-                    <TableRow key={employee.employeeId}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{employee.employeeName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Mã NV: {employee.employeeId}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {employee.currentPosition ? (
-                          <div>
-                            <p className="font-medium">{employee.currentPosition}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {employee.currentDepartment}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            Không giữ chức vụ
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-blue-600">
-                              {appointmentCount} bổ nhiệm
-                            </Badge>
-                          </div>
-                          {terminationCount > 0 && (
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-red-600">
-                                {terminationCount} miễn nhiệm
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div className="flex items-center gap-2">
-                            {getTypeBadge(latestRecord.type)}
-                          </div>
-                          <p className="text-muted-foreground mt-1">
-                            {new Date(latestRecord.decisionDate).toLocaleDateString('vi-VN')}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {employee.currentPosition ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            Đang giữ chức
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-gray-100 text-gray-800">
-                            Không giữ chức
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 justify-center">
+                terminations.map((termination) => (
+                  <TableRow key={termination.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{termination.employeeName}</p>
+                        <p className="text-sm text-muted-foreground">{termination.department}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium">{termination.position}</p>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium">{termination.decisionNumber}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {termination.appointmentDecisionNumber || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">
+                        {new Date(termination.decisionDate).toLocaleDateString('vi-VN')}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">
+                        {new Date(termination.effectiveDate).toLocaleDateString('vi-VN')}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 justify-center">
+                        {isAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenDetailModal(employee.employeeId)}
-                            title="Xem chi tiết lịch sử"
+                            onClick={() => handleOpenFormModal(termination)}
+                            title="Chỉnh sửa"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDetailModal(termination.id)}
+                          title="Xem chi tiết"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination */}
+        {!isLoading && terminations.length > 0 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <div className="text-sm text-muted-foreground">
+              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setPage(0);
+                }}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(0)}
+                  disabled={page === 0}
+                >
+                  Đầu
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => p - 1)}
+                  disabled={page === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <span className="px-3 text-sm">
+                  Trang {page + 1} / {totalPages}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= totalPages - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(totalPages - 1)}
+                  disabled={page >= totalPages - 1}
+                >
+                  Cuối
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
-      <EmployeeHistoryDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={handleCloseDetailModal}
-        employeeId={selectedEmployeeId}
-        isAdmin={isAdmin}
-      />
-
       {isAdmin && (
-        <AddHistoryRecordModal
-          isOpen={isAddModalOpen}
-          onClose={handleCloseAddModal}
-          onSuccess={handleSuccess}
+        <TerminationFormModal
+          isOpen={isFormModalOpen}
+          onClose={handleCloseFormModal}
+          termination={selectedTermination}
+          onSuccess={handleFormSuccess}
         />
       )}
+
+      <TerminationDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        terminationId={selectedTerminationId}
+        onSuccess={handleDetailSuccess}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

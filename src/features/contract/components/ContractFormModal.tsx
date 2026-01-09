@@ -302,7 +302,7 @@ export default function ContractFormModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-xl font-semibold">
-            {contract ? 'Chỉnh sửa hợp đồng' : 'Tạo hợp đồng mới'}
+            {contract ? 'Chỉnh sửa hợp đồng' : 'Thêm hợp đồng mới'}
           </h2>
           <button
             onClick={onClose}
@@ -554,7 +554,7 @@ export default function ContractFormModal({
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Đang lưu...' : contract ? 'Cập nhật' : 'Tạo hợp đồng'}
+            {isSubmitting ? 'Đang lưu...' : contract ? 'Xác nhận' : 'Xác nhận'}
           </Button>
         </div>
       </div>

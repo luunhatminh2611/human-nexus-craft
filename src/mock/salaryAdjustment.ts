@@ -1,11 +1,9 @@
 // mock/salaryAdjustment.ts
 
 export type AdjustmentStatus = 
-  | 'DRAFT'              // Bản nháp (Manager đang soạn)
-  | 'PENDING_APPROVAL'   // Chờ Admin phê duyệt (Manager đã gửi)
-  | 'APPROVED'           // Đã phê duyệt - có quyết định (Admin đã duyệt)
-  | 'REJECTED'           // Từ chối (Admin từ chối)
-  | 'EFFECTIVE';         // Đã có hiệu lực (đã áp dụng)
+  | 'DRAFT'              // Bản nháp
+  | 'ACTIVE'             // Đang hiệu lực
+  | 'EXPIRED';           // Đã hết hiệu lực
 
 export type AdjustmentType = 
   | 'ANNUAL_INCREASE'      // Tăng lương định kỳ hàng năm
@@ -57,6 +55,7 @@ export interface SalaryAdjustment {
   
   // Thời gian
   effectiveDate: string;        // Ngày có hiệu lực
+  expiryDate?: string;          // Ngày hết hiệu lực (nếu có)
   
   // Lý do và căn cứ
   reason: string;               // Lý do chi tiết
@@ -70,18 +69,10 @@ export interface SalaryAdjustment {
   // Trạng thái
   status: AdjustmentStatus;
   
-  // Phê duyệt
-  approvedBy?: string;
-  approvedByName?: string;
-  approvedDate?: string;
-  approvalNote?: string;        // Ghi chú phê duyệt
-  
-  rejectedReason?: string;      // Lý do từ chối
-  
-  // Người đề xuất (Manager hoặc Admin)
-  proposedBy: string;
-  proposedByName: string;
-  proposedDate: string;
+  // Người tạo (Admin)
+  createdBy: string;
+  createdByName: string;
+  createdDate: string;
   
   // Cập nhật
   updatedBy?: string;
@@ -106,10 +97,8 @@ export interface SalaryHistory {
 
 export const statusLabels: Record<AdjustmentStatus, string> = {
   DRAFT: 'Bản nháp',
-  PENDING_APPROVAL: 'Chờ phê duyệt',
-  APPROVED: 'Đã phê duyệt',
-  REJECTED: 'Từ chối',
-  EFFECTIVE: 'Đã có hiệu lực',
+  ACTIVE: 'Đang hiệu lực',
+  EXPIRED: 'Đã hết hạn',
 };
 
 export const adjustmentTypeLabels: Record<AdjustmentType, string> = {
@@ -175,28 +164,24 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     increaseAmount: 3000000,
     increasePercentage: 11.54,
     effectiveDate: '2024-01-01',
-    proposedDate: '2023-12-10',
+    createdDate: '2023-12-10',
     reason: 'Tăng lương định kỳ năm 2024 dựa trên đánh giá hiệu suất xuất sắc',
     performanceNote: 'Hoàn thành vượt 120% KPI, đóng góp quan trọng vào dự án X',
     attachments: ['danh-gia-hieu-suat-2023.pdf', 'bao-cao-kpi.pdf'],
     decisionNumber: 'QĐ-TL-2024-001',
     decisionDate: '2023-12-25',
-    status: 'EFFECTIVE',
-    approvedBy: 'ADMIN-001',
-    approvedByName: 'Nguyễn Văn E',
-    approvedDate: '2023-12-25',
-    approvalNote: 'Phê duyệt tăng lương theo đề xuất',
-    proposedBy: 'MGR-001',
-    proposedByName: 'Trần Thị B (Manager IT)',
+    status: 'ACTIVE',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
   },
   
-  // Chờ phê duyệt
+  // Đã có hiệu lực - Thăng chức
   {
     id: 'SA-002',
     employeeId: 'EMP-002',
     employeeName: 'Lê Thị Cẩm',
     departmentName: 'Phòng Kinh doanh',
-    position: 'Sales Executive',
+    position: 'Senior Sales Executive',
     currentPosition: 'Sales Executive',
     newPosition: 'Senior Sales Executive',
     adjustmentType: 'PROMOTION',
@@ -221,17 +206,19 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     },
     increaseAmount: 5500000,
     increasePercentage: 30.56,
-    effectiveDate: '2025-02-01',
-    proposedDate: '2025-01-05',
+    effectiveDate: '2024-02-01',
+    createdDate: '2024-01-05',
     reason: 'Thăng chức lên Senior Sales Executive do đạt doanh số xuất sắc và quản lý team hiệu quả',
-    performanceNote: 'Đạt 150% doanh số năm 2024, training thành công 3 nhân viên mới',
-    attachments: ['de-xuat-thang-chuc.pdf', 'bao-cao-doanh-so-2024.pdf'],
-    status: 'PENDING_APPROVAL',
-    proposedBy: 'MGR-002',
-    proposedByName: 'Phạm Văn D (Manager Kinh doanh)',
+    performanceNote: 'Đạt 150% doanh số năm 2023, training thành công 3 nhân viên mới',
+    attachments: ['de-xuat-thang-chuc.pdf', 'bao-cao-doanh-so-2023.pdf'],
+    decisionNumber: 'QĐ-TL-2024-002',
+    decisionDate: '2024-01-15',
+    status: 'ACTIVE',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
   },
   
-  // Đã phê duyệt chưa có hiệu lực
+  // Đã có hiệu lực
   {
     id: 'SA-003',
     employeeId: 'EMP-003',
@@ -258,20 +245,16 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     },
     increaseAmount: 2000000,
     increasePercentage: 10.53,
-    effectiveDate: '2025-02-01',
-    proposedDate: '2025-01-03',
+    effectiveDate: '2024-12-01',
+    createdDate: '2024-11-15',
     reason: 'Tăng lương dựa trên đánh giá hiệu suất Q4/2024 đạt loại A',
     performanceNote: 'Hoàn thành xuất sắc công tác báo cáo tài chính, không có sai sót',
     attachments: ['danh-gia-q4-2024.pdf'],
-    decisionNumber: 'QĐ-TL-2025-001',
-    decisionDate: '2025-01-06',
-    status: 'APPROVED',
-    approvedBy: 'ADMIN-001',
-    approvedByName: 'Nguyễn Văn E',
-    approvedDate: '2025-01-06',
-    approvalNote: 'Phê duyệt theo đề xuất, có hiệu lực từ 01/02/2025',
-    proposedBy: 'MGR-003',
-    proposedByName: 'Vũ Thị G (Manager Kế toán)',
+    decisionNumber: 'QĐ-TL-2024-025',
+    decisionDate: '2024-11-20',
+    status: 'ACTIVE',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
   },
   
   // Bản nháp
@@ -300,57 +283,18 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     increaseAmount: 1000000,
     increasePercentage: 8.33,
     effectiveDate: '2025-03-01',
-    proposedDate: '2025-01-06',
+    createdDate: '2025-01-06',
     reason: 'Tăng lương định kỳ năm 2025',
     attachments: [],
     status: 'DRAFT',
-    proposedBy: 'MGR-004',
-    proposedByName: 'Lý Văn L (Manager Hành chính)',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
+    notes: 'Đang soạn thảo quyết định',
   },
   
-  // Từ chối
+  // Kết thúc thử việc - Đã có hiệu lực
   {
     id: 'SA-005',
-    employeeId: 'EMP-005',
-    employeeName: 'Bùi Thị K',
-    departmentName: 'Phòng Marketing',
-    position: 'Marketing Specialist',
-    currentPosition: 'Marketing Specialist',
-    adjustmentType: 'PERFORMANCE_BONUS',
-    currentSalary: {
-      baseSalary: 17000000,
-      allowances: {
-        position: 2000000,
-        phone: 1000000,
-      },
-      totalSalary: 20000000,
-    },
-    newSalary: {
-      baseSalary: 20000000,
-      allowances: {
-        position: 2000000,
-        phone: 1000000,
-      },
-      totalSalary: 23000000,
-    },
-    increaseAmount: 3000000,
-    increasePercentage: 15.0,
-    effectiveDate: '2024-12-01',
-    proposedDate: '2024-11-15',
-    reason: 'Đề xuất tăng lương do hoàn thành tốt các chiến dịch marketing',
-    attachments: ['de-xuat-tang-luong.pdf'],
-    status: 'REJECTED',
-    approvedBy: 'ADMIN-001',
-    approvedByName: 'Nguyễn Văn E',
-    approvedDate: '2024-11-20',
-    rejectedReason: 'Chưa đủ thời gian đánh giá hiệu suất (mới làm 6 tháng). Đề nghị xem xét lại sau 6 tháng nữa.',
-    proposedBy: 'MGR-005',
-    proposedByName: 'Đặng Văn M (Manager Marketing)',
-  },
-  
-  // Kết thúc thử việc
-  {
-    id: 'SA-006',
     employeeId: 'EMP-008',
     employeeName: 'Võ Thị P',
     departmentName: 'Phòng Kinh doanh',
@@ -376,19 +320,21 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     },
     increaseAmount: 6500000,
     increasePercentage: 86.67,
-    effectiveDate: '2025-03-01',
-    proposedDate: '2025-01-05',
+    effectiveDate: '2024-09-01',
+    createdDate: '2024-08-20',
     reason: 'Kết thúc thử việc, chuyển sang nhân viên chính thức',
     performanceNote: 'Hoàn thành tốt công việc trong thời gian thử việc',
     attachments: ['danh-gia-thu-viec.pdf'],
-    status: 'PENDING_APPROVAL',
-    proposedBy: 'MGR-002',
-    proposedByName: 'Phạm Văn D (Manager Kinh doanh)',
+    decisionNumber: 'QĐ-TL-2024-018',
+    decisionDate: '2024-08-25',
+    status: 'ACTIVE',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
   },
 
   // Thăng chức - Đã có hiệu lực
   {
-    id: 'SA-007',
+    id: 'SA-006',
     employeeId: 'EMP-007',
     employeeName: 'Phan Thị N',
     departmentName: 'Phòng Nhân sự',
@@ -416,24 +362,20 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     increaseAmount: 10000000,
     increasePercentage: 52.63,
     effectiveDate: '2024-07-01',
-    proposedDate: '2024-06-10',
+    createdDate: '2024-06-10',
     reason: 'Thăng chức lên HR Manager do thể hiện năng lực lãnh đạo xuất sắc',
     performanceNote: 'Triển khai thành công hệ thống đánh giá hiệu suất mới, tuyển dụng đúng 95% nhân sự',
     attachments: ['de-xuat-thang-chuc.pdf', 'bao-cao-thanh-tich.pdf'],
     decisionNumber: 'QĐ-TL-2024-015',
     decisionDate: '2024-06-25',
-    status: 'EFFECTIVE',
-    approvedBy: 'ADMIN-001',
-    approvedByName: 'Nguyễn Văn E',
-    approvedDate: '2024-06-25',
-    approvalNote: 'Phê duyệt thăng chức và tăng lương theo đề xuất',
-    proposedBy: 'MGR-006',
-    proposedByName: 'Hoàng Thị P (Manager Nhân sự)',
+    status: 'ACTIVE',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
   },
 
-  // Admin tự tạo và tự động duyệt (không cần chờ phê duyệt)
+  // Điều chỉnh theo thị trường - Đã có hiệu lực
   {
-    id: 'SA-008',
+    id: 'SA-007',
     employeeId: 'EMP-009',
     employeeName: 'Lý Văn Q',
     departmentName: 'Phòng IT',
@@ -460,20 +402,97 @@ export const mockSalaryAdjustments: SalaryAdjustment[] = [
     },
     increaseAmount: 3000000,
     increasePercentage: 9.68,
-    effectiveDate: '2025-02-01',
-    proposedDate: '2025-01-07',
+    effectiveDate: '2024-11-01',
+    createdDate: '2024-10-15',
     reason: 'Điều chỉnh lương theo mức thị trường để giữ chân nhân tài',
     performanceNote: 'Nhân viên có kỹ năng cao, đang có nhiều offer từ công ty khác',
     attachments: ['bao-cao-thi-truong-luong.pdf'],
-    decisionNumber: 'QĐ-TL-2025-002',
-    decisionDate: '2025-01-07',
-    status: 'APPROVED',
-    approvedBy: 'ADMIN-001',
-    approvedByName: 'Nguyễn Văn E',
-    approvedDate: '2025-01-07',
-    approvalNote: 'Admin tạo quyết định trực tiếp',
-    proposedBy: 'ADMIN-001',
-    proposedByName: 'Nguyễn Văn E (Admin)',
+    decisionNumber: 'QĐ-TL-2024-022',
+    decisionDate: '2024-10-20',
+    status: 'ACTIVE',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
+  },
+
+  // Đã hết hạn (temporary salary increase)
+  {
+    id: 'SA-008',
+    employeeId: 'EMP-005',
+    employeeName: 'Bùi Thị K',
+    departmentName: 'Phòng Marketing',
+    position: 'Marketing Specialist',
+    currentPosition: 'Marketing Specialist',
+    adjustmentType: 'SPECIAL_RECOGNITION',
+    currentSalary: {
+      baseSalary: 17000000,
+      allowances: {
+        position: 2000000,
+        phone: 1000000,
+      },
+      totalSalary: 20000000,
+    },
+    newSalary: {
+      baseSalary: 17000000,
+      allowances: {
+        position: 2000000,
+        phone: 1000000,
+        other: 2000000, // Thưởng đặc biệt
+      },
+      totalSalary: 22000000,
+    },
+    increaseAmount: 2000000,
+    increasePercentage: 10.0,
+    effectiveDate: '2024-01-01',
+    expiryDate: '2024-06-30',
+    createdDate: '2023-12-20',
+    reason: 'Thưởng đặc biệt 6 tháng cho chiến dịch marketing thành công vượt trội',
+    performanceNote: 'Chiến dịch mang về 500M doanh thu, tăng 200% so với dự kiến',
+    attachments: ['bao-cao-chien-dich.pdf'],
+    decisionNumber: 'QĐ-TL-2024-003',
+    decisionDate: '2023-12-28',
+    status: 'EXPIRED',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
+  },
+
+  // Bản nháp - Giảm lương
+  {
+    id: 'SA-009',
+    employeeId: 'EMP-010',
+    employeeName: 'Trần Văn S',
+    departmentName: 'Phòng Kinh doanh',
+    position: 'Sales Staff',
+    currentPosition: 'Senior Sales Executive',
+    newPosition: 'Sales Staff',
+    adjustmentType: 'DEMOTION',
+    currentSalary: {
+      baseSalary: 18000000,
+      allowances: {
+        position: 2500000,
+        responsibility: 1000000,
+        transportation: 1500000,
+      },
+      totalSalary: 23000000,
+    },
+    newSalary: {
+      baseSalary: 14000000,
+      allowances: {
+        position: 1000000,
+        transportation: 1000000,
+      },
+      totalSalary: 16000000,
+    },
+    increaseAmount: -7000000,
+    increasePercentage: -30.43,
+    effectiveDate: '2025-02-01',
+    createdDate: '2025-01-08',
+    reason: 'Giảm lương do giáng chức từ Senior về Staff do không đạt chỉ tiêu 3 quý liên tiếp',
+    performanceNote: 'Chỉ đạt 60% KPI trong Q2, Q3, Q4/2024',
+    attachments: [],
+    status: 'DRAFT',
+    createdBy: 'ADMIN-001',
+    createdByName: 'Nguyễn Văn E',
+    notes: 'Đang xem xét quyết định',
   },
 ];
 
@@ -481,15 +500,13 @@ export function calculateSalaryStatistics(adjustments: SalaryAdjustment[]) {
   return {
     total: adjustments.length,
     draft: adjustments.filter(a => a.status === 'DRAFT').length,
-    pendingApproval: adjustments.filter(a => a.status === 'PENDING_APPROVAL').length,
-    approved: adjustments.filter(a => a.status === 'APPROVED').length,
-    rejected: adjustments.filter(a => a.status === 'REJECTED').length,
-    effective: adjustments.filter(a => a.status === 'EFFECTIVE').length,
+    active: adjustments.filter(a => a.status === 'ACTIVE').length,
+    expired: adjustments.filter(a => a.status === 'EXPIRED').length,
     totalIncrease: adjustments
-      .filter(a => a.status === 'EFFECTIVE' || a.status === 'APPROVED')
+      .filter(a => a.status === 'ACTIVE')
       .reduce((sum, a) => sum + a.increaseAmount, 0),
     averageIncrease: adjustments
-      .filter(a => a.status === 'EFFECTIVE' || a.status === 'APPROVED')
+      .filter(a => a.status === 'ACTIVE')
       .reduce((sum, a, _, arr) => sum + a.increasePercentage / arr.length, 0),
   };
 }
@@ -511,7 +528,7 @@ export const mockSalaryHistory: SalaryHistory[] = [
   {
     id: 'SH-002',
     employeeId: 'EMP-007',
-    adjustmentId: 'SA-007',
+    adjustmentId: 'SA-006',
     effectiveDate: '2024-07-01',
     oldSalary: 19000000,
     newSalary: 29000000,

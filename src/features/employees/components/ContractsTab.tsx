@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/components/ui/card';
-import Button from '@/shared/components/ui/button/Button';
 import { Button as Button2 } from '@/shared/components/ui/button/Button2';
 import {
   FileText,
@@ -268,10 +267,10 @@ export default function ContractsTab({ employeeId }: ContractsTabProps) {
                 Tổng số: {contracts.length} hợp đồng
               </p>
             </div>
-            <Button onClick={openCreate}>
+            <Button2 onClick={openCreate}>
               <Plus className="h-4 w-4 mr-2" />
               Thêm hợp đồng
-            </Button>
+            </Button2>
           </div>
         </CardContent>
       </Card>
@@ -408,43 +407,43 @@ export default function ContractsTab({ employeeId }: ContractsTabProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button
+                <Button2
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
                 >
                   Đầu
-                </Button>
-                <Button
+                </Button2>
+                <Button2
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
                   Trước
-                </Button>
+                </Button2>
 
                 <span className="text-sm px-4">
                   Trang {currentPage} / {totalPages}
                 </span>
 
-                <Button
+                <Button2
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
                   Sau
-                </Button>
-                <Button
+                </Button2>
+                <Button2
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages}
                 >
                   Cuối
-                </Button>
+                </Button2>
               </div>
             </div>
           </CardContent>

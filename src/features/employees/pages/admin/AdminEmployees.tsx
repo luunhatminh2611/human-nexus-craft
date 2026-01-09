@@ -33,7 +33,8 @@ import {
   Trash2,
   ArrowLeft,
   Edit,
-  Edit2
+  Edit2,
+  ChevronDown
 } from 'lucide-react';
 import { employeeApi } from '../../api/employeeApi';
 import { userApi } from '../../api/userApi';
@@ -69,6 +70,13 @@ import { culturalLevelApi, degreeApi, ethnicityApi, itLevelApi, jobTitleApi, lab
 import { toast } from '@/shared/hooks/use-toast';
 import EmployeeFamilyVisitTab from '../../components/VistFamilyTab';
 import InsuranceTab from '../../components/InsuranceTab';
+import AllDecisionsTab from '../../components/AlldecisionTab';
+import clsx from 'clsx';
+import TerminationTab from '../../components/TerminationTab';
+import ExtensionTab from '../../components/ExtensionTab';
+import EmployeeDocumentsTab from '../../components/EmployeeDocumentTab';
+import FamilyTab from '../../components/FamilyTab';
+import WorkScheduleTab from '../../components/WorkScheduleTab';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -77,7 +85,7 @@ export default function Employees() {
   const [filterDepartment, setFilterDepartment] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
+  const [isDecisionDropdownOpen, setIsDecisionDropdownOpen] = useState(false);
   // Employee selection for detail view
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [editingEmployeeId, setEditingEmployeeId] = useState(null);
@@ -105,7 +113,7 @@ export default function Employees() {
   const [isBulkEditModalOpen, setIsBulkEditModalOpen] = useState(false);
   const [isBulkAddModalOpen, setIsBulkAddModalOpen] = useState(false);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
-  const [decisionType, setDecisionType] = useState('reward');
+  const [decisionType, setDecisionType] = useState('all');
   const [medicalType, setMedicalType] = useState('record');
   const [isColumnSettingsOpen, setIsColumnSettingsOpen] = useState(false);
 
@@ -805,11 +813,11 @@ export default function Employees() {
 
               {selectedEmployeeId ? (
                 <div>
-                  {/* <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex-1">
-                        <Upload className="h-4 w-4" />
-                        Import Excel
-                      </Button> */}
-                  <Button variant="outline" size="sm" onClick={handleExportExcel} className="flex-1">
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="h-4 w-4 mr-1" />
+                    Tải lên
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleExportExcel} className="ml-2 flex-1">
                     <Download className="h-4 w-4 mr-2" />
                     Tải xuống
                   </Button>
@@ -1306,7 +1314,7 @@ export default function Employees() {
                         >
                           <TabsTrigger value="info">Hồ sơ & Quyết định</TabsTrigger>
                           <TabsTrigger value="benefit">Chế độ & Phúc lợi</TabsTrigger>
-                          <TabsTrigger value="salary-review">Lương & Đánh giá</TabsTrigger>
+                          <TabsTrigger value="salary-review">Lương & KPI</TabsTrigger>
                           <TabsTrigger value="skill">Đào tạo, bồi dưỡng</TabsTrigger>
                           <TabsTrigger value="business">Nghỉ phép & Công tác</TabsTrigger>
                           <TabsTrigger value="/">Khác</TabsTrigger>
@@ -1326,14 +1334,157 @@ export default function Employees() {
                               >
                                 Sơ yếu lý lịch
                               </Button2>
-                              <Button2
-                                variant={subTab === 'decision' ? 'default' : 'ghost'}
-                                size="sm"
-                                onClick={() => setSubTab('decision')}
-                                className={subTab === 'decision' ? '' : 'hover:bg-background'}
-                              >
-                                Quyết định
-                              </Button2>
+                              <div className="relative">
+                                <Button2
+                                  variant={subTab === 'decision' ? 'default' : 'ghost'}
+                                  size="sm"
+                                  onClick={() => {
+                                    setSubTab('decision');
+                                    setIsDecisionDropdownOpen(!isDecisionDropdownOpen);
+                                  }}
+                                  className={subTab === 'decision' ? '' : 'hover:bg-background'}
+                                >
+                                  Quyết định
+                                  <ChevronDown
+                                    className={clsx(
+                                      'h-4 w-4 ml-1 transition-transform',
+                                      isDecisionDropdownOpen && 'rotate-180'
+                                    )}
+                                  />
+                                </Button2>
+
+                                {/* Dropdown menu */}
+                                {subTab === 'decision' && isDecisionDropdownOpen && (
+                                  <div className="absolute left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('all');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'all'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Tất cả quyết định
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('reward');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'reward'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Khen thưởng
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('discipline');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'discipline'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Kỷ luật
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('appointment');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'appointment'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Bổ nhiệm
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('dismissal');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'dismissal'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Miễn nhiệm
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('transfer');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'transfer'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Điều chuyển công tác
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('salary-adjustment');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'salary-adjustment'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Điều chỉnh lương
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('suspend-terminate');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'suspend-terminate'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Chấm dứt hợp đồng
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDecisionType('renew-extend');
+                                        setIsDecisionDropdownOpen(false);
+                                      }}
+                                      className={clsx(
+                                        'w-full px-4 py-2 text-sm text-left transition-colors',
+                                        decisionType === 'renew-extend'
+                                          ? 'bg-green-100 text-green-600 font-medium'
+                                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                      )}
+                                    >
+                                      Gia hạn/Tái ký hợp đồng
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                               <Button2
                                 variant={subTab === 'degree' ? 'default' : 'ghost'}
                                 size="sm"
@@ -1386,83 +1537,12 @@ export default function Employees() {
                               )}
                               {subTab === 'decision' && (
                                 <div className="space-y-4">
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="outline" className="w-fit">
-                                        {decisionType === 'reward' && 'Khen thưởng'}
-                                        {decisionType === 'discipline' && 'Kỷ luật'}
-                                        {decisionType === 'appointment' && 'Bổ nhiệm'}
-                                        {decisionType === 'dismissal' && 'Miễn nhiệm'}
-                                        {decisionType === 'salary-adjustment' && 'Điều chỉnh lương'}
-                                        {decisionType === 'transfer' && 'Điều chuyển công tác'}
-                                        {decisionType === 'suspend-terminate' && 'Tạm hoãn/Chấm dứt hợp đồng'}
-                                        {decisionType === 'renew-extend' && 'Tái ký hoặc gia hạn hợp đồng'}
-                                        <span className="ml-2">▼</span>
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-64 p-2">
-                                      <div className="flex flex-col gap-1">
-                                        <Button
-                                          variant={decisionType === 'reward' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('reward')}
-                                        >
-                                          Khen thưởng
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'discipline' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('discipline')}
-                                        >
-                                          Kỷ luật
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'appointment' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('appointment')}
-                                        >
-                                          Bổ nhiệm
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'dismissal' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('dismissal')}
-                                        >
-                                          Miễn nhiệm
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'salary-adjustment' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('salary-adjustment')}
-                                        >
-                                          Điều chỉnh lương
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'transfer' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('transfer')}
-                                        >
-                                          Điều chuyển công tác
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'suspend-terminate' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('suspend-terminate')}
-                                        >
-                                          Tạm hoãn/Chấm dứt hợp đồng
-                                        </Button>
-                                        <Button
-                                          variant={decisionType === 'renew-extend' ? 'primary' : 'ghost'}
-                                          className="justify-start"
-                                          onClick={() => setDecisionType('renew-extend')}
-                                        >
-                                          Tái ký hoặc gia hạn hợp đồng
-                                        </Button>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-
-                                  {/* Render component based on decision type */}
+                                  {decisionType === 'all' && (
+                                    <AllDecisionsTab
+                                      employeeId={Number(selectedEmployeeId)}
+                                      userData={employeeDetailData}
+                                    />
+                                  )}
                                   {decisionType === 'reward' && (
                                     <RewardTab
                                       employeeId={Number(selectedEmployeeId)}
@@ -1493,11 +1573,16 @@ export default function Employees() {
                                       userData={employeeDetailData}
                                     />
                                   )}
-
-                                  {!['reward', 'discipline', 'appointment', 'dismissal', 'transfer', 'salary-adjustment'].includes(decisionType) && (
-                                    <InfoTab
+                                  {decisionType === 'suspend-terminate' && (
+                                    <TerminationTab
+                                      employeeId={Number(selectedEmployeeId)}
                                       userData={employeeDetailData}
-                                      employeeId={selectedEmployeeId}
+                                    />
+                                  )}
+                                  {decisionType === 'renew-extend' && (
+                                    <ExtensionTab
+                                      employeeId={Number(selectedEmployeeId)}
+                                      userData={employeeDetailData}
                                     />
                                   )}
                                 </div>
@@ -1547,14 +1632,13 @@ export default function Employees() {
                                 </div>
                               )}
                               {subTab === 'profile' && (
-                                <InfoTab
+                                <EmployeeDocumentsTab
                                   userData={employeeDetailData}
-                                  employeeId={selectedEmployeeId}
+                                  employeeId={Number(selectedEmployeeId)}
                                 />
                               )}
                               {subTab === 'family' && (
-                                <InfoTab
-                                  userData={employeeDetailData}
+                                <FamilyTab
                                   employeeId={selectedEmployeeId}
                                 />
                               )}
@@ -1595,8 +1679,7 @@ export default function Employees() {
                             {/* Content */}
                             <div>
                               {subTab === 'workSchedule' &&
-                                <InfoTab
-                                  userData={employeeDetailData}
+                                <WorkScheduleTab
                                   employeeId={selectedEmployeeId}
                                 />
                               }

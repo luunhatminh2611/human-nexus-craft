@@ -30,6 +30,9 @@ import EmployeeDocumentsPage from '@/features/employeeFile/pages/EmployeeDocumen
 import SocialInsurancePage from '@/features/socialInsurance/pages/SocialInsurancePage';
 import SalaryAdjustmentPage from '@/features/salaryAdjustment/pages/SalaryAdjustmentPage';
 import FamilyVisitList from '@/features/fanilyVisit/pages/VisitFamilyPage';
+import ExtensionDecisionPage from '@/features/contracDecision/pages/ExtensionDecisionPage';
+import TerminationDecisionPage from '@/features/contracDecision/pages/TerminationDecisionPage';
+import FamilyManagementPage from '@/features/fanilyVisit/pages/FamilyManagementPage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -160,6 +163,9 @@ export const router = createBrowserRouter([
       { path: ROUTES.SOCIAL_INSURANCE.slice(1), element: <SocialInsurancePage /> },
       { path: ROUTES.SALARY_ADJUST.slice(1), element: <SalaryAdjustmentPage /> },
       { path: ROUTES.VISIT_MANAGEMENT.slice(1), element: <FamilyVisitList /> },
+      { path: ROUTES.EXTEND_DECISION_MANAGEMENT.slice(1), element: <ExtensionDecisionPage /> },
+      { path: ROUTES.TERMINATE_DECISION_MANAGEMENT.slice(1), element: <TerminationDecisionPage /> },
+      { path: ROUTES.FAMILY_MANAGEMENT.slice(1), element: <FamilyManagementPage /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]

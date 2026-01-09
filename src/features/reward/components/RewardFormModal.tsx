@@ -1,3 +1,5 @@
+// pages/hr/components/RewardFormModal.tsx
+
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -11,8 +13,8 @@ import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
-import { X, Save, Send } from 'lucide-react';
-import { type Reward } from '../../../mock/reward';
+import { X, Save, Upload, FileText, Trash2 } from 'lucide-react';
+import { type Reward, type RewardAttachment } from '../../../mock/reward';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
 interface RewardFormModalProps {
@@ -29,7 +31,6 @@ export default function RewardFormModal({
   onSuccess,
 }: RewardFormModalProps) {
   const { user } = useAuthStore();
-  const isAdmin = user?.roles === 'ADMIN';
 
   const [formData, setFormData] = useState({
     employeeName: '',
@@ -38,14 +39,15 @@ export default function RewardFormModal({
     rewardType: '',
     achievement: '',
     reason: '',
-    proposedAmount: '',
+    amount: '',
     decisionNumber: '',
     decisionDate: '',
   });
 
+  const [attachments, setAttachments] = useState<RewardAttachment[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitAction, setSubmitAction] = useState<'draft' | 'submit'>('draft');
 
   /* -------------------- Init data -------------------- */
   useEffect(() => {
@@ -57,10 +59,11 @@ export default function RewardFormModal({
         rewardType: reward.rewardType,
         achievement: reward.achievement,
         reason: reward.reason,
-        proposedAmount: reward.proposedAmount?.toString() || '',
-        decisionNumber: reward.decisionNumber || '',
-        decisionDate: reward.decisionDate || '',
+        amount: reward.amount.toString(),
+        decisionNumber: reward.decisionNumber,
+        decisionDate: reward.decisionDate,
       });
+      setAttachments(reward.attachments || []);
     } else {
       setFormData({
         employeeName: '',
@@ -69,13 +72,80 @@ export default function RewardFormModal({
         rewardType: '',
         achievement: '',
         reason: '',
-        proposedAmount: '',
+        amount: '',
         decisionNumber: '',
         decisionDate: '',
       });
+      setAttachments([]);
     }
+    setUploadingFiles([]);
     setErrors({});
   }, [reward, isOpen]);
+
+  /* -------------------- File Upload -------------------- */
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Validate file types (only PDF, images, Word docs)
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
+    const invalidFiles = files.filter(f => !allowedTypes.includes(f.type));
+    if (invalidFiles.length > 0) {
+      setErrors(prev => ({
+        ...prev,
+        files: 'Chỉ chấp nhận file PDF, ảnh (JPG, PNG) hoặc Word',
+      }));
+      return;
+    }
+
+    // Validate file size (max 10MB per file)
+    const oversizedFiles = files.filter(f => f.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      setErrors(prev => ({
+        ...prev,
+        files: 'Kích thước file không được vượt quá 10MB',
+      }));
+      return;
+    }
+
+    setUploadingFiles(prev => [...prev, ...files]);
+    setErrors(prev => ({ ...prev, files: '' }));
+
+    // Simulate upload (replace with actual API call)
+    files.forEach((file, index) => {
+      setTimeout(() => {
+        const newAttachment: RewardAttachment = {
+          id: `ATT_${Date.now()}_${index}`,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          url: URL.createObjectURL(file), // Temporary URL for preview
+          uploadedAt: new Date().toISOString(),
+        };
+
+        setAttachments(prev => [...prev, newAttachment]);
+        setUploadingFiles(prev => prev.filter(f => f !== file));
+      }, 1000 + index * 500);
+    });
+  };
+
+  const handleRemoveAttachment = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
 
   /* -------------------- Handlers -------------------- */
   const handleChange = (field: string, value: string) => {
@@ -92,11 +162,11 @@ export default function RewardFormModal({
   };
 
   const handleAmountChange = (value: string) => {
-    handleChange('proposedAmount', value.replace(/\D/g, ''));
+    handleChange('amount', value.replace(/\D/g, ''));
   };
 
   /* -------------------- Validation -------------------- */
-  const validateForm = (action: 'draft' | 'submit') => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.employeeName.trim())
@@ -112,23 +182,17 @@ export default function RewardFormModal({
     if (!formData.reason.trim())
       newErrors.reason = 'Vui lòng nhập lý do khen thưởng';
 
-    if (action === 'submit' && !formData.proposedAmount) {
-      newErrors.proposedAmount = isAdmin
-        ? 'Vui lòng nhập mức khen thưởng'
-        : 'Vui lòng nhập mức khen thưởng đề xuất';
+    if (!formData.amount) {
+      newErrors.amount = 'Vui lòng nhập mức khen thưởng';
+    } else if (isNaN(Number(formData.amount))) {
+      newErrors.amount = 'Mức khen thưởng phải là số';
     }
 
-    if (formData.proposedAmount && isNaN(Number(formData.proposedAmount))) {
-      newErrors.proposedAmount = 'Mức khen thưởng phải là số';
+    if (!formData.decisionNumber.trim()) {
+      newErrors.decisionNumber = 'Vui lòng nhập số quyết định';
     }
-
-    if (isAdmin && action === 'submit') {
-      if (!formData.decisionNumber.trim()) {
-        newErrors.decisionNumber = 'Vui lòng nhập số quyết định';
-      }
-      if (!formData.decisionDate) {
-        newErrors.decisionDate = 'Vui lòng chọn ngày quyết định';
-      }
+    if (!formData.decisionDate) {
+      newErrors.decisionDate = 'Vui lòng chọn ngày quyết định';
     }
 
     setErrors(newErrors);
@@ -136,37 +200,23 @@ export default function RewardFormModal({
   };
 
   /* -------------------- Submit -------------------- */
-  const handleSubmit = async (action: 'draft' | 'submit') => {
-    setSubmitAction(action);
-    if (!validateForm(action)) return;
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     const payload = {
       ...formData,
-      rewardAmount: Number(formData.proposedAmount),
-      status:
-        action === 'draft'
-          ? 'DRAFT'
-          : isAdmin
-          ? 'APPROVED'
-          : 'PENDING',
-
-      proposedBy: user?.name,
-      proposedById: user?.id,
-      proposedDate: new Date().toISOString(),
-
-      ...(isAdmin && action === 'submit'
-        ? {
-            approvedBy: user?.name,
-            approvedById: user?.id,
-            approvedDate: new Date().toISOString(),
-          }
-        : {}),
+      amount: Number(formData.amount),
+      attachments,
+      createdBy: user?.name,
+      createdById: user?.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    console.log('Submit reward:', payload);
+    console.log(reward ? 'Update reward:' : 'Create reward:', payload);
 
     setIsSubmitting(false);
     onSuccess();
@@ -178,11 +228,7 @@ export default function RewardFormModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isAdmin
-              ? 'Xác nhận khen thưởng'
-              : reward
-              ? 'Chỉnh sửa đề xuất khen thưởng'
-              : 'Đề xuất khen thưởng mới'}
+            {reward ? 'Chỉnh sửa quyết định khen thưởng' : 'Tạo quyết định khen thưởng'}
           </DialogTitle>
         </DialogHeader>
 
@@ -204,6 +250,13 @@ export default function RewardFormModal({
                   <Input
                     value={(formData as any)[field]}
                     onChange={e => handleChange(field, e.target.value)}
+                    placeholder={
+                      field === 'employeeName'
+                        ? 'VD: Nguyễn Văn A'
+                        : field === 'departmentName'
+                        ? 'VD: Phòng Kỹ thuật'
+                        : 'VD: Senior Developer'
+                    }
                   />
                   {errors[field] && (
                     <p className="text-sm text-red-500">{errors[field]}</p>
@@ -216,11 +269,13 @@ export default function RewardFormModal({
           {/* Reward info */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Loại khen thưởng *</Label>
+              <Label>
+                Loại khen thưởng <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={formData.rewardType}
                 onChange={e => handleChange('rewardType', e.target.value)}
-                placeholder='Nhập loại khen thưởng...'
+                placeholder="VD: Giải thưởng hoàn thành dự án xuất sắc"
               />
               {errors.rewardType && (
                 <p className="text-sm text-red-500">{errors.rewardType}</p>
@@ -228,102 +283,200 @@ export default function RewardFormModal({
             </div>
 
             <div className="space-y-2">
-              <Label>Thành tích *</Label>
+              <Label>
+                Thành tích <span className="text-red-500">*</span>
+              </Label>
               <Textarea
                 rows={3}
                 value={formData.achievement}
                 onChange={e => handleChange('achievement', e.target.value)}
-                placeholder='Nhập thành tích...'
+                placeholder="Mô tả thành tích của nhân viên..."
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Lý do khen thưởng *</Label>
-              <Textarea
-                rows={4}
-                value={formData.reason}
-                onChange={e => handleChange('reason', e.target.value)}
-                placeholder='Nhập lý do khen thưởng...'
-              />
+              {errors.achievement && (
+                <p className="text-sm text-red-500">{errors.achievement}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>
-                {isAdmin
-                  ? 'Mức khen thưởng (VNĐ)'
-                  : 'Mức khen thưởng đề xuất (VNĐ)'}
+                Lý do khen thưởng <span className="text-red-500">*</span>
               </Label>
-              <Input
-                value={formatCurrency(formData.proposedAmount)}
-                onChange={e => handleAmountChange(e.target.value)}
-                placeholder='VD: 1.000.000'
+              <Textarea
+                rows={4}
+                value={formData.reason}
+                onChange={e => handleChange('reason', e.target.value)}
+                placeholder="Lý do chi tiết cho quyết định khen thưởng..."
               />
+              {errors.reason && (
+                <p className="text-sm text-red-500">{errors.reason}</p>
+              )}
             </div>
 
-            {/* Admin decision */}
-            {isAdmin && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-                <div>
-                  <Label>Số quyết định *</Label>
-                  <Input
-                    value={formData.decisionNumber}
-                    onChange={e =>
-                      handleChange('decisionNumber', e.target.value)
-                    }
-                  />
-                  {errors.decisionNumber && (
-                    <p className="text-sm text-red-500">
-                      {errors.decisionNumber}
-                    </p>
-                  )}
-                </div>
+            <div className="space-y-2">
+              <Label>
+                Mức khen thưởng (VNĐ) <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={formatCurrency(formData.amount)}
+                onChange={e => handleAmountChange(e.target.value)}
+                placeholder="VD: 10.000.000"
+              />
+              {errors.amount && (
+                <p className="text-sm text-red-500">{errors.amount}</p>
+              )}
+              {formData.amount && !errors.amount && (
+                <p className="text-sm text-muted-foreground">
+                  {new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                  }).format(Number(formData.amount))}
+                </p>
+              )}
+            </div>
+          </div>
 
-                <div>
-                  <Label>Ngày quyết định *</Label>
-                  <Input
-                    type="date"
-                    value={formData.decisionDate}
-                    onChange={e =>
-                      handleChange('decisionDate', e.target.value)
-                    }
-                  />
-                  {errors.decisionDate && (
-                    <p className="text-sm text-red-500">
-                      {errors.decisionDate}
-                    </p>
-                  )}
-                </div>
+          {/* Decision info */}
+          <div className="p-4 bg-blue-50 rounded-lg space-y-4">
+            <h3 className="font-semibold text-sm">Thông tin quyết định</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>
+                  Số quyết định <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={formData.decisionNumber}
+                  onChange={e => handleChange('decisionNumber', e.target.value)}
+                  placeholder="VD: QD-KT/2024/001"
+                />
+                {errors.decisionNumber && (
+                  <p className="text-sm text-red-500">{errors.decisionNumber}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label>
+                  Ngày quyết định <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={formData.decisionDate}
+                  onChange={e => handleChange('decisionDate', e.target.value)}
+                />
+                {errors.decisionDate && (
+                  <p className="text-sm text-red-500">{errors.decisionDate}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>File đính kèm</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Tải file lên
+                </Button>
+                <input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Chấp nhận: PDF, JPG, PNG, Word. Tối đa 10MB/file
+              </p>
+              {errors.files && (
+                <p className="text-sm text-red-500">{errors.files}</p>
+              )}
+            </div>
+
+            {/* Uploading files */}
+            {uploadingFiles.length > 0 && (
+              <div className="space-y-2">
+                {uploadingFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                  >
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)} - Đang tải lên...
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Attached files */}
+            {attachments.length > 0 && (
+              <div className="space-y-2">
+                {attachments.map(attachment => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center gap-3 p-3 bg-muted/50 border rounded-lg"
+                  >
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{attachment.fileName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(attachment.fileSize)}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveAttachment(attachment.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
           <Alert>
             <AlertDescription>
-              {isAdmin ? (
-                <strong>
-                  Xác nhận sẽ tạo quyết định khen thưởng chính thức.
-                </strong>
-              ) : (
-                <strong>
-                  Khi gửi đề xuất, hồ sơ sẽ chuyển cho HR xem xét.
-                </strong>
-              )}
+              <strong>
+                {reward
+                  ? 'Cập nhật quyết định khen thưởng sẽ được lưu lại trong hệ thống.'
+                  : 'Quyết định khen thưởng sẽ được tạo và ghi nhận vào hồ sơ nhân viên.'}
+              </strong>
             </AlertDescription>
           </Alert>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             <X className="h-4 w-4 mr-2" /> Hủy
           </Button>
 
-          <Button variant="outline" onClick={() => handleSubmit('draft')}>
-            <Save className="h-4 w-4 mr-2" /> Lưu nháp
-          </Button>
-
-          <Button onClick={() => handleSubmit('submit')}>
-            <Send className="h-4 w-4 mr-2" />
-            {isAdmin ? 'Xác nhận' : 'Gửi đề xuất'}
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                {reward ? 'Xác nhận' : 'Xác nhận'}
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -13,8 +13,6 @@ import { Badge } from '@/shared/components/ui/badge';
 import { Card } from '@/shared/components/ui/card';
 import { Alert, AlertDescription } from '@/shared/components/ui/alert';
 import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
-import { Separator } from '@/shared/components/ui/separator';
 import { 
   X, 
   UserCheck, 
@@ -22,15 +20,11 @@ import {
   Calendar,
   DollarSign,
   FileText,
-  History,
   AlertCircle,
-  Ban,
   Download,
-  CheckCircle,
-  Send
+  File
 } from 'lucide-react';
-import { mockAppointments, type Appointment, statusLabels, appointmentTypeLabels } from '../../../mock/appointment';
-import { Input } from '@/shared/components/ui/input';
+import { mockAppointments, type Appointment, appointmentTypeLabels } from '../../../mock/appointment';
 
 interface AppointmentDetailModalProps {
   isOpen: boolean;
@@ -49,20 +43,6 @@ export default function AppointmentDetailModal({
 }: AppointmentDetailModalProps) {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showRevokeForm, setShowRevokeForm] = useState(false);
-  const [revokedReason, setRevokedReason] = useState('');
-  const [revokeError, setRevokeError] = useState('');
-  
-  const [showTerminationForm, setShowTerminationForm] = useState(false);
-  const [terminationData, setTerminationData] = useState({
-    terminationDate: '',
-    terminationDecisionNumber: '',
-    terminationDecisionDate: '',
-    terminationReason: '',
-    terminationNote: '',
-  });
-  const [terminationErrors, setTerminationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -77,86 +57,9 @@ export default function AppointmentDetailModal({
     const foundAppointment = mockAppointments.find(a => a.id === appointmentId);
     if (foundAppointment) {
       setAppointment(foundAppointment);
-      if (foundAppointment.revokedReason) {
-        setRevokedReason(foundAppointment.revokedReason);
-      }
     }
 
     setIsLoading(false);
-  };
-
-  const handlePublish = async () => {
-    if (!appointment) return;
-
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    console.log('Publishing appointment:', {
-      appointmentId: appointment.id,
-      status: 'PUBLISHED',
-    });
-
-    setIsSubmitting(false);
-    onSuccess();
-  };
-
-  const handleRevoke = async () => {
-    if (!revokedReason.trim()) {
-      setRevokeError('Vui lòng nhập lý do hủy bỏ quyết định');
-      return;
-    }
-
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    console.log('Revoking appointment:', {
-      appointmentId: appointment?.id,
-      revokedReason,
-      revokedDate: new Date().toISOString().split('T')[0],
-      status: 'REVOKED',
-    });
-
-    setIsSubmitting(false);
-    setShowRevokeForm(false);
-    onSuccess();
-  };
-
-  const handleTerminate = async () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!terminationData.terminationDate) {
-      newErrors.terminationDate = 'Vui lòng chọn ngày miễn nhiệm';
-    }
-
-    if (!terminationData.terminationDecisionNumber.trim()) {
-      newErrors.terminationDecisionNumber = 'Vui lòng nhập số quyết định miễn nhiệm';
-    }
-
-    if (!terminationData.terminationDecisionDate) {
-      newErrors.terminationDecisionDate = 'Vui lòng chọn ngày quyết định';
-    }
-
-    if (!terminationData.terminationReason.trim()) {
-      newErrors.terminationReason = 'Vui lòng nhập lý do miễn nhiệm';
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setTerminationErrors(newErrors);
-      return;
-    }
-
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    console.log('Terminating appointment:', {
-      appointmentId: appointment?.id,
-      ...terminationData,
-      status: 'TERMINATED',
-    });
-
-    setIsSubmitting(false);
-    setShowTerminationForm(false);
-    onSuccess();
   };
 
   const formatCurrency = (amount: number) => {
@@ -164,21 +67,6 @@ export default function AppointmentDetailModal({
       style: 'currency',
       currency: 'VND',
     }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'DRAFT': { label: statusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
-      'PUBLISHED': { label: statusLabels.PUBLISHED, className: 'bg-blue-100 text-blue-800' },
-      'PENDING_EFFECTIVE': { label: statusLabels.PENDING_EFFECTIVE, className: 'bg-yellow-100 text-yellow-800' },
-      'IN_EFFECT': { label: statusLabels.IN_EFFECT, className: 'bg-green-100 text-green-800' },
-      'EXPIRING_SOON': { label: statusLabels.EXPIRING_SOON, className: 'bg-orange-100 text-orange-800' },
-      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-red-100 text-red-800' },
-      'REVOKED': { label: statusLabels.REVOKED, className: 'bg-red-100 text-red-800' },
-    };
-
-    const config = statusConfig[status] || { label: status, className: '' };
-    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getTypeBadge = (type: string) => {
@@ -190,6 +78,22 @@ export default function AppointmentDetailModal({
 
     const config = typeConfig[type];
     return config ? <Badge className={config.className}>{config.label}</Badge> : null;
+  };
+
+  const isExpiringSoon = (expiryDate?: string) => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const threeMonthsLater = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate());
+    return expiry > today && expiry <= threeMonthsLater;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   if (isLoading) {
@@ -216,10 +120,6 @@ export default function AppointmentDetailModal({
     );
   }
 
-  const canPublish = isAdmin && appointment.status === 'DRAFT';
-  const canRevoke = isAdmin && (appointment.status === 'PUBLISHED' || appointment.status === 'PENDING_EFFECTIVE' || appointment.status === 'IN_EFFECT');
-  const canTerminate = isAdmin && (appointment.status === 'IN_EFFECT' || appointment.status === 'EXPIRING_SOON');
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
@@ -236,33 +136,26 @@ export default function AppointmentDetailModal({
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Số QĐ: {appointment.decisionNumber}</span>
-                {getStatusBadge(appointment.status)}
                 {getTypeBadge(appointment.appointmentType)}
+                {isExpiringSoon(appointment.expiryDate) && (
+                  <Badge className="bg-orange-100 text-orange-800">
+                    Sắp hết hạn
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              Ngày ban hành: {new Date(appointment.decisionDate).toLocaleDateString('vi-VN')}
+              Ngày quyết định: {new Date(appointment.decisionDate).toLocaleDateString('vi-VN')}
             </div>
           </div>
 
           {/* Expiring Soon Alert */}
-          {appointment.status === 'EXPIRING_SOON' && (
+          {isExpiringSoon(appointment.expiryDate) && (
             <Alert className="border-orange-200 bg-orange-50">
               <AlertCircle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
                 Quyết định này sắp hết hạn vào ngày {appointment.expiryDate && new Date(appointment.expiryDate).toLocaleDateString('vi-VN')}. 
-                Vui lòng xem xét bổ nhiệm lại hoặc kết thúc nhiệm kỳ.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Expired Alert */}
-          {appointment.status === 'EXPIRED' && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Quyết định này đã hết hiệu lực vào ngày {appointment.expiryDate && new Date(appointment.expiryDate).toLocaleDateString('vi-VN')}. 
-                Cần có quyết định mới nếu tiếp tục bổ nhiệm.
+                Vui lòng xem xét bổ nhiệm lại nếu cần.
               </AlertDescription>
             </Alert>
           )}
@@ -273,20 +166,14 @@ export default function AppointmentDetailModal({
               <UserCheck className="h-4 w-4" />
               Thông tin nhân viên
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-muted-foreground">Tên nhân viên</Label>
                 <p className="font-medium text-lg">{appointment.employeeName}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Phòng ban hiện tại</Label>
-                  <p className="font-medium">{appointment.currentDepartment}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Chức vụ hiện tại</Label>
-                  <p className="font-medium">{appointment.currentPosition}</p>
-                </div>
+              <div>
+                <Label className="text-muted-foreground">Phòng ban</Label>
+                <p className="font-medium">{appointment.department}</p>
               </div>
             </div>
           </Card>
@@ -298,18 +185,10 @@ export default function AppointmentDetailModal({
               Thông tin bổ nhiệm
             </h3>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Chức vụ mới</Label>
-                  <p className="font-semibold text-lg text-blue-900">{appointment.newPosition}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Phòng ban mới</Label>
-                  <p className="font-semibold text-lg text-blue-900">{appointment.newDepartment}</p>
-                </div>
+              <div>
+                <Label className="text-muted-foreground">Chức vụ</Label>
+                <p className="font-semibold text-lg text-blue-900">{appointment.position}</p>
               </div>
-
-              <Separator />
 
               <div>
                 <Label className="text-muted-foreground">Lý do bổ nhiệm</Label>
@@ -354,24 +233,18 @@ export default function AppointmentDetailModal({
           </Card>
 
           {/* Salary Information */}
-          {(appointment.currentSalary || appointment.newSalary || appointment.allowance) && (
+          {(appointment.salary || appointment.allowance) && (
             <Card className="p-4">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
                 <DollarSign className="h-4 w-4" />
                 Lương và phúc lợi
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {appointment.currentSalary && (
+                {appointment.salary && (
                   <div>
-                    <Label className="text-muted-foreground">Lương hiện tại</Label>
-                    <p className="font-medium">{formatCurrency(appointment.currentSalary)}</p>
-                  </div>
-                )}
-                {appointment.newSalary && (
-                  <div>
-                    <Label className="text-muted-foreground">Lương mới</Label>
+                    <Label className="text-muted-foreground">Mức lương</Label>
                     <p className="font-semibold text-lg text-green-600">
-                      {formatCurrency(appointment.newSalary)}
+                      {formatCurrency(appointment.salary)}
                     </p>
                   </div>
                 )}
@@ -383,324 +256,58 @@ export default function AppointmentDetailModal({
                     </p>
                   </div>
                 )}
-              </div>
-              {appointment.newSalary && appointment.allowance && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-muted-foreground">Tổng thu nhập mới</Label>
-                    <p className="font-bold text-xl text-green-600">
-                      {formatCurrency(appointment.newSalary + appointment.allowance)}
+                {appointment.salary && appointment.allowance && (
+                  <div>
+                    <Label className="text-muted-foreground">Tổng thu nhập</Label>
+                    <p className="font-bold text-lg text-green-600">
+                      {formatCurrency(appointment.salary + appointment.allowance)}
                     </p>
                   </div>
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* Revoked Information */}
-          {appointment.status === 'REVOKED' && appointment.revokedReason && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-700">
-                <Ban className="h-4 w-4" />
-                Thông tin hủy bỏ
-              </h3>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-muted-foreground">Ngày hủy bỏ</Label>
-                  <p className="font-medium">
-                    {appointment.revokedDate && new Date(appointment.revokedDate).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Lý do hủy bỏ</Label>
-                  <p className="whitespace-pre-wrap mt-1">{appointment.revokedReason}</p>
-                </div>
+                )}
               </div>
             </Card>
           )}
 
-          {/* Terminated Information */}
-          {appointment.status === 'TERMINATED' && appointment.terminationReason && (
-            <Card className="p-4 bg-orange-50 border-orange-200">
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-orange-700">
-                <Ban className="h-4 w-4" />
-                Thông tin miễn nhiệm
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Số quyết định miễn nhiệm</Label>
-                  <p className="font-medium">{appointment.terminationDecisionNumber}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Ngày quyết định</Label>
-                  <p className="font-medium">
-                    {appointment.terminationDecisionDate && new Date(appointment.terminationDecisionDate).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Ngày miễn nhiệm</Label>
-                  <p className="font-medium">
-                    {appointment.terminationDate && new Date(appointment.terminationDate).toLocaleDateString('vi-VN')}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Người quyết định</Label>
-                  <p className="font-medium">{appointment.terminationBy}</p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <Label className="text-muted-foreground">Lý do miễn nhiệm</Label>
-                <p className="whitespace-pre-wrap mt-1">{appointment.terminationReason}</p>
-              </div>
-              {appointment.terminationNote && (
-                <div className="mt-2">
-                  <Label className="text-muted-foreground">Ghi chú</Label>
-                  <p className="whitespace-pre-wrap mt-1 text-muted-foreground italic">
-                    {appointment.terminationNote}
-                  </p>
-                </div>
-              )}
-            </Card>
-          )}
-
-          {/* Previous Appointments History */}
-          {appointment.previousAppointments && appointment.previousAppointments.length > 0 && (
+          {/* Attachments */}
+          {appointment.attachments && appointment.attachments.length > 0 && (
             <Card className="p-4">
               <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Lịch sử bổ nhiệm
+                <File className="h-4 w-4" />
+                File đính kèm ({appointment.attachments.length})
               </h3>
-              <div className="space-y-3">
-                {appointment.previousAppointments.map((item, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <Calendar className="h-4 w-4 mt-1 text-muted-foreground" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium">{item.position}</p>
-                        <Badge variant="outline">{item.department}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Số QĐ: {item.decisionNumber}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Từ {new Date(item.effectiveDate).toLocaleDateString('vi-VN')}
-                        {item.expiryDate && ` đến ${new Date(item.expiryDate).toLocaleDateString('vi-VN')}`}
-                        {item.termMonths && ` (${item.termMonths} tháng)`}
+              <div className="space-y-2">
+                {appointment.attachments.map((file) => (
+                  <div key={file.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded hover:bg-muted/70 transition-colors">
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(file.size)} • {new Date(file.uploadedAt).toLocaleDateString('vi-VN')}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => console.log('Download:', file.name)}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
             </Card>
           )}
 
-          {/* Termination Form (Admin only) */}
-          {isAdmin && canTerminate && showTerminationForm && (
-            <Card className="p-4 bg-orange-50 border-orange-200">
-              <h3 className="font-semibold mb-4 flex items-center gap-2 text-orange-700">
-                <Ban className="h-4 w-4" />
-                Miễn nhiệm
-              </h3>
-              <div className="space-y-4">
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Miễn nhiệm sẽ kết thúc quyết định bổ nhiệm này. Nhân viên sẽ nhận được thông báo.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="terminationDecisionNumber">
-                      Số quyết định miễn nhiệm <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="terminationDecisionNumber"
-                      value={terminationData.terminationDecisionNumber}
-                      onChange={(e) => {
-                        setTerminationData(prev => ({ ...prev, terminationDecisionNumber: e.target.value }));
-                        setTerminationErrors(prev => ({ ...prev, terminationDecisionNumber: '' }));
-                      }}
-                      placeholder="VD: QD-MN/2024/001"
-                    />
-                    {terminationErrors.terminationDecisionNumber && (
-                      <p className="text-sm text-red-500">{terminationErrors.terminationDecisionNumber}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="terminationDecisionDate">
-                      Ngày quyết định <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="terminationDecisionDate"
-                      type="date"
-                      value={terminationData.terminationDecisionDate}
-                      onChange={(e) => {
-                        setTerminationData(prev => ({ ...prev, terminationDecisionDate: e.target.value }));
-                        setTerminationErrors(prev => ({ ...prev, terminationDecisionDate: '' }));
-                      }}
-                    />
-                    {terminationErrors.terminationDecisionDate && (
-                      <p className="text-sm text-red-500">{terminationErrors.terminationDecisionDate}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="terminationDate">
-                    Ngày miễn nhiệm <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="terminationDate"
-                    type="date"
-                    value={terminationData.terminationDate}
-                    onChange={(e) => {
-                      setTerminationData(prev => ({ ...prev, terminationDate: e.target.value }));
-                      setTerminationErrors(prev => ({ ...prev, terminationDate: '' }));
-                    }}
-                  />
-                  {terminationErrors.terminationDate && (
-                    <p className="text-sm text-red-500">{terminationErrors.terminationDate}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="terminationReason">
-                    Lý do miễn nhiệm <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="terminationReason"
-                    value={terminationData.terminationReason}
-                    onChange={(e) => {
-                      setTerminationData(prev => ({ ...prev, terminationReason: e.target.value }));
-                      setTerminationErrors(prev => ({ ...prev, terminationReason: '' }));
-                    }}
-                    placeholder="Nhập lý do miễn nhiệm chi tiết"
-                    rows={3}
-                  />
-                  {terminationErrors.terminationReason && (
-                    <p className="text-sm text-red-500">{terminationErrors.terminationReason}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="terminationNote">Ghi chú</Label>
-                  <Textarea
-                    id="terminationNote"
-                    value={terminationData.terminationNote}
-                    onChange={(e) => setTerminationData(prev => ({ ...prev, terminationNote: e.target.value }))}
-                    placeholder="Ghi chú thêm (nếu có)"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowTerminationForm(false);
-                      setTerminationData({
-                        terminationDate: '',
-                        terminationDecisionNumber: '',
-                        terminationDecisionDate: '',
-                        terminationReason: '',
-                        terminationNote: '',
-                      });
-                      setTerminationErrors({});
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    onClick={handleTerminate}
-                    disabled={isSubmitting}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        Đang xử lý...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Xác nhận miễn nhiệm
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
-          {isAdmin && canRevoke && showRevokeForm && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <h3 className="font-semibold mb-3 flex items-center gap-2 text-red-700">
-                <Ban className="h-4 w-4" />
-                Hủy bỏ quyết định
-              </h3>
-              <div className="space-y-3">
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Hành động này không thể hoàn tác. Quyết định sẽ bị hủy bỏ và nhân viên sẽ nhận được thông báo.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-2">
-                  <Label htmlFor="revokedReason">
-                    Lý do hủy bỏ <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="revokedReason"
-                    value={revokedReason}
-                    onChange={(e) => {
-                      setRevokedReason(e.target.value);
-                      setRevokeError('');
-                    }}
-                    placeholder="Nhập lý do chi tiết về việc hủy bỏ quyết định này"
-                    rows={4}
-                  />
-                  {revokeError && (
-                    <p className="text-sm text-red-500">{revokeError}</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowRevokeForm(false);
-                      setRevokedReason('');
-                      setRevokeError('');
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Hủy
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleRevoke}
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        Đang xử lý...
-                      </>
-                    ) : (
-                      <>
-                        <Ban className="h-4 w-4 mr-2" />
-                        Xác nhận hủy bỏ
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
+          {/* Note */}
+          {appointment.note && (
+            <Card className="p-4 bg-muted/50">
+              <Label className="text-muted-foreground">Ghi chú</Label>
+              <p className="whitespace-pre-wrap mt-1 italic">{appointment.note}</p>
             </Card>
           )}
 
           {/* Created By */}
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground border-t pt-4">
             <p>Người tạo: {appointment.createdBy}</p>
             <p>Ngày tạo: {new Date(appointment.createdAt).toLocaleString('vi-VN')}</p>
             {appointment.updatedAt !== appointment.createdAt && (
@@ -710,55 +317,15 @@ export default function AppointmentDetailModal({
         </div>
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" />
             Đóng
           </Button>
 
-          {!isAdmin && (
-            <Button variant="outline" onClick={() => console.log('Download PDF')}>
-              <Download className="h-4 w-4 mr-2" />
-              Tải xuống PDF
-            </Button>
-          )}
-
-          {isAdmin && canRevoke && !showRevokeForm && (
-            <Button
-              variant="destructive"
-              onClick={() => setShowRevokeForm(true)}
-              disabled={isSubmitting}
-            >
-              <Ban className="h-4 w-4 mr-2" />
-              Hủy bỏ quyết định
-            </Button>
-          )}
-
-          {isAdmin && canTerminate && !showTerminationForm && (
-            <Button
-              onClick={() => setShowTerminationForm(true)}
-              disabled={isSubmitting}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              <Ban className="h-4 w-4 mr-2" />
-              Miễn nhiệm
-            </Button>
-          )}
-
-          {canPublish && (
-            <Button onClick={handlePublish} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  Đang ban hành...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Ban hành quyết định
-                </>
-              )}
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => console.log('Download PDF')}>
+            <Download className="h-4 w-4 mr-2" />
+            Tải xuống PDF
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -6,21 +6,27 @@ export interface Reward {
   employeeName: string;
   departmentName: string;
   position: string;
-  proposedBy: string;
-  proposedById: string;
-  proposedDate: string;
-  rewardType: string; // Loại khen thưởng (string tự do)
+  rewardType: string; // Loại khen thưởng
   achievement: string; // Thành tích
   reason: string; // Lý do khen thưởng
-  proposedAmount?: number; // Mức khen thưởng đề xuất
-  approvedAmount?: number; // Mức khen thưởng được duyệt
-  decisionNumber?: string; // Số quyết định
-  decisionDate?: string; // Ngày quyết định
-  status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED';
-  rejectionReason?: string;
+  amount: number; // Mức khen thưởng
+  decisionNumber: string; // Số quyết định
+  decisionDate: string; // Ngày quyết định
+  attachments?: RewardAttachment[]; // File đính kèm
+  createdBy: string; // Người tạo quyết định
+  createdById: string;
   createdAt: string;
   updatedAt: string;
   rewardHistory?: RewardHistoryItem[]; // Lịch sử khen thưởng của nhân viên này
+}
+
+export interface RewardAttachment {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  url: string;
+  uploadedAt: string;
 }
 
 export interface RewardHistoryItem {
@@ -30,13 +36,6 @@ export interface RewardHistoryItem {
   reason: string;
 }
 
-export const statusLabels = {
-  DRAFT: 'Bản nháp',
-  PENDING: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Từ chối',
-};
-
 export const mockRewards: Reward[] = [
   {
     id: 'RW001',
@@ -44,18 +43,25 @@ export const mockRewards: Reward[] = [
     employeeName: 'Nguyễn Văn An',
     departmentName: 'Phòng Kỹ thuật',
     position: 'Senior Developer',
-    proposedBy: 'Trần Văn B',
-    proposedById: 'MGR001',
-    proposedDate: '2024-12-15',
     rewardType: 'Giải thưởng hoàn thành dự án xuất sắc',
     achievement: 'Hoàn thành dự án ERP trước thời hạn 2 tuần, tiết kiệm 30% chi phí',
     reason: 'Anh An đã làm việc không ngừng nghỉ, tối ưu hóa code và giải quyết nhiều vấn đề kỹ thuật phức tạp',
-    proposedAmount: 10000000,
-    approvedAmount: 10000000,
+    amount: 10000000,
     decisionNumber: 'QD-KT/2024/001',
     decisionDate: '2024-12-20',
-    status: 'APPROVED',
-    createdAt: '2024-12-15T08:00:00Z',
+    attachments: [
+      {
+        id: 'ATT001',
+        fileName: 'Quyet_dinh_khen_thuong_001.pdf',
+        fileSize: 245678,
+        fileType: 'application/pdf',
+        url: '/files/rewards/QD-KT-2024-001.pdf',
+        uploadedAt: '2024-12-20T10:30:00Z',
+      },
+    ],
+    createdBy: 'Trần Văn B',
+    createdById: 'ADM001',
+    createdAt: '2024-12-20T10:30:00Z',
     updatedAt: '2024-12-20T10:30:00Z',
     rewardHistory: [
       { date: '2024-06-15', rewardType: 'Nhân viên xuất sắc quý 2', amount: 5000000, reason: 'Hoàn thành KPI vượt mức' },
@@ -68,14 +74,14 @@ export const mockRewards: Reward[] = [
     employeeName: 'Lê Thị Bình',
     departmentName: 'Phòng Marketing',
     position: 'Marketing Manager',
-    proposedBy: 'Phạm Văn C',
-    proposedById: 'MGR002',
-    proposedDate: '2024-12-18',
     rewardType: 'Thưởng tăng trưởng doanh số',
     achievement: 'Tăng trưởng doanh số 45% so với cùng kỳ năm trước',
     reason: 'Chị Bình đã xây dựng và triển khai chiến dịch marketing hiệu quả, mở rộng thị trường mới',
-    proposedAmount: 15000000,
-    status: 'PENDING',
+    amount: 15000000,
+    decisionNumber: 'QD-MKT/2024/005',
+    decisionDate: '2024-12-18',
+    createdBy: 'Phạm Văn C',
+    createdById: 'ADM002',
     createdAt: '2024-12-18T09:00:00Z',
     updatedAt: '2024-12-18T09:00:00Z',
     rewardHistory: [
@@ -88,18 +94,15 @@ export const mockRewards: Reward[] = [
     employeeName: 'Hoàng Văn Cường',
     departmentName: 'Phòng Kỹ thuật',
     position: 'Tech Lead',
-    proposedBy: 'Trần Văn B',
-    proposedById: 'MGR001',
-    proposedDate: '2024-12-10',
     rewardType: 'Giải thưởng đổi mới sáng tạo',
     achievement: 'Phát triển hệ thống AI tự động hóa quy trình báo cáo',
     reason: 'Giải pháp AI giúp tiết kiệm 200 giờ làm việc mỗi tháng cho toàn bộ công ty',
-    proposedAmount: 20000000,
-    approvedAmount: 18000000,
+    amount: 18000000,
     decisionNumber: 'QD-KT/2024/002',
     decisionDate: '2024-12-16',
-    status: 'APPROVED',
-    createdAt: '2024-12-10T10:00:00Z',
+    createdBy: 'Trần Văn B',
+    createdById: 'ADM001',
+    createdAt: '2024-12-16T14:00:00Z',
     updatedAt: '2024-12-16T14:00:00Z',
     rewardHistory: [
       { date: '2024-08-20', rewardType: 'Sáng kiến cải tiến', amount: 5000000, reason: 'Cải tiến hệ thống backup' },
@@ -112,14 +115,14 @@ export const mockRewards: Reward[] = [
     employeeName: 'Phạm Thị Dung',
     departmentName: 'Phòng Nhân sự',
     position: 'HR Specialist',
-    proposedBy: 'Nguyễn Văn D',
-    proposedById: 'MGR003',
-    proposedDate: '2024-12-22',
     rewardType: 'Nhân viên tiêu biểu năm 2024',
     achievement: 'Tuyển dụng thành công 50+ nhân sự chất lượng cao, giảm tỷ lệ nghỉ việc 30%',
     reason: 'Chị Dung đã xây dựng quy trình tuyển dụng mới, cải thiện đáng kể chất lượng nguồn nhân lực',
-    proposedAmount: 25000000,
-    status: 'PENDING',
+    amount: 25000000,
+    decisionNumber: 'QD-HR/2024/008',
+    decisionDate: '2024-12-22',
+    createdBy: 'Nguyễn Văn D',
+    createdById: 'ADM003',
     createdAt: '2024-12-22T08:30:00Z',
     updatedAt: '2024-12-22T08:30:00Z',
     rewardHistory: [
@@ -133,14 +136,14 @@ export const mockRewards: Reward[] = [
     employeeName: 'Đỗ Văn Em',
     departmentName: 'Phòng Kinh doanh',
     position: 'Sales Executive',
-    proposedBy: 'Lê Văn E',
-    proposedById: 'MGR004',
-    proposedDate: '2024-12-25',
     rewardType: 'Thưởng ký hợp đồng lớn',
     achievement: 'Ký được hợp đồng 5 tỷ đồng với khách hàng chiến lược',
     reason: 'Anh Em đã nỗ lực trong 6 tháng để thuyết phục khách hàng, mở ra cơ hội hợp tác lớn',
-    proposedAmount: 12000000,
-    status: 'DRAFT',
+    amount: 12000000,
+    decisionNumber: 'QD-Sales/2024/012',
+    decisionDate: '2024-12-25',
+    createdBy: 'Lê Văn E',
+    createdById: 'ADM004',
     createdAt: '2024-12-25T11:00:00Z',
     updatedAt: '2024-12-25T11:00:00Z',
     rewardHistory: [],
@@ -151,18 +154,15 @@ export const mockRewards: Reward[] = [
     employeeName: 'Vũ Thị Phượng',
     departmentName: 'Phòng Kế toán',
     position: 'Chief Accountant',
-    proposedBy: 'Trần Văn F',
-    proposedById: 'MGR005',
-    proposedDate: '2024-12-12',
     rewardType: 'Giải thưởng báo cáo tài chính xuất sắc',
     achievement: 'Hoàn thành báo cáo tài chính năm sớm 1 tháng, không có sai sót',
     reason: 'Chị Phượng đã làm việc chuyên nghiệp, đảm bảo độ chính xác cao',
-    proposedAmount: 8000000,
-    approvedAmount: 8000000,
+    amount: 8000000,
     decisionNumber: 'QD-KT/2024/003',
     decisionDate: '2024-12-18',
-    status: 'APPROVED',
-    createdAt: '2024-12-12T09:30:00Z',
+    createdBy: 'Trần Văn F',
+    createdById: 'ADM005',
+    createdAt: '2024-12-18T15:00:00Z',
     updatedAt: '2024-12-18T15:00:00Z',
     rewardHistory: [
       { date: '2024-06-30', rewardType: 'Nhân viên xuất sắc quý 2', amount: 6000000, reason: 'Hoàn thành tốt công việc' },
@@ -174,14 +174,14 @@ export const mockRewards: Reward[] = [
     employeeName: 'Bùi Văn Giang',
     departmentName: 'Phòng Kỹ thuật',
     position: 'DevOps Engineer',
-    proposedBy: 'Trần Văn B',
-    proposedById: 'MGR001',
-    proposedDate: '2024-12-20',
     rewardType: 'Thưởng xử lý sự cố',
     achievement: 'Khắc phục sự cố hệ thống nghiêm trọng trong 2 giờ, tránh thiệt hại 100 triệu đồng',
     reason: 'Anh Giang đã làm việc xuyên đêm để khôi phục hệ thống',
-    proposedAmount: 7000000,
-    status: 'PENDING',
+    amount: 7000000,
+    decisionNumber: 'QD-KT/2024/004',
+    decisionDate: '2024-12-20',
+    createdBy: 'Trần Văn B',
+    createdById: 'ADM001',
     createdAt: '2024-12-20T16:00:00Z',
     updatedAt: '2024-12-20T16:00:00Z',
     rewardHistory: [
@@ -194,16 +194,15 @@ export const mockRewards: Reward[] = [
     employeeName: 'Ngô Thị Hà',
     departmentName: 'Phòng Marketing',
     position: 'Content Creator',
-    proposedBy: 'Phạm Văn C',
-    proposedById: 'MGR002',
-    proposedDate: '2024-12-14',
     rewardType: 'Giải thưởng nội dung sáng tạo',
     achievement: 'Video viral đạt 5 triệu view, tăng 10,000 followers',
     reason: 'Chị Hà đã tạo ra nội dung độc đáo, thu hút lớn',
-    proposedAmount: 6000000,
-    status: 'REJECTED',
-    rejectionReason: 'Đã nhận thưởng tháng trước cho cùng loại thành tích',
-    createdAt: '2024-12-14T10:00:00Z',
+    amount: 6000000,
+    decisionNumber: 'QD-MKT/2024/006',
+    decisionDate: '2024-12-19',
+    createdBy: 'Phạm Văn C',
+    createdById: 'ADM002',
+    createdAt: '2024-12-19T11:00:00Z',
     updatedAt: '2024-12-19T11:00:00Z',
     rewardHistory: [
       { date: '2024-11-10', rewardType: 'Thưởng viral content', amount: 5000000, reason: 'Video đạt 3 triệu view' },
@@ -213,26 +212,23 @@ export const mockRewards: Reward[] = [
 
 export const calculateRewardStatistics = (rewards: Reward[]) => {
   const total = rewards.length;
-  const draft = rewards.filter(r => r.status === 'DRAFT').length;
-  const pending = rewards.filter(r => r.status === 'PENDING').length;
-  const approved = rewards.filter(r => r.status === 'APPROVED').length;
-  const rejected = rewards.filter(r => r.status === 'REJECTED').length;
 
-  const totalProposedAmount = rewards
-    .filter(r => r.proposedAmount)
-    .reduce((sum, r) => sum + (r.proposedAmount || 0), 0);
+  const totalAmount = rewards.reduce((sum, r) => sum + r.amount, 0);
 
-  const totalApprovedAmount = rewards
-    .filter(r => r.approvedAmount && r.status === 'APPROVED')
-    .reduce((sum, r) => sum + (r.approvedAmount || 0), 0);
+  const byDepartment = rewards.reduce((acc, r) => {
+    acc[r.departmentName] = (acc[r.departmentName] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const byRewardType = rewards.reduce((acc, r) => {
+    acc[r.rewardType] = (acc[r.rewardType] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   return {
     total,
-    draft,
-    pending,
-    approved,
-    rejected,
-    totalProposedAmount,
-    totalApprovedAmount,
+    totalAmount,
+    byDepartment,
+    byRewardType,
   };
 };

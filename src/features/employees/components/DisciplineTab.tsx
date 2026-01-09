@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, Plus, Edit, AlertTriangle, FileText } from 'lucide-react';
+import { Search, Eye, Plus, Edit, FileText } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -25,7 +25,8 @@ import {
   mockDisciplines, 
   type Discipline,
   statusLabels,
-  severityLabels
+  severityLabels,
+  actionLabels
 } from '../../../mock/dismissed';
 import DisciplineDetailModal from '../../../features/discipline/components/DisciplineDetailModal';
 import DisciplineFormModal from '../../../features/discipline/components/DisciplineFormModal';
@@ -39,7 +40,6 @@ interface DisciplineTabProps {
 export default function DisciplineTab({ userData, employeeId }: DisciplineTabProps) {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
-  const isManager = user?.roles === 'MANAGER';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -123,11 +123,8 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'DRAFT': { label: statusLabels.DRAFT, className: 'bg-gray-100 text-gray-800' },
-      'PENDING_EXPLANATION': { label: statusLabels.PENDING_EXPLANATION, className: 'bg-blue-100 text-blue-800' },
-      'PENDING_REVIEW': { label: statusLabels.PENDING_REVIEW, className: 'bg-yellow-100 text-yellow-800' },
-      'OVERDUE': { label: statusLabels.OVERDUE, className: 'bg-red-100 text-red-800' },
-      'COMPLETED': { label: statusLabels.COMPLETED, className: 'bg-green-100 text-green-800' },
-      'DISMISSED': { label: statusLabels.DISMISSED, className: 'bg-purple-100 text-purple-800' },
+      'ACTIVE': { label: statusLabels.ACTIVE, className: 'bg-green-100 text-green-800' },
+      'EXPIRED': { label: statusLabels.EXPIRED, className: 'bg-gray-100 text-gray-600' },
     };
 
     const config = statusConfig[status] || { label: status, className: '' };
@@ -155,8 +152,35 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
     );
   };
 
+  const getActionBadge = (action: string) => {
+    const actionConfig = {
+      'WARNING': { label: actionLabels.WARNING, className: 'bg-yellow-100 text-yellow-800' },
+      'REPRIMAND': { label: actionLabels.REPRIMAND, className: 'bg-orange-100 text-orange-800' },
+      'SALARY_CUT': { label: actionLabels.SALARY_CUT, className: 'bg-red-100 text-red-800' },
+      'DEMOTION': { label: actionLabels.DEMOTION, className: 'bg-purple-100 text-purple-800' },
+      'TERMINATION': { label: actionLabels.TERMINATION, className: 'bg-red-200 text-red-900' },
+    };
+
+    const config = actionConfig[action] || { label: action, className: '' };
+
+    return (
+      <Badge className={config.className}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  // Calculate statistics for this employee
+  const stats = {
+    total: disciplines.length,
+    active: disciplines.filter(d => d.status === 'ACTIVE').length,
+    draft: disciplines.filter(d => d.status === 'DRAFT').length,
+    expired: disciplines.filter(d => d.status === 'EXPIRED').length,
+  };
+
   return (
     <div className="space-y-4">
+
       {/* Filters */}
       <Card className="p-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -183,24 +207,20 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
           </Select>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
+            <SelectTrigger className="w-full md:w-[160px]">
               <SelectValue placeholder="Trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tất cả trạng thái</SelectItem>
-              <SelectItem value="DRAFT">Bản nháp</SelectItem>
-              <SelectItem value="PENDING_EXPLANATION">Chờ giải trình</SelectItem>
-              <SelectItem value="PENDING_REVIEW">Chờ xem xét</SelectItem>
-              <SelectItem value="OVERDUE">Quá hạn</SelectItem>
-              <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
-              <SelectItem value="DISMISSED">Đã bác bỏ</SelectItem>
+              <SelectItem value="ACTIVE">Đang hiệu lực</SelectItem>
+              <SelectItem value="EXPIRED">Đã hết hạn</SelectItem>
             </SelectContent>
           </Select>
 
-          {(isManager || isAdmin) && (
+          {isAdmin && (
             <Button onClick={() => handleOpenFormModal()}>
               <Plus className="h-4 w-4 mr-2" />
-              Thêm kỷ luật
+              Tạo quyết định
             </Button>
           )}
         </div>
@@ -216,9 +236,9 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
                 <TableHead>Mô tả</TableHead>
                 <TableHead>Mức độ</TableHead>
                 <TableHead>Ngày vi phạm</TableHead>
-                <TableHead>Người ghi nhận</TableHead>
-                <TableHead>Hạn giải trình</TableHead>
+                <TableHead>Hình thức KL</TableHead>
                 <TableHead>Số QĐ</TableHead>
+                <TableHead>Ngày QĐ</TableHead>
                 <TableHead>Trạng thái</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
@@ -238,7 +258,7 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
                   <TableCell colSpan={9} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-8 w-8" />
-                      <p>Nhân viên này chưa có hồ sơ kỷ luật nào</p>
+                      <p>Nhân viên này chưa có quyết định kỷ luật nào</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -262,39 +282,26 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <p>{discipline.createdByName}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {new Date(discipline.createdDate).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {discipline.explanationDeadline ? (
-                        <div className="text-sm">
-                          <div className={`font-medium ${
-                            new Date(discipline.explanationDeadline) < new Date() && 
-                            discipline.status === 'PENDING_EXPLANATION'
-                              ? 'text-red-600'
-                              : ''
-                          }`}>
-                            {new Date(discipline.explanationDeadline).toLocaleDateString('vi-VN')}
-                          </div>
-                        </div>
+                      {discipline.disciplineAction ? (
+                        getActionBadge(discipline.disciplineAction)
                       ) : (
-                        <span className="text-sm text-muted-foreground">Chưa gửi</span>
+                        <span className="text-sm text-muted-foreground">Chưa có</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {discipline.decisionNumber ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{discipline.decisionNumber}</div>
-                          <div className="text-muted-foreground text-xs">
-                            {discipline.decisionDate && new Date(discipline.decisionDate).toLocaleDateString('vi-VN')}
-                          </div>
-                        </div>
+                        <span className="text-sm font-medium">{discipline.decisionNumber}</span>
                       ) : (
                         <span className="text-sm text-muted-foreground">Chưa có</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {discipline.decisionDate ? (
+                        <span className="text-sm">
+                          {new Date(discipline.decisionDate).toLocaleDateString('vi-VN')}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -302,7 +309,7 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {(discipline.status === 'DRAFT' && (isManager || isAdmin)) && (
+                        {discipline.status === 'DRAFT' && isAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -336,8 +343,6 @@ export default function DisciplineTab({ userData, employeeId }: DisciplineTabPro
         onClose={handleCloseDetailModal}
         disciplineId={selectedDisciplineId}
         onSuccess={handleDetailSuccess}
-        isAdmin={isAdmin}
-        isManager={isManager}
       />
 
       <DisciplineFormModal

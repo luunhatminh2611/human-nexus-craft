@@ -54,8 +54,8 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
     const allColumns = {
         // Cột bắt buộc (không thể ẩn)
         required: [
-            { key: 'code', label: 'Mã NV *' },
-            { key: 'fullName', label: 'Tên NV *' },
+            { key: 'code', label: 'Mã nhân viên *' },
+            { key: 'fullName', label: 'Tên nhân viên *' },
             { key: 'birthDate', label: 'Ngày sinh *' },
             { key: 'startDate', label: 'Ngày vào làm *' },
             { key: 'departmentId', label: 'Phòng ban *' },
@@ -986,7 +986,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                 <TabsContent value="basic" className="space-y-3">
                     <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
-                            <Label className="text-xs">Mã NV *</Label>
+                            <Label className="text-xs">Mã nhân viên*</Label>
                             <Input
                                 value={employee.code}
                                 onChange={(e) => handleFieldChange(employee.tempId, 'code', e.target.value)}

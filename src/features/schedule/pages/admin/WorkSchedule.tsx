@@ -65,6 +65,10 @@ export default function WorkSchedule() {
 
   const ISODate = (d: Date) => d.toISOString().split("T")[0];
 
+  useEffect(() => {
+    setSelectedDept(""); // Reset về tất cả
+  }, []);
+
   const getDatesBetween = (startStr: string, endStr?: string) => {
     const dates: string[] = [];
     const start = new Date(startStr);
@@ -138,9 +142,18 @@ export default function WorkSchedule() {
     try {
       setLoading(true);
       setError(null);
-      
+
       let res;
-      if (selectedDept) {
+      // Kiểm tra selectedDept phải có giá trị thực sự (không phải "", null, undefined)
+      if (selectedDept && selectedDept !== "all") {
+        // Kiểm tra department có tồn tại không
+        const deptExists = departments.find(d => String(d.id) === String(selectedDept));
+        if (!deptExists) {
+          setError(`Phòng ban ID ${selectedDept} không tồn tại`);
+          setRawWorkSchedules([]);
+          setExpandedSchedules([]);
+          return;
+        }
         // Gọi API filter theo phòng ban
         res = await workScheduleApi.getByDepartment(selectedDept);
       } else {
@@ -158,7 +171,10 @@ export default function WorkSchedule() {
       expandAllSchedules(schedules);
     } catch (err: any) {
       console.error("Lỗi khi lấy work schedule:", err);
-      setError("Không tải được lịch công tác từ server");
+      const errorMsg = err?.response?.data?.message || err?.message || "Không tải được lịch công tác từ server";
+      setError(errorMsg);
+      setRawWorkSchedules([]);
+      setExpandedSchedules([]);
     } finally {
       setLoading(false);
     }
