@@ -18,9 +18,12 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download, Edit } from 'lucide-react';
 import { specialtyApi } from '@/features/categories/api/categoriesApi';
 import { toast } from 'sonner';
+import BulkAddSpecialtyModal from '../components/modal/BulkAddSpecialtyModal';
+import BulkEditSpecialtyModal from '../components/modal/BulkEditSpecialtyModal';
 
 interface Specialty {
   id: number;
@@ -34,15 +37,21 @@ export default function SpecialtyTab() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Specialty | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
-    name: '',
     code: '',
+    name: '',
     description: '',
   });
+
+  // Bulk modals
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
 
   useEffect(() => {
     fetchSpecialties();
@@ -61,7 +70,6 @@ export default function SpecialtyTab() {
     }
   };
 
-  // Lọc và phân trang
   const filteredSpecialties = useMemo(() => {
     return specialties.filter(item => {
       const search = searchTerm.toLowerCase();
@@ -80,24 +88,54 @@ export default function SpecialtyTab() {
     return filteredSpecialties.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredSpecialties, currentPage, itemsPerPage]);
 
-  // Reset về trang 1 khi search
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedSpecialties.map(item => item.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedIds.length === paginatedSpecialties.length && paginatedSpecialties.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedSpecialties]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
 
   const handleOpenDialog = (item?: Specialty) => {
     if (item) {
       setSelectedItem(item);
       setFormData({
-        name: item.name,
         code: item.code || '',
+        name: item.name,
         description: item.description || '',
       });
     } else {
       setSelectedItem(null);
       setFormData({
-        name: '',
         code: '',
+        name: '',
         description: '',
       });
     }
@@ -108,8 +146,8 @@ export default function SpecialtyTab() {
     setIsDialogOpen(false);
     setSelectedItem(null);
     setFormData({
-      name: '',
       code: '',
+      name: '',
       description: '',
     });
   };
@@ -161,6 +199,21 @@ export default function SpecialtyTab() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một nghề nghiệp');
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchSpecialties();
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-6 items-center gap-4">
@@ -177,16 +230,28 @@ export default function SpecialtyTab() {
           </div>
 
           <Button className="shrink-0" variant='outline'>
-            <Upload className="mr-1 h-2 w-2" />
+            <Upload className="mr-2 h-4 w-4" />
             Tải lên
           </Button>
           <Button className="shrink-0" variant='outline'>
-            <Download className="mr-1 h-2 w-2" />
+            <Download className="mr-2 h-4 w-4" />
             Tải xuống
           </Button>
 
-          {/* Button */}
-          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+          <Button
+            className="shrink-0"
+            variant='default'
+            onClick={handleBulkEdit}
+            disabled={selectedIds.length === 0}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Sửa ({selectedIds.length})
+          </Button>
+
+          <Button 
+            onClick={() => setIsBulkAddOpen(true)} 
+            className="shrink-0"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Thêm nghề nghiệp
           </Button>
@@ -197,6 +262,12 @@ export default function SpecialtyTab() {
         <Table>
           <TableHeader className='bg-muted'>
             <TableRow>
+              <TableHead className="w-[50px] border">
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
               <TableHead className="border">Mã nghề nghiệp</TableHead>
               <TableHead className="border">Tên nghề nghiệp</TableHead>
@@ -207,19 +278,25 @@ export default function SpecialtyTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : paginatedSpecialties.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedSpecialties.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="border">
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium border">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
@@ -271,6 +348,11 @@ export default function SpecialtyTab() {
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredSpecialties.length)} trong tổng số{' '}
             {filteredSpecialties.length} nghề nghiệp
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -284,7 +366,6 @@ export default function SpecialtyTab() {
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -408,6 +489,22 @@ export default function SpecialtyTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Add Modal */}
+      <BulkAddSpecialtyModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchSpecialties();
+        }}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditSpecialtyModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }

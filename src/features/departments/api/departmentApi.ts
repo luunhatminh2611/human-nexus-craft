@@ -50,6 +50,16 @@ export const unitApi = {
     }
   },
 
+  updateBulk: async (formattedPayload) => {
+    try {
+      const response = await api.put("/department/update_list", formattedPayload);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật hàng loạt phòng ban:", error);
+      throw error;
+    }
+  },
+
   // Xóa đơn vị
   delete: async (id) => {
     try {

@@ -18,9 +18,12 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Plus, Pencil, Trash2, Briefcase, Search, ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Briefcase, Search, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react';
 import { jobTitleApi } from '../api/categoriesApi';
 import { toast } from 'sonner';
+import BulkAddPositionModal from '../components/modal/BulkAddPositionModal';
+import BulkEditPositionModal from '../components/modal/BulkEditPositionModal';
 
 interface Position {
   id: number;
@@ -43,6 +46,12 @@ export default function PositionsTab() {
     code: '',
     description: '',
   });
+
+  // Bulk operations
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     fetchPositions();
@@ -84,6 +93,40 @@ export default function PositionsTab() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Checkbox handlers
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedPositions.map(item => item.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  // Sync selectAll state with selectedIds
+  useEffect(() => {
+    if (selectedIds.length === paginatedPositions.length && paginatedPositions.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedPositions]);
+
+  // Clear selection when changing page or search
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
 
   const handleOpenDialog = (item?: Position) => {
     if (item) {
@@ -161,10 +204,24 @@ export default function PositionsTab() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một chức vụ');
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchPositions();
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-6 items-center gap-4">
-
         <div className="flex col-span-6 items-center gap-2">
           {/* Search */}
           <div className="relative flex-1">
@@ -176,16 +233,31 @@ export default function PositionsTab() {
               className="pl-10 w-full"
             />
           </div>
-          <Button className="shrink-0" variant='outline'>
-            <Upload className="mr-1 h-2 w-2" />
+
+          <Button
+            className="shrink-0"
+            variant='outline'
+          >
+            <Upload className="mr-1 h-4 w-4" />
             Tải lên
           </Button>
+
           <Button className="shrink-0" variant='outline'>
-            <Download className="mr-1 h-2 w-2" />
+            <Download className="mr-1 h-4 w-4" />
             Tải xuống
           </Button>
-          {/* Button */}
-          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+
+            <Button
+              className="shrink-0"
+              variant='default'
+              onClick={handleBulkEdit}
+              disabled={selectedIds.length === 0}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Chỉnh sửa ({selectedIds.length})
+            </Button>
+
+          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Thêm chức vụ
           </Button>
@@ -196,6 +268,12 @@ export default function PositionsTab() {
         <Table>
           <TableHeader className='bg-muted'>
             <TableRow>
+              <TableHead className="w-[50px] border">
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
               <TableHead className="border">Mã chức vụ</TableHead>
               <TableHead className="border">Tên chức vụ</TableHead>
@@ -206,23 +284,29 @@ export default function PositionsTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : paginatedPositions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedPositions.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="border">
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium border">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border">
                     {item.code ? (
                       <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
                         {item.code}
@@ -270,6 +354,11 @@ export default function PositionsTab() {
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredPositions.length)} trong tổng số{' '}
             {filteredPositions.length} chức vụ
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -283,7 +372,6 @@ export default function PositionsTab() {
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -323,7 +411,7 @@ export default function PositionsTab() {
         </div>
       )}
 
-      {/* Dialog thêm/sửa */}
+      {/* Dialog thêm/sửa đơn lẻ */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -405,6 +493,22 @@ export default function PositionsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Add Modal */}
+      <BulkAddPositionModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchPositions();
+        }}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditPositionModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedPositionIds={selectedIds}
+      />
     </div>
   );
 }

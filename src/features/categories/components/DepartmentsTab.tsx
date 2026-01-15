@@ -7,12 +7,15 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/shared/components/ui/dialog';
+import { Checkbox } from '@/shared/components/ui/checkbox';
 import { unitApi } from '@/features/departments/api/departmentApi';
 import mockData from '@/mock/data';
 import { Users, Edit, Trash2, Plus, Loader2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Input } from '@/shared/components/ui/input';
 import { DepartmentFormModal } from '../../departments/components/DepartmentModal';
+import BulkAddDepartmentModal from '../components/modal/BulkAddDepartmentModal';
+import BulkEditDepartmentModal from '../components/modal/BulkEditDepartmentModal';
 import {
   Table,
   TableBody,
@@ -35,6 +38,12 @@ export default function DepartmentTabs() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editingDept, setEditingDept] = useState(null);
+
+  // Bulk operations
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   // Fetch departments từ API
   const fetchDepartments = async () => {
@@ -101,6 +110,41 @@ export default function DepartmentTabs() {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  // Checkbox handlers
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedDepartments.map(item => Number(item.id)));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const numId = Number(id);
+    if (checked) {
+      setSelectedIds(prev => [...prev, numId]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== numId));
+      setSelectAll(false);
+    }
+  };
+
+  // Sync selectAll state with selectedIds
+  useEffect(() => {
+    if (selectedIds.length === paginatedDepartments.length && paginatedDepartments.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedDepartments]);
+
+  // Clear selection when changing page or search
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
+
   const openAddModal = () => {
     setEditingDept(null);
     setFormModalOpen(true);
@@ -139,6 +183,21 @@ export default function DepartmentTabs() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast({ title: 'Thông báo', description: 'Vui lòng chọn ít nhất một phòng ban' });
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchDepartments();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -162,17 +221,31 @@ export default function DepartmentTabs() {
             />
           </div>
 
-          <Button className="shrink-0" variant='outline'>
+          <Button
+            className="shrink-0"
+            variant='outline'
+          >
             <Upload className="mr-1 h-2 w-2" />
             Tải lên
           </Button>
+
           <Button className="shrink-0" variant='outline'>
             <Download className="mr-1 h-2 w-2" />
             Tải xuống
           </Button>
 
-          {/* Button */}
-          <Button onClick={openAddModal} className="shrink-0">
+          {/* Bulk Edit Button */}
+            <Button
+              className="shrink-0"
+              variant='default'
+              onClick={handleBulkEdit}
+              disabled={selectedIds.length === 0}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Sửa ({selectedIds.length})
+            </Button>
+
+          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Thêm phòng ban
           </Button>
@@ -184,6 +257,12 @@ export default function DepartmentTabs() {
           <Table className="w-full text-sm">
             <TableHeader className='bg-muted'>
               <TableRow>
+                <TableHead className="p-3 border w-[50px]">
+                  <Checkbox
+                    checked={selectAll}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead className="p-3 border w-[80px]">STT</TableHead>
                 <TableHead className="p-3 border">Mã phòng ban</TableHead>
                 <TableHead className="p-3 border">Tên phòng ban</TableHead>
@@ -197,9 +276,15 @@ export default function DepartmentTabs() {
               {paginatedDepartments.length > 0 ? (
                 paginatedDepartments.map((dept, index) => {
                   const parentDept = departments.find((d) => d.id === dept.parentId);
-                  
+
                   return (
                     <tr key={dept.id} className="hover:bg-muted/40">
+                      <td className="p-3 border">
+                        <Checkbox
+                          checked={selectedIds.includes(Number(dept.id))}
+                          onCheckedChange={(checked) => handleSelectOne(dept.id, checked as boolean)}
+                        />
+                      </td>
                       <td className="p-3 border font-medium">
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
@@ -260,7 +345,7 @@ export default function DepartmentTabs() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="text-center p-4 text-muted-foreground">
+                  <td colSpan={8} className="text-center p-4 text-muted-foreground">
                     {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Không có phòng ban nào'}
                   </td>
                 </tr>
@@ -277,6 +362,11 @@ export default function DepartmentTabs() {
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredDepartments.length)} trong tổng số{' '}
             {filteredDepartments.length} phòng ban
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -290,7 +380,6 @@ export default function DepartmentTabs() {
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -360,6 +449,22 @@ export default function DepartmentTabs() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Add Modal */}
+      <BulkAddDepartmentModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchDepartments();
+        }}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditDepartmentModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }

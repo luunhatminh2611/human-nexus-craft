@@ -18,9 +18,12 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download, Edit } from 'lucide-react';
 import { ppeItemApi } from '@/features/safety/api/ppeItemApi';
 import { toast } from 'sonner';
+import BulkAddPPEItemModal from '../components/modal/BulkAddPPEItemModal';
+import BulkEditPPEItemModal from '../components/modal/BulkEditPPEItemModal';
 
 interface PPEItem {
   id: number;
@@ -43,6 +46,12 @@ export default function PPEItemsTab() {
     description: '',
     size: '',
   });
+
+  // Bulk operations
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     fetchPPEItems();
@@ -84,6 +93,40 @@ export default function PPEItemsTab() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Checkbox handlers
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedPPEItems.map(item => item.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  // Sync selectAll state with selectedIds
+  useEffect(() => {
+    if (selectedIds.length === paginatedPPEItems.length && paginatedPPEItems.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedPPEItems]);
+
+  // Clear selection when changing page or search
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
 
   const handleOpenDialog = (item?: PPEItem) => {
     if (item) {
@@ -161,6 +204,21 @@ export default function PPEItemsTab() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một đồ bảo hộ');
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchPPEItems();
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-6 items-center gap-4">
@@ -185,8 +243,19 @@ export default function PPEItemsTab() {
             Tải xuống
           </Button>
 
+          {/* Bulk Edit Button */}
+          <Button
+            className="shrink-0"
+            variant='default'
+            onClick={handleBulkEdit}
+            disabled={selectedIds.length === 0}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Sửa ({selectedIds.length})
+          </Button>
+
           {/* Button */}
-          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Thêm đồ bảo hộ
           </Button>
@@ -197,6 +266,12 @@ export default function PPEItemsTab() {
         <Table>
           <TableHeader className='bg-muted'>
             <TableRow>
+              <TableHead className="w-[50px] border">
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
               <TableHead className="border">Tên đồ bảo hộ</TableHead>
               <TableHead className="border">Mô tả</TableHead>
@@ -207,19 +282,25 @@ export default function PPEItemsTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : paginatedPPEItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedPPEItems.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="border">
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium border">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
@@ -271,6 +352,11 @@ export default function PPEItemsTab() {
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredPPEItems.length)} trong tổng số{' '}
             {filteredPPEItems.length} đồ bảo hộ
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -284,7 +370,6 @@ export default function PPEItemsTab() {
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -324,7 +409,7 @@ export default function PPEItemsTab() {
         </div>
       )}
 
-      {/* Dialog thêm/sửa */}
+      {/* Dialog thêm/sửa đơn lẻ */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -406,6 +491,22 @@ export default function PPEItemsTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Add Modal */}
+      <BulkAddPPEItemModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchPPEItems();
+        }}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditPPEItemModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }

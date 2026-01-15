@@ -19,9 +19,12 @@ import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Switch } from '@/shared/components/ui/switch';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download, Edit } from 'lucide-react';
 import { departmentTypeApi } from '@/features/departments/api/departmentTypeApi';
 import { toast } from 'sonner';
+import BulkAddDepartmentTypeModal from '../components/modal/BulkAddDepartmentTypeModal';
+import BulkEditDepartmentTypeModal from '../components/modal/BulkEditDepartmentTypeModal';
 
 interface DepartmentType {
   id: number;
@@ -46,6 +49,12 @@ export default function DepartmentTypesTab() {
     description: '',
     isActive: true,
   });
+
+  // Bulk operations
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     fetchDepartmentTypes();
@@ -87,6 +96,40 @@ export default function DepartmentTypesTab() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  // Checkbox handlers
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedDepartmentTypes.map(item => item.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  // Sync selectAll state with selectedIds
+  useEffect(() => {
+    if (selectedIds.length === paginatedDepartmentTypes.length && paginatedDepartmentTypes.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedDepartmentTypes]);
+
+  // Clear selection when changing page or search
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
 
   const handleOpenDialog = (item?: DepartmentType) => {
     if (item) {
@@ -167,6 +210,21 @@ export default function DepartmentTypesTab() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một loại phòng ban');
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchDepartmentTypes();
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-6 items-center gap-4">
@@ -182,7 +240,10 @@ export default function DepartmentTypesTab() {
             />
           </div>
 
-          <Button className="shrink-0" variant='outline'>
+          <Button
+            className="shrink-0"
+            variant='outline'
+          >
             <Upload className="mr-1 h-2 w-2" />
             Tải lên
           </Button>
@@ -191,8 +252,18 @@ export default function DepartmentTypesTab() {
             Tải xuống
           </Button>
 
-          {/* Button */}
-          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+          {/* Bulk Edit Button */}
+          <Button
+            className="shrink-0"
+            variant='default'
+            onClick={handleBulkEdit}
+            disabled={selectedIds.length === 0}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Sửa ({selectedIds.length})
+          </Button>
+
+          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Thêm loại phòng ban
           </Button>
@@ -203,6 +274,12 @@ export default function DepartmentTypesTab() {
         <Table>
           <TableHeader className='bg-muted'>
             <TableRow>
+              <TableHead className="w-[50px] border">
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
               <TableHead className="border">Mã loại phòng ban</TableHead>
               <TableHead className="border">Tên loại phòng ban</TableHead>
@@ -214,19 +291,25 @@ export default function DepartmentTypesTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : paginatedDepartmentTypes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedDepartmentTypes.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="border">
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium border">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
@@ -240,8 +323,8 @@ export default function DepartmentTypesTab() {
                   <TableCell className="border">
                     <span
                       className={`px-2 py-1 rounded-full text-xs ${item.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
                         }`}
                     >
                       {item.isActive ? 'Hoạt động' : 'Không hoạt động'}
@@ -284,6 +367,11 @@ export default function DepartmentTypesTab() {
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredDepartmentTypes.length)} trong tổng số{' '}
             {filteredDepartmentTypes.length} loại phòng ban
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -297,7 +385,6 @@ export default function DepartmentTypesTab() {
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -337,7 +424,7 @@ export default function DepartmentTypesTab() {
         </div>
       )}
 
-      {/* Dialog thêm/sửa */}
+      {/* Dialog thêm/sửa đơn lẻ */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -431,6 +518,22 @@ export default function DepartmentTypesTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Add Modal */}
+      <BulkAddDepartmentTypeModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchDepartmentTypes();
+        }}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditDepartmentTypeModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }

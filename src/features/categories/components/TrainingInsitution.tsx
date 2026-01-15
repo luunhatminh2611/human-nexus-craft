@@ -17,9 +17,12 @@ import {
 } from '@/shared/components/tables/table';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download, Edit } from 'lucide-react';
 import { categoriesApi } from '../api/categoriesApi';
 import { toast } from 'sonner';
+import BulkAddTrainingInstitutionModal from '../components/modal/BulkAddTrainingInstitutionModal';
+import BulkEditTrainingInstitutionModal from '../components/modal/BulkEditTrainingInstitutionModal';
 
 interface TrainingInstitution {
   id: number;
@@ -45,8 +48,11 @@ export default function TrainingInstitutionTab() {
     email: '',
   });
 
-  // Validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Bulk operations
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     fetchInstitutions();
@@ -65,7 +71,6 @@ export default function TrainingInstitutionTab() {
     }
   };
 
-  // Lọc và phân trang
   const filteredInstitutions = useMemo(() => {
     return institutions.filter(item => {
       const search = searchTerm.toLowerCase();
@@ -85,10 +90,40 @@ export default function TrainingInstitutionTab() {
     return filteredInstitutions.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredInstitutions, currentPage, itemsPerPage]);
 
-  // Reset về trang 1 khi search
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedInstitutions.map(item => item.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedIds.length === paginatedInstitutions.length && paginatedInstitutions.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedInstitutions]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
 
   const handleOpenDialog = (item?: TrainingInstitution) => {
     if (item) {
@@ -108,7 +143,6 @@ export default function TrainingInstitutionTab() {
         email: '',
       });
     }
-    setErrors({});
     setIsDialogOpen(true);
   };
 
@@ -121,32 +155,11 @@ export default function TrainingInstitutionTab() {
       phone: '',
       email: '',
     });
-    setErrors({});
-  };
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Vui lòng nhập tên cơ sở đào tạo';
-    }
-
-    // Validate email if provided
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email không hợp lệ';
-    }
-
-    // Validate phone if provided
-    if (formData.phone && !/^[0-9]{10,11}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ (10-11 số)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) {
+    if (!formData.name.trim()) {
+      toast.error('Vui lòng nhập tên cơ sở đào tạo');
       return;
     }
 
@@ -191,11 +204,25 @@ export default function TrainingInstitutionTab() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một cơ sở đào tạo');
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchInstitutions();
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-6 items-center gap-4">
         <div className="flex col-span-6 items-center gap-2">
-          {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -215,8 +242,17 @@ export default function TrainingInstitutionTab() {
             Tải xuống
           </Button>
 
-          {/* Button */}
-          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+          <Button
+            className="shrink-0"
+            variant='default'
+            onClick={handleBulkEdit}
+            disabled={selectedIds.length === 0}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Sửa ({selectedIds.length})
+          </Button>
+
+          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Thêm cơ sở đào tạo
           </Button>
@@ -227,6 +263,12 @@ export default function TrainingInstitutionTab() {
         <Table>
           <TableHeader className='bg-muted'>
             <TableRow>
+              <TableHead className="w-[50px] border">
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
               <TableHead className="border">Tên cơ sở đào tạo</TableHead>
               <TableHead className="border">Địa chỉ</TableHead>
@@ -238,19 +280,25 @@ export default function TrainingInstitutionTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : paginatedInstitutions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedInstitutions.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="border">
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium border">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
@@ -288,13 +336,17 @@ export default function TrainingInstitutionTab() {
         </Table>
       </div>
 
-      {/* Pagination */}
       {filteredInstitutions.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredInstitutions.length)} trong tổng số{' '}
             {filteredInstitutions.length} cơ sở đào tạo
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -308,7 +360,6 @@ export default function TrainingInstitutionTab() {
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                // Hiển thị trang đầu, cuối và các trang gần trang hiện tại
                 if (
                   page === 1 ||
                   page === totalPages ||
@@ -348,7 +399,6 @@ export default function TrainingInstitutionTab() {
         </div>
       )}
 
-      {/* Dialog thêm/sửa */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -358,15 +408,11 @@ export default function TrainingInstitutionTab() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">
-                Tên cơ sở đào tạo <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="name">Tên cơ sở đào tạo <span className="text-red-500">*</span></Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ví dụ: Đại học Bách Khoa Hà Nội..."
               />
             </div>
@@ -375,9 +421,7 @@ export default function TrainingInstitutionTab() {
               <Input
                 id="address"
                 value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="Ví dụ: Số 1 Đại Cồ Việt, Hai Bà Trưng, Hà Nội"
               />
             </div>
@@ -386,9 +430,7 @@ export default function TrainingInstitutionTab() {
               <Input
                 id="phone"
                 value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="Ví dụ: 0243 868 3008"
               />
             </div>
@@ -398,9 +440,7 @@ export default function TrainingInstitutionTab() {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="Ví dụ: info@university.edu.vn"
               />
             </div>
@@ -416,7 +456,6 @@ export default function TrainingInstitutionTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog xác nhận xóa */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -441,6 +480,20 @@ export default function TrainingInstitutionTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BulkAddTrainingInstitutionModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchInstitutions();
+        }}
+      />
+
+      <BulkEditTrainingInstitutionModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }

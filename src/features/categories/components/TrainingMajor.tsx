@@ -18,9 +18,12 @@ import {
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download } from 'lucide-react';
+import { Checkbox } from '@/shared/components/ui/checkbox';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Upload, Download, Edit } from 'lucide-react';
 import { categoriesApi } from '../api/categoriesApi';
 import { toast } from 'sonner';
+import BulkAddTrainingMajorModal from '../components/modal/BulkAddTrainingMajorModal';
+import BulkEditTrainingMajorModal from '../components/modal/BulkEditTrainingMajorModal';
 
 interface TrainingMajor {
   id: number;
@@ -43,6 +46,12 @@ export default function TrainingMajorTab() {
     code: '',
     description: '',
   });
+
+  // Bulk operations
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     fetchTrainingMajors();
@@ -84,6 +93,37 @@ export default function TrainingMajorTab() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedIds(paginatedTrainingMajors.map(item => item.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+      setSelectAll(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedIds.length === paginatedTrainingMajors.length && paginatedTrainingMajors.length > 0) {
+      setSelectAll(true);
+    } else {
+      setSelectAll(false);
+    }
+  }, [selectedIds, paginatedTrainingMajors]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  }, [currentPage, searchTerm]);
 
   const handleOpenDialog = (item?: TrainingMajor) => {
     if (item) {
@@ -161,6 +201,21 @@ export default function TrainingMajorTab() {
     setCurrentPage(page);
   };
 
+  const handleBulkEdit = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Vui lòng chọn ít nhất một ngành đào tạo');
+      return;
+    }
+    setIsBulkEditOpen(true);
+  };
+
+  const handleCloseBulkEdit = () => {
+    setIsBulkEditOpen(false);
+    setSelectedIds([]);
+    setSelectAll(false);
+    fetchTrainingMajors();
+  };
+
   return (
     <div className="space-y-4 p-4">
       <div className="grid grid-cols-6 items-center gap-4">
@@ -185,8 +240,17 @@ export default function TrainingMajorTab() {
             Tải xuống
           </Button>
 
-          {/* Button */}
-          <Button onClick={() => handleOpenDialog()} className="shrink-0">
+          <Button
+            className="shrink-0"
+            variant='default'
+            onClick={handleBulkEdit}
+            disabled={selectedIds.length === 0}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Sửa ({selectedIds.length})
+          </Button>
+
+          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             Thêm ngành đào tạo
           </Button>
@@ -197,6 +261,12 @@ export default function TrainingMajorTab() {
         <Table>
           <TableHeader className='bg-muted'>
             <TableRow>
+              <TableHead className="w-[50px] border">
+                <Checkbox
+                  checked={selectAll}
+                  onCheckedChange={handleSelectAll}
+                />
+              </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
               <TableHead className="border">Mã ngành</TableHead>
               <TableHead className="border">Tên ngành đào tạo</TableHead>
@@ -207,19 +277,25 @@ export default function TrainingMajorTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : paginatedTrainingMajors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
               paginatedTrainingMajors.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="border">
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={(checked) => handleSelectOne(item.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium border">
                     {(currentPage - 1) * itemsPerPage + index + 1}
                   </TableCell>
@@ -271,6 +347,11 @@ export default function TrainingMajorTab() {
             Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
             {Math.min(currentPage * itemsPerPage, filteredTrainingMajors.length)} trong tổng số{' '}
             {filteredTrainingMajors.length} ngành đào tạo
+            {selectedIds.length > 0 && (
+              <span className="ml-2 font-semibold text-blue-600">
+                ({selectedIds.length} được chọn)
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -406,6 +487,22 @@ export default function TrainingMajorTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Add Modal */}
+      <BulkAddTrainingMajorModal
+        isOpen={isBulkAddOpen}
+        onClose={() => {
+          setIsBulkAddOpen(false);
+          fetchTrainingMajors();
+        }}
+      />
+
+      {/* Bulk Edit Modal */}
+      <BulkEditTrainingMajorModal
+        isOpen={isBulkEditOpen}
+        onClose={handleCloseBulkEdit}
+        preSelectedIds={selectedIds}
+      />
     </div>
   );
 }

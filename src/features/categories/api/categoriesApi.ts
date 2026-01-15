@@ -121,6 +121,28 @@ export const jobTitleApi = {
     }
   },
 
+  updateBulk: async (payload) => {
+    try {
+      const formattedPayload = {
+        payload: payload.map(item => ({
+          id: item.id,
+          name: item.name,
+          code: item.code || null,
+          type: "Chức danh",
+          description: item.description || null,
+          updatedAt: new Date().toISOString(),
+          deleted: false,
+        }))
+      };
+
+      const response = await api.put("/position/update_list", formattedPayload);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật hàng loạt chức danh:", error);
+      throw error;
+    }
+  },
+
   delete: async (id) => {
     try {
       const response = await api.delete(`/api/position/${id}`);
