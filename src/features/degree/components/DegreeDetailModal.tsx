@@ -84,9 +84,7 @@ export default function DegreeDetailModal({ isOpen, onClose, degreeId }: DegreeD
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Chi tiết bằng cấp</span>
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+
           </DialogTitle>
         </DialogHeader>
 

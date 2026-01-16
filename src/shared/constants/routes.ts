@@ -27,6 +27,8 @@ export const ROUTES = {
   ADMIN_LEAVE_MANAGEMENT: '/admin/employees/leave-requests',
   ADMIN_DEGREE_MANAGEMENT: '/admin/employees/degree',
   ADMIN_EXIT_MANAGEMENT: '/admin/exit',
+  ADMIN_FAMILY_MANAGEMENT: '/admin/family',
+
 
 
   MANAGER_DASHBOARD: '/manager/dashboard',
@@ -51,6 +53,8 @@ export const ROUTES = {
   EMPLOYEE_WORK_SCHEDULE: '/employee/work-schedule',
   EMPLOYEE_TRANSFER: '/employee/transfer',
   EMPLOYEE_TRAINING: '/employee/training/:id',
+  EMPLOYEE_FAMILY: '/employee/family',
+
   TRAINING_DETAIL: '/training/:id',
   LEAVE_REQUESTS: '/user/leave-requests',
   TRANSFER_DETAIL: '/transfer/detail/:id',
@@ -67,7 +71,6 @@ export const ROUTES = {
   VISIT_MANAGEMENT: '/visit-health',
   EXTEND_DECISION_MANAGEMENT: '/admin/contract-resign',
   TERMINATE_DECISION_MANAGEMENT: '/contract-unsign',
-  FAMILY_MANAGEMENT: '/admin/family',
   MEDICAL_PROFILE:'/admin/employees/health',
   RECRUITMENT_MANAGEMENT: '/admin/recruitment',
   PERMISSION_MANAGEMEN: '/admin/permission',

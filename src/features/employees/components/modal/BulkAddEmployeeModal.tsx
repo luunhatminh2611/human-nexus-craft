@@ -570,6 +570,50 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
             const importedEmployees: any[] = [];
             const existingCodes = new Map(employees.map(emp => [emp.code, emp]));
 
+            const formatDateFromExcel = (value: any) => {
+                if (!value) return '';
+
+                // Date object
+                if (value instanceof Date) {
+                    return value.toISOString().split('T')[0];
+                }
+
+                // Số serial Excel
+                if (typeof value === 'number') {
+                    const date = new Date((value - 25569) * 86400 * 1000);
+                    return date.toISOString().split('T')[0];
+                }
+
+                // Chuỗi dd/mm/yyyy
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+
+                    // Format dd/mm/yyyy hoặc d/m/yyyy
+                    const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                    if (ddmmyyyyMatch) {
+                        const [, day, month, year] = ddmmyyyyMatch;
+                        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
+
+                    // Đã đúng yyyy-mm-dd
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+                        return trimmed;
+                    }
+                }
+
+                return '';
+            };
+
+            // Helper: Chuẩn hóa giới tính
+            const normalizeGender = (value: string) => {
+                const genderMap = {
+                    'Nam': 'NAM',
+                    'Nữ': 'NỮ',
+                    'Khác': 'KHÁC'
+                };
+                return genderMap[value?.trim()] || value?.toUpperCase() || 'NAM';
+            };
+
             worksheet.eachRow((row, rowNumber) => {
                 if (rowNumber === 1) return; // Skip header
 
@@ -585,15 +629,15 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                     tempId: existingCodes.has(code) ? existingCodes.get(code)!.tempId : nextId + importedEmployees.length,
                     code,
                     fullName: getCellValue(2),
-                    birthDate: getCellValue(3),
-                    gender: getCellValue(4) || 'NAM',
+                    birthDate: formatDateFromExcel(getCellValue(3)),
+                    gender: normalizeGender(getCellValue(4)),
                     birthPlace: getCellValue(5),
                     ethnicity: findIdByName(ethnicities, getCellValue(6)),
                     nationalityId: findIdByName(nationalities, getCellValue(7)),
                     religion: getCellValue(8),
                     policyFamilyId: findIdByName(policyFamilies, getCellValue(9)),
                     cccdNumber: getCellValue(10),
-                    cccdDate: getCellValue(11),
+                    cccdDate: formatDateFromExcel(getCellValue(11)),
                     cccdPlace: getCellValue(12),
                     provinceCityId: findIdByName(provinceCities, getCellValue(13)),
                     wardId: findIdByName(wards, getCellValue(14)),
@@ -601,15 +645,15 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                     permanentAddress: getCellValue(16),
                     nativePlace: getCellValue(17),
                     homeTown: getCellValue(18),
-                    startDate: getCellValue(19),
-                    endDate: getCellValue(20),
+                    startDate: formatDateFromExcel(getCellValue(19)),
+                    endDate: formatDateFromExcel(getCellValue(20)),
                     departmentId: findIdByName(departments, getCellValue(21)),
                     positionId: findIdByName(positions, getCellValue(22)),
                     laborContractTypeId: findIdByName(laborContractTypes, getCellValue(23)),
                     currentJobDetail: getCellValue(24),
                     title: getCellValue(25),
                     cardNumber: getCellValue(26),
-                    documentReturnDate: getCellValue(27),
+                    documentReturnDate: formatDateFromExcel(getCellValue(27)),
                     isWoundedSoldier: getCellValue(28) === 'Có',
                     educationLevelId: findIdByName(degrees, getCellValue(29)),
                     educationDetail: getCellValue(30),
@@ -623,13 +667,13 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                     trainingMajorId: findIdByName(trainingMajors, getCellValue(38)),
                     trainingTypeId: findIdByName(trainingTypes, getCellValue(39)),
                     socialInsuranceNumber: getCellValue(40),
-                    socialInsuranceStartDate: getCellValue(41),
+                    socialInsuranceStartDate: formatDateFromExcel(getCellValue(41)),
                     socialInsuranceJobId: findIdByName(socialInsuranceJobs, getCellValue(42)),
-                    partyJoinDate: getCellValue(43),
-                    partyOfficialDate: getCellValue(44),
-                    youthUnionJoinDate: getCellValue(45),
-                    militaryJoinDate: getCellValue(46),
-                    militaryEndDate: getCellValue(47),
+                    partyJoinDate: formatDateFromExcel(getCellValue(43)),
+                    partyOfficialDate: formatDateFromExcel(getCellValue(44)),
+                    youthUnionJoinDate: formatDateFromExcel(getCellValue(45)),
+                    militaryJoinDate: formatDateFromExcel(getCellValue(46)),
+                    militaryEndDate: formatDateFromExcel(getCellValue(47)),
                     militaryRankId: findIdByName(militaryRanks, getCellValue(48)),
                     note: getCellValue(49),
                     status: 'Đang làm việc',

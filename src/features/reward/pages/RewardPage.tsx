@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, Award } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Plus, Edit, Award, AlertCircle } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
   Table,
@@ -20,14 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import { 
-  mockRewards, 
-  type Reward, 
-  calculateRewardStatistics,
-} from '../../../mock/reward';
 import RewardDetailModal from '../components/RewardApprovalModal';
 import RewardFormModal from '../components/RewardFormModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import { decisionApi, DecisionType, type DecisionResponse } from '@/features/employees/api/decisionApi';
 
 export default function RewardPage() {
   const { user } = useAuthStore();
@@ -35,18 +31,22 @@ export default function RewardPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
-  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [rewards, setRewards] = useState<DecisionResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedReward, setSelectedReward] = useState<DecisionResponse | null>(null);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedRewardId, setSelectedRewardId] = useState<string | null>(null);
+  const [selectedRewardId, setSelectedRewardId] = useState<number | null>(null);
+
+  // Lấy danh sách phòng ban từ chi tiết quyết định
+  const [departments, setDepartments] = useState<string[]>([]);
 
   useEffect(() => {
     fetchRewards();
@@ -54,33 +54,65 @@ export default function RewardPage() {
 
   const fetchRewards = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    setError(null);
+    try {
+      // Gọi API để lấy tất cả quyết định khen thưởng
+      const allRewards = await decisionApi.getAll({
+        title: searchTerm || undefined,
+      });
 
-    let filtered = [...mockRewards];
-
-    if (departmentFilter !== 'ALL') {
-      filtered = filtered.filter(r => r.departmentName === departmentFilter);
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter(r =>
-        r.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.rewardType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.achievement.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      // Filter chỉ lấy quyết định khen thưởng (REWARD)
+      let filtered = allRewards.filter(
+        (r: DecisionResponse) => r.decisionType === DecisionType.REWARD
       );
+
+      // Lấy danh sách phòng ban từ chi tiết quyết định
+      const uniqueDepartments = Array.from(
+        new Set(
+          filtered
+            .map((r: DecisionResponse) => r.details?.department)
+            .filter(Boolean)
+        )
+      ) as string[];
+      setDepartments(uniqueDepartments);
+
+      // Filter theo phòng ban nếu được chọn
+      if (departmentFilter !== 'ALL') {
+        filtered = filtered.filter(
+          (r: DecisionResponse) => r.details?.department === departmentFilter
+        );
+      }
+
+      // Filter theo tìm kiếm
+      if (searchTerm) {
+        filtered = filtered.filter((r: DecisionResponse) => {
+          const searchLower = searchTerm.toLowerCase();
+          return (
+            r.title?.toLowerCase().includes(searchLower) ||
+            r.decisionNumber.toLowerCase().includes(searchLower) ||
+            r.details?.rewardReason?.toLowerCase().includes(searchLower) ||
+            r.details?.achievement?.toLowerCase().includes(searchLower)
+          );
+        });
+      }
+
+      setTotalItems(filtered.length);
+
+      // Pagination
+      const start = page * pageSize;
+      const end = start + pageSize;
+      setRewards(filtered.slice(start, end));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Lỗi khi tải danh sách quyết định khen thưởng'
+      );
+      console.error('Lỗi fetch rewards:', err);
+    } finally {
+      setIsLoading(false);
     }
-
-    setTotalItems(filtered.length);
-
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setRewards(filtered.slice(start, end));
-
-    setIsLoading(false);
   };
 
-  const handleOpenFormModal = (reward?: Reward) => {
+  const handleOpenFormModal = (reward?: DecisionResponse) => {
     setSelectedReward(reward || null);
     setIsFormModalOpen(true);
   };
@@ -95,7 +127,7 @@ export default function RewardPage() {
     handleCloseFormModal();
   };
 
-  const handleOpenDetailModal = (id: string) => {
+  const handleOpenDetailModal = (id: number) => {
     setSelectedRewardId(id);
     setIsDetailModalOpen(true);
   };
@@ -105,19 +137,28 @@ export default function RewardPage() {
     setSelectedRewardId(null);
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | string | undefined) => {
+    if (!amount) return 'N/A';
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numAmount)) return 'N/A';
+    
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
-    }).format(amount);
+    }).format(numAmount);
   };
 
-  const stats = calculateRewardStatistics(mockRewards);
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('vi-VN');
+    } catch {
+      return dateString;
+    }
+  };
+
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = page * pageSize + 1;
   const endIndex = Math.min((page + 1) * pageSize, totalItems);
-
-  const departments = Array.from(new Set(mockRewards.map(r => r.departmentName)));
 
   return (
     <div className="space-y-6">
@@ -136,20 +177,47 @@ export default function RewardPage() {
         )}
       </div>
 
+      {/* Error Alert */}
+      {error && (
+        <Card className="p-4 border-red-200 bg-red-50">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+            <div>
+              <p className="font-medium text-red-900">Lỗi</p>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchRewards()}
+              className="ml-auto"
+            >
+              Thử lại
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Filters */}
       <Card className="p-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, loại khen thưởng, thành tích hoặc số quyết định"
+              placeholder="Tìm kiếm theo tiêu đề, số quyết định, lý do hoặc thành tích"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(0);
+              }}
               className="pl-10"
             />
           </div>
 
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <Select value={departmentFilter} onValueChange={(value) => {
+            setDepartmentFilter(value);
+            setPage(0);
+          }}>
             <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue placeholder="Phòng ban" />
             </SelectTrigger>
@@ -169,11 +237,11 @@ export default function RewardPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nhân viên</TableHead>
-                <TableHead>Loại khen thưởng</TableHead>
-                <TableHead>Thành tích</TableHead>
+                <TableHead>Tiêu đề</TableHead>
                 <TableHead>Số quyết định</TableHead>
                 <TableHead>Ngày quyết định</TableHead>
+                <TableHead>Loại khen thưởng</TableHead>
+                <TableHead>Lý do</TableHead>
                 <TableHead>Mức thưởng</TableHead>
                 <TableHead>Người tạo</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
@@ -203,35 +271,31 @@ export default function RewardPage() {
                   <TableRow key={reward.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{reward.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{reward.departmentName}</p>
-                        <p className="text-xs text-muted-foreground">{reward.position}</p>
+                        <p className="font-medium line-clamp-1">{reward.title || 'N/A'}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="font-medium text-sm">{reward.rewardType}</span>
+                      <div className="text-sm font-medium">{reward.decisionNumber}</div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm max-w-[250px] line-clamp-2">{reward.achievement}</span>
+                      <span className="text-sm">{formatDate(reward.decisionDate)}</span>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium">{reward.decisionNumber}</div>
-                      </div>
+                      <span className="font-medium text-sm">{reward.details?.rewardType || 'N/A'}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">
-                        {new Date(reward.decisionDate).toLocaleDateString('vi-VN')}
+                      <span className="text-sm max-w-[250px] line-clamp-2">
+                        {reward.details?.rewardReason || 'N/A'}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-green-600">
-                        {formatCurrency(reward.amount)}
+                        {formatCurrency(reward.details?.rewardValue)}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <p>{reward.createdBy}</p>
+                        <p>{reward.createdBy || 'N/A'}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -333,11 +397,13 @@ export default function RewardPage() {
         )}
       </Card>
 
-      <RewardDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={handleCloseDetailModal}
-        rewardId={selectedRewardId}
-      />
+      {selectedRewardId && (
+        <RewardDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={handleCloseDetailModal}
+          rewardId={selectedRewardId.toString()}
+        />
+      )}
 
       {isAdmin && (
         <RewardFormModal

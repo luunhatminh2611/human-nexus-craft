@@ -36,6 +36,7 @@ import FamilyManagementPage from '@/features/fanilyVisit/pages/FamilyManagementP
 import MedicalHRPage from '@/features/medical/pages/admin/AdminMedicalRecord';
 import RecruitmentPage from '@/features/recruitment/pages/RecruitmentPage';
 import PermissionManagementUI from '@/features/permission/pages/Permission';
+import MyFamilyMembersPage from '@/features/fanilyVisit/pages/EmployeeFamilyPage';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -151,6 +152,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.EMPLOYEE_WORK_SCHEDULE.slice(1), element: <EmployeeWorkSchedule /> },
       { path: ROUTES.EMPLOYEE_TRANSFER.slice(1), element: <EmployeeTransferPage /> },
       { path: ROUTES.EMPLOYEE_TRAINING.slice(1), element: <EmployeeTrainingDetailPage /> },
+      { path: ROUTES.EMPLOYEE_FAMILY.slice(1), element: <MyFamilyMembersPage /> },
 
       // Shared Training Detail
       { path: ROUTES.TRAINING_DETAIL.slice(1), element: <TrainingDetail /> },
@@ -168,7 +170,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.VISIT_MANAGEMENT.slice(1), element: <FamilyVisitList /> },
       { path: ROUTES.EXTEND_DECISION_MANAGEMENT.slice(1), element: <ExtensionDecisionPage /> },
       { path: ROUTES.TERMINATE_DECISION_MANAGEMENT.slice(1), element: <TerminationDecisionPage /> },
-      { path: ROUTES.FAMILY_MANAGEMENT.slice(1), element: <FamilyManagementPage /> },
+      { path: ROUTES.ADMIN_FAMILY_MANAGEMENT.slice(1), element: <FamilyManagementPage /> },
       { path: ROUTES.MEDICAL_PROFILE.slice(1), element: <MedicalHRPage /> },
       { path: ROUTES.RECRUITMENT_MANAGEMENT.slice(1), element: <RecruitmentPage /> },
       { path: ROUTES.PERMISSION_MANAGEMEN.slice(1), element: <PermissionManagementUI /> },

@@ -326,7 +326,7 @@ export default function DegreeFormModal({ isOpen, onClose, degree, onSuccess }: 
                     setShowEmployeeList(true);
                   }}
                   onFocus={() => setShowEmployeeList(true)}
-                  placeholder="Tìm kiếm nhân viên theo tên, mã hoặc phòng ban"
+                  placeholder="Tìm kiếm nhân viên theo mã, tên hoặc phòng ban"
                   className={`pl-10 ${errors.employeeId ? 'border-red-500' : ''}`}
                 />
               </div>

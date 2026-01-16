@@ -128,7 +128,18 @@ export default function BulkAddTrainingInstitutionModal({ isOpen, onClose }) {
 
                 const getCellValue = (colNumber: number) => {
                     const cell = row.getCell(colNumber);
-                    return cell.value ? String(cell.value).trim() : '';
+
+                    if (!cell.value) return '';
+
+                    // Xử lý object (hyperlink, rich text, formula)
+                    if (typeof cell.value === 'object' && cell.value !== null) {
+                        if ('text' in cell.value) return String(cell.value.text).trim();
+                        if ('richText' in cell.value) return cell.value.richText.map(rt => rt.text).join('').trim();
+                        if ('result' in cell.value) return String(cell.value.result).trim();
+                        return String(cell.value).trim();
+                    }
+
+                    return String(cell.value).trim();
                 };
 
                 const name = getCellValue(1);
@@ -254,9 +265,9 @@ export default function BulkAddTrainingInstitutionModal({ isOpen, onClose }) {
                         type={field === 'email' ? 'email' : 'text'}
                         placeholder={
                             field === 'name' ? 'Tên cơ sở đào tạo' :
-                            field === 'address' ? 'Địa chỉ' :
-                            field === 'phone' ? 'Số điện thoại' :
-                            'Email'
+                                field === 'address' ? 'Địa chỉ' :
+                                    field === 'phone' ? 'Số điện thoại' :
+                                        'Email'
                         }
                     />
                 );

@@ -1,8 +1,5 @@
-import { useState, useMemo } from 'react';
-import {
-  Card,
-  CardContent,
-} from '@/shared/components/ui/card';
+import { useEffect, useState, useMemo } from 'react';
+import { Card, CardContent } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Badge } from '@/shared/components/ui/badge';
@@ -19,6 +16,8 @@ import {
   Edit,
   Trash2,
   Users,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import {
   Table,
@@ -28,80 +27,60 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import RelativeFormModal from '../components/RelativeFormModal';
-import DeleteRelativeConfirmModal from '../components/DeleteConnffirm';
-
-/* ================= MOCK DATA ================= */
-
-const mockEmployees = [
-  { id: 1, code: 'NV001', fullName: 'Nguyễn Văn A', department: 'Hành chính' },
-  { id: 2, code: 'NV002', fullName: 'Trần Thị B', department: 'Kế toán' },
-  { id: 3, code: 'NV003', fullName: 'Lê Văn C', department: 'Kỹ thuật' },
-];
+import FamilyModal from '../../employees/components/modal/FamilyModal';
+import { familyApi } from '../../employees/api/family';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
 const relationshipTypes = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Con'];
+const MAX_FAMILY_MEMBERS = 2;
 
-const mockFamilies = [
-  {
-    id: 1,
-    employeeId: 1,
-    employeeName: 'Nguyễn Văn A',
-    employeeCode: 'NV001',
-    relationship: 'Vợ',
-    familyName: 'Trần Thị Hoa',
-    phone: '0912345678',
-  },
-  {
-    id: 2,
-    employeeId: 1,
-    employeeName: 'Nguyễn Văn A',
-    employeeCode: 'NV001',
-    relationship: 'Con',
-    familyName: 'Nguyễn Văn D',
-    phone: '',
-  },
-  {
-    id: 3,
-    employeeId: 2,
-    employeeName: 'Trần Thị B',
-    employeeCode: 'NV002',
-    relationship: 'Mẹ',
-    familyName: 'Lê Thị M',
-    phone: '0909123123',
-  },
-];
-
-/* ============================================ */
-
-export default function FamilyRelationshipList() {
-  const [families, setFamilies] = useState(mockFamilies);
+export default function MyFamilyMembersPage() {
+  const [familyMembers, setFamilyMembers] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRelationship, setFilterRelationship] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-
+  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
   const [selectedFamily, setSelectedFamily] = useState(null);
+  const [mode, setMode] = useState('create');
 
-  /* ===== FILTER ===== */
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    if (user?.employeeId) {
+      fetchFamilyMembers();
+    }
+  }, [user?.employeeId]);
+
+  const fetchFamilyMembers = async () => {
+    try {
+      setIsLoading(true);
+      const res = await familyApi.getByEmployeeId(user?.employeeId);
+      setFamilyMembers(res || []);
+    } catch (e) {
+      console.error('Lỗi lấy thông tin thân nhân', e);
+      setFamilyMembers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const filteredFamilies = useMemo(() => {
     const text = searchTerm.toLowerCase();
-    return families.filter(f => {
+    return familyMembers.filter(f => {
       const matchesSearch =
-        f.employeeName.toLowerCase().includes(text) ||
-        f.employeeCode.toLowerCase().includes(text) ||
-        f.familyName.toLowerCase().includes(text);
+        f.name?.toLowerCase().includes(text) ||
+        f.phone?.toLowerCase().includes(text);
 
       const matchesRelationship =
         filterRelationship === 'all' || f.relationship === filterRelationship;
 
       return matchesSearch && matchesRelationship;
     });
-  }, [families, searchTerm, filterRelationship]);
+  }, [familyMembers, searchTerm, filterRelationship]);
 
-  /* ===== PAGINATION ===== */
   const paginatedFamilies = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredFamilies.slice(start, start + itemsPerPage);
@@ -109,7 +88,32 @@ export default function FamilyRelationshipList() {
 
   const totalPages = Math.ceil(filteredFamilies.length / itemsPerPage);
 
-  const getRelationshipBadge = (type) => {
+  const canAddMore = familyMembers.length < MAX_FAMILY_MEMBERS;
+
+  const handleAdd = () => {
+    setMode('create');
+    setSelectedFamily(null);
+    setIsFamilyModalOpen(true);
+  };
+
+  const handleEdit = (member) => {
+    setMode('edit');
+    setSelectedFamily(member);
+    setIsFamilyModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa thông tin thân nhân này?')) return;
+    try {
+      await familyApi.delete(id);
+      fetchFamilyMembers();
+    } catch (e) {
+      console.error('Lỗi xóa thân nhân', e);
+      alert('Không thể xóa thân nhân. Vui lòng thử lại.');
+    }
+  };
+
+  const getRelationshipBadge = (relationship) => {
     const map = {
       Cha: 'bg-blue-100 text-blue-800',
       Mẹ: 'bg-pink-100 text-pink-800',
@@ -117,29 +121,44 @@ export default function FamilyRelationshipList() {
       Chồng: 'bg-purple-100 text-purple-800',
       Con: 'bg-green-100 text-green-800',
     };
-    return <Badge className={map[type] || 'bg-gray-100'}>{type}</Badge>;
+    return <Badge className={map[relationship] || 'bg-gray-100'}>{relationship}</Badge>;
   };
 
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className='flex justify-between items-center'>
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quan hệ gia đình</h1>
+          <h1 className="text-3xl font-bold">Thông tin thân nhân của tôi</h1>
           <p className="text-muted-foreground">
-            Quản lý thông tin thân nhân của toàn bộ nhân viên
+            Quản lý thông tin thân nhân của bạn
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setSelectedFamily(null);
-            setIsFormModalOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm thân nhân
-        </Button>
       </div>
+
+      {/* Info banner */}
+      <Card className="p-4 bg-blue-50 border-blue-200">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">Thông tin quan trọng</p>
+            <p>Bạn có thể quản lý tối đa {MAX_FAMILY_MEMBERS} thành viên gia đình. Nếu cần thay đổi thông tin, vui lòng liên hệ với phòng Nhân sự.</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Limit warning */}
+      {!canAddMore && (
+        <Card className="p-4 bg-orange-50 border-orange-200">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-orange-800">
+              <p className="font-medium">Đã đạt giới hạn</p>
+              <p>Bạn đã thêm tối đa {MAX_FAMILY_MEMBERS} thành viên gia đình. Để thêm thành viên mới, vui lòng xóa một thành viên cũ.</p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* FILTER */}
       <Card className="p-4">
@@ -147,7 +166,7 @@ export default function FamilyRelationshipList() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo tên, mã NV, thân nhân..."
+              placeholder="Tìm theo tên thân nhân hoặc SĐT..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -162,12 +181,21 @@ export default function FamilyRelationshipList() {
               <SelectValue placeholder="Quan hệ" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="all">Tất cả quan hệ</SelectItem>
               {relationshipTypes.map(r => (
                 <SelectItem key={r} value={r}>{r}</SelectItem>
               ))}
             </SelectContent>
           </Select>
+
+          <Button 
+            onClick={handleAdd}
+            disabled={!canAddMore}
+            title={!canAddMore ? `Đã đạt giới hạn ${MAX_FAMILY_MEMBERS} thành viên` : ''}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm thân nhân
+          </Button>
         </div>
       </Card>
 
@@ -178,20 +206,29 @@ export default function FamilyRelationshipList() {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-center w-16">STT</TableHead>
-                <TableHead>Nhân viên</TableHead>
-                <TableHead>Thân nhân</TableHead>
+                <TableHead>Tên thân nhân</TableHead>
                 <TableHead>Quan hệ</TableHead>
-                <TableHead>SĐT</TableHead>
+                <TableHead>Số điện thoại</TableHead>
                 <TableHead className="text-center w-32">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedFamilies.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      <span className="text-sm">Đang tải...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : paginatedFamilies.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Users className="h-8 w-8" />
-                      <p>Chưa có dữ liệu</p>
+                      <p>Chưa có thông tin thân nhân</p>
+                      <p className="text-sm">Nhấn "Thêm thân nhân" để bắt đầu</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -205,23 +242,20 @@ export default function FamilyRelationshipList() {
                         {stt}
                       </TableCell>
                       <TableCell>
-                        <p className="font-medium text-sm">{f.employeeName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {f.employeeCode}
-                        </p>
+                        <span className="text-sm font-medium">{f.name}</span>
                       </TableCell>
-                      <TableCell>{f.familyName}</TableCell>
-                      <TableCell>{getRelationshipBadge(f.relationship)}</TableCell>
-                      <TableCell>{f.phone || '-'}</TableCell>
+                      <TableCell>
+                        {getRelationshipBadge(f.relationship)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{f.phone || '-'}</span>
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-center">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              setSelectedFamily(f);
-                              setIsFormModalOpen(true);
-                            }}
+                            onClick={() => handleEdit(f)}
                             title="Sửa"
                           >
                             <Edit className="h-4 w-4" />
@@ -230,10 +264,7 @@ export default function FamilyRelationshipList() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive"
-                            onClick={() => {
-                              setSelectedFamily(f);
-                              setIsDeleteModalOpen(true);
-                            }}
+                            onClick={() => handleDelete(f.id)}
                             title="Xóa"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -317,32 +348,14 @@ export default function FamilyRelationshipList() {
         </Card>
       )}
 
-      <RelativeFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => {
-          setIsFormModalOpen(false);
-          setSelectedFamily(null);
-        }}
-        relative={selectedFamily}
-        onSuccess={() => {
-          setIsFormModalOpen(false);
-          setSelectedFamily(null);
-        }}
-      />
-      <DeleteRelativeConfirmModal
-        isOpen={isDeleteModalOpen}
-        relativeName={selectedFamily?.familyName}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setSelectedFamily(null);
-        }}
-        onConfirm={() => {
-          setFamilies(prev =>
-            prev.filter(item => item.id !== selectedFamily.id)
-          );
-          setIsDeleteModalOpen(false);
-          setSelectedFamily(null);
-        }}
+      {/* FAMILY MODAL */}
+      <FamilyModal
+        isOpen={isFamilyModalOpen}
+        onClose={() => setIsFamilyModalOpen(false)}
+        employeeId={user?.employeeId}
+        familyData={selectedFamily}
+        mode={mode}
+        onSuccess={fetchFamilyMembers}
       />
     </div>
   );

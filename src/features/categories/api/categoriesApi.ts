@@ -145,7 +145,7 @@ export const jobTitleApi = {
 
   delete: async (id) => {
     try {
-      const response = await api.delete(`/api/position/${id}`);
+      const response = await api.delete(`/position/${id}`);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi xóa chức danh:", error);
@@ -215,7 +215,7 @@ export const majorApi = {
 
   delete: async (id) => {
     try {
-      const response = await api.delete(`/api/position/${id}`);
+      const response = await api.delete(`/position/${id}`);
       return response.data;
     } catch (error) {
       console.error("Lỗi khi xóa ngành nghề:", error);

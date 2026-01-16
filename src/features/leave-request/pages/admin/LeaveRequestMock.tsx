@@ -658,7 +658,7 @@ export default function AdminLeaveRequestPage() {
             </div>
 
             <div>
-              <Label htmlFor="attachment">Đơn xin nghỉ phép (file viết tay)</Label>
+              <Label htmlFor="attachment">Đơn xin nghỉ phép</Label>
               <div className="mt-2">
                 <label
                   htmlFor="attachment"

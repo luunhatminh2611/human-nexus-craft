@@ -48,8 +48,8 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         path: '/admin/employees',
         submenu: [
           { label: 'Bằng cấp', icon: School, path: '/degree/management' },
+          { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/employee/family' },
           { label: 'Thăm nhân', icon: Hospital, path: '/visit-health' },
-          // { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
           { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/employee/exit' },
           { label: 'Bảo hiểm xã hội', icon: HandHeart, path: '/social-insurance' },
           { label: 'Hồ sơ', icon: FolderClosed, path: '/file' },
@@ -84,7 +84,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         path: '/admin/employees',
         submenu: [
           { label: 'Bằng cấp', icon: School, path: '/degree/management' },
-          // { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/admin/family' },
+          { label: 'Quan hệ gia đình', icon: NotebookTabs, path: '/employee/family' },
           { label: 'Thăm nhân', icon: Hospital, path: '/visit-health' },
           // { label: 'Hợp đồng', icon: Signature, path: '/admin/contract' },
           { label: 'Xuất cảnh nước ngoài', icon: Compass, path: '/admin/exit' },
