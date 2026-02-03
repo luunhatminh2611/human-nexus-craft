@@ -248,7 +248,7 @@ export default function OrgChart() {
       {/* Organizational Chart với scroll horizontal */}
       <Card>
         <CardContent className="p-8">
-          <div className="overflow-x-auto pb-4 flex items-center justify-center">
+          <div className="overflow-x-auto pb-4 flex items-center justify-start">
             <div className="inline-flex gap-12">
               {/* Root Departments */}
               {rootDepartments.map((root) => (

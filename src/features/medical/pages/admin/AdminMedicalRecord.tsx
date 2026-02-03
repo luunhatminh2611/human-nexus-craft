@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Activity, Plus, Edit, AlertCircle, Heart } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, Activity, Plus, Edit, AlertCircle } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -24,8 +24,14 @@ import {
 import { mockMedicalProfiles, type MedicalProfile } from '../../../../mock/medicalProfile';
 import MedicalDetailModal from '../../components/MedicalDetailModal';
 import MedicalFormModal from '../../components/MedicalFormModal';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import { ehrApi } from '@/features/employees/api/ehrApi';
+import { toast } from '@/shared/hooks/use-toast';
 
 export default function MedicalHRPage() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.roles === 'ADMIN';
+
   const [searchTerm, setSearchTerm] = useState('');
   const [healthFilter, setHealthFilter] = useState<string>('ALL');
   const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
@@ -49,48 +55,78 @@ export default function MedicalHRPage() {
 
   const fetchProfiles = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      let filtered: any[] = [];
 
-    let filtered = [...mockMedicalProfiles];
-
-    if (healthFilter !== 'ALL') {
-      filtered = filtered.filter(p => p.healthClassification === healthFilter);
-    }
-
-    if (departmentFilter !== 'ALL') {
-      filtered = filtered.filter(p => p.departmentName === departmentFilter);
-    }
-
-    if (allergyFilter !== 'ALL') {
-      if (allergyFilter === 'HAS_ALLERGY') {
-        filtered = filtered.filter(p => p.allergy && p.allergy !== 'Không');
-      } else if (allergyFilter === 'NO_ALLERGY') {
-        filtered = filtered.filter(p => !p.allergy || p.allergy === 'Không');
+      // Nếu là admin, sử dụng mock data (vì API chưa có)
+      if (isAdmin) {
+        filtered = [...mockMedicalProfiles];
+      } else {
+        // Nếu không phải admin, gọi API để lấy hồ sơ của user hiện tại
+        if (user?.employeeId) {
+          try {
+            const response = await ehrApi.profile.getByEmployeeId(user.employeeId);
+            // Chuyển đổi API response thành format giống mock data
+            if (response.data) {
+              filtered = [response.data];
+            }
+          } catch (error) {
+            console.error('Lỗi khi lấy dữ liệu hồ sơ y tế:', error);
+            toast({
+              title: 'Lỗi',
+              description: 'Không thể tải hồ sơ y tế',
+            });
+            filtered = [];
+          }
+        }
       }
+
+      // Áp dụng các filter
+      if (healthFilter !== 'ALL') {
+        filtered = filtered.filter(p => p.healthClassification === healthFilter);
+      }
+
+      if (departmentFilter !== 'ALL') {
+        filtered = filtered.filter(p => p.departmentName === departmentFilter);
+      }
+
+      if (allergyFilter !== 'ALL') {
+        if (allergyFilter === 'HAS_ALLERGY') {
+          filtered = filtered.filter(p => p.allergy && p.allergy !== 'Không');
+        } else if (allergyFilter === 'NO_ALLERGY') {
+          filtered = filtered.filter(p => !p.allergy || p.allergy === 'Không');
+        }
+      }
+
+      if (searchTerm) {
+        filtered = filtered.filter(p =>
+          p.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.bloodType?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      // Sort by last check date (newest first)
+      filtered.sort((a, b) => {
+        if (!a.lastCheckDate) return 1;
+        if (!b.lastCheckDate) return -1;
+        return new Date(b.lastCheckDate).getTime() - new Date(a.lastCheckDate).getTime();
+      });
+
+      setTotalItems(filtered.length);
+
+      const start = page * pageSize;
+      const end = start + pageSize;
+      setProfiles(filtered.slice(start, end));
+    } catch (error) {
+      console.error('Lỗi khi tải dữ liệu y tế:', error);
+      toast({
+        title: 'Lỗi',
+        description: 'Không thể tải dữ liệu y tế',
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    if (searchTerm) {
-      filtered = filtered.filter(p =>
-        p.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.bloodType?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Sort by last check date (newest first)
-    filtered.sort((a, b) => {
-      if (!a.lastCheckDate) return 1;
-      if (!b.lastCheckDate) return -1;
-      return new Date(b.lastCheckDate).getTime() - new Date(a.lastCheckDate).getTime();
-    });
-
-    setTotalItems(filtered.length);
-
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setProfiles(filtered.slice(start, end));
-
-    setIsLoading(false);
   };
 
   const handleOpenDetailModal = (id: string) => {
@@ -120,11 +156,11 @@ export default function MedicalHRPage() {
 
   const getHealthBadge = (classification: string) => {
     const healthConfig = {
-      'Loại I': { className: 'bg-green-100 text-green-800' },
-      'Loại II': { className: 'bg-blue-100 text-blue-800' },
-      'Loại III': { className: 'bg-yellow-100 text-yellow-800' },
-      'Loại IV': { className: 'bg-orange-100 text-orange-800' },
-      'Loại V': { className: 'bg-red-100 text-red-800' },
+      'I': { className: 'bg-green-100 text-green-800' },
+      'II': { className: 'bg-blue-100 text-blue-800' },
+      'III': { className: 'bg-yellow-100 text-yellow-800' },
+      'IV': { className: 'bg-orange-100 text-orange-800' },
+      'V': { className: 'bg-red-100 text-red-800' },
     };
 
     const config = healthConfig[classification];
@@ -151,36 +187,53 @@ export default function MedicalHRPage() {
     return { label: 'Béo phì', color: 'text-red-600' };
   };
 
-  // Calculate statistics
-  const stats = {
+  // Calculate statistics - chỉ dùng mock data cho admin
+  const stats = isAdmin ? {
     total: mockMedicalProfiles.length,
     healthyClass1: mockMedicalProfiles.filter(p => p.healthClassification === 'Loại I').length,
     healthyClass2: mockMedicalProfiles.filter(p => p.healthClassification === 'Loại II').length,
     withAllergies: mockMedicalProfiles.filter(p => p.allergy && p.allergy !== 'Không').length,
     withChronicDisease: mockMedicalProfiles.filter(p => p.chronicDisease && p.chronicDisease !== 'Không').length,
     withOccupationalDisease: mockMedicalProfiles.filter(p => p.occupationalDisease && p.occupationalDisease !== 'Không').length,
+  } : {
+    total: profiles.length,
+    healthyClass1: profiles.filter(p => p.healthClassification === 'Loại I').length,
+    healthyClass2: profiles.filter(p => p.healthClassification === 'Loại II').length,
+    withAllergies: profiles.filter(p => p.allergy && p.allergy !== 'Không').length,
+    withChronicDisease: profiles.filter(p => p.chronicDisease && p.chronicDisease !== 'Không').length,
+    withOccupationalDisease: profiles.filter(p => p.occupationalDisease && p.occupationalDisease !== 'Không').length,
   };
 
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = page * pageSize + 1;
   const endIndex = Math.min((page + 1) * pageSize, totalItems);
 
-  const departments = Array.from(new Set(mockMedicalProfiles.map(p => p.departmentName)));
+  const departments = isAdmin 
+    ? Array.from(new Set(mockMedicalProfiles.map(p => p.departmentName)))
+    : Array.from(new Set(profiles.map(p => p.departmentName)));
+  
   const healthClassifications = ['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý hồ sơ y tế</h1>
+          <h1 className="text-3xl font-bold">
+            {isAdmin ? 'Quản lý hồ sơ y tế' : 'Hồ sơ y tế của tôi'}
+          </h1>
           <p className="text-muted-foreground">
-            Quản lý và theo dõi sức khỏe của tất cả nhân viên
+            {isAdmin 
+              ? 'Quản lý và theo dõi sức khỏe của tất cả nhân viên'
+              : 'Xem và cập nhật hồ sơ sức khỏe của bạn'
+            }
           </p>
         </div>
-        <Button onClick={() => handleOpenFormModal()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm hồ sơ y tế
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => handleOpenFormModal()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm hồ sơ y tế
+          </Button>
+        )}
       </div>
 
       {/* Filters */}
@@ -189,47 +242,54 @@ export default function MedicalHRPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, mã NV hoặc nhóm máu"
+              placeholder={isAdmin 
+                ? 'Tìm kiếm theo tên nhân viên, mã NV hoặc nhóm máu'
+                : 'Tìm kiếm theo tên'
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
 
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Phòng ban" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả phòng ban</SelectItem>
-              {departments.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isAdmin && (
+            <>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <SelectValue placeholder="Phòng ban" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả phòng ban</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select value={healthFilter} onValueChange={setHealthFilter}>
-            <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue placeholder="Phân loại" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả phân loại</SelectItem>
-              {healthClassifications.map(hc => (
-                <SelectItem key={hc} value={hc}>{hc}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              <Select value={healthFilter} onValueChange={setHealthFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Phân loại" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả phân loại</SelectItem>
+                  {healthClassifications.map(hc => (
+                    <SelectItem key={hc} value={hc}>{hc}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          <Select value={allergyFilter} onValueChange={setAllergyFilter}>
-            <SelectTrigger className="w-full md:w-[150px]">
-              <SelectValue placeholder="Dị ứng" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả</SelectItem>
-              <SelectItem value="HAS_ALLERGY">Có dị ứng</SelectItem>
-              <SelectItem value="NO_ALLERGY">Không dị ứng</SelectItem>
-            </SelectContent>
-          </Select>
+              <Select value={allergyFilter} onValueChange={setAllergyFilter}>
+                <SelectTrigger className="w-full md:w-[150px]">
+                  <SelectValue placeholder="Dị ứng" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tất cả</SelectItem>
+                  <SelectItem value="HAS_ALLERGY">Có dị ứng</SelectItem>
+                  <SelectItem value="NO_ALLERGY">Không dị ứng</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
         </div>
       </Card>
 
@@ -239,7 +299,7 @@ export default function MedicalHRPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nhân viên</TableHead>
+                {isAdmin && <TableHead>Nhân viên</TableHead>}
                 <TableHead>Nhóm máu</TableHead>
                 <TableHead>Chỉ số</TableHead>
                 <TableHead>BMI</TableHead>
@@ -252,7 +312,7 @@ export default function MedicalHRPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -261,7 +321,7 @@ export default function MedicalHRPage() {
                 </TableRow>
               ) : profiles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Activity className="h-8 w-8" />
                       <p>Không tìm thấy hồ sơ y tế nào</p>
@@ -275,13 +335,15 @@ export default function MedicalHRPage() {
 
                   return (
                     <TableRow key={profile.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{profile.employeeName}</p>
-                          <p className="text-sm text-muted-foreground">{profile.employeeCode}</p>
-                          <p className="text-xs text-muted-foreground">{profile.departmentName}</p>
-                        </div>
-                      </TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{profile.employeeName}</p>
+                            <p className="text-sm text-muted-foreground">{profile.employeeCode}</p>
+                            <p className="text-xs text-muted-foreground">{profile.departmentName}</p>
+                          </div>
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Badge variant="outline" className="font-semibold">
                           {profile.bloodType || '--'}
@@ -357,14 +419,16 @@ export default function MedicalHRPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenFormModal(profile)}
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleOpenFormModal(profile)}
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -453,12 +517,14 @@ export default function MedicalHRPage() {
       />
 
       {/* Form Modal */}
-      <MedicalFormModal
-        isOpen={isFormModalOpen}
-        onClose={handleCloseFormModal}
-        profile={selectedProfile}
-        onSuccess={handleFormSuccess}
-      />
+      {isAdmin && (
+        <MedicalFormModal
+          isOpen={isFormModalOpen}
+          onClose={handleCloseFormModal}
+          profile={selectedProfile}
+          onSuccess={handleFormSuccess}
+        />
+      )}
     </div>
   );
 }

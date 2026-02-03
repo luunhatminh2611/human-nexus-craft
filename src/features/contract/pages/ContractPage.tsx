@@ -85,7 +85,21 @@ export default function ContractPage() {
     const fetchContracts = async () => {
       setIsLoading(true);
       try {
-        const data = await contractApi.getAll();
+        let data;
+
+        // Nếu là admin, lấy tất cả hợp đồng
+        if (isAdmin) {
+          data = await contractApi.getAll();
+        } else {
+          // Nếu không phải admin, lấy hợp đồng của nhân viên đó
+          if (user?.employeeId) {
+            data = await contractApi.getByEmployeeId(user.employeeId);
+          } else {
+            console.warn('User không có employeeId');
+            data = [];
+          }
+        }
+
         setContractsData(data);
       } catch (error) {
         console.error('Error fetching contracts:', error);
@@ -100,7 +114,7 @@ export default function ContractPage() {
     };
 
     fetchContracts();
-  }, [refreshKey]);
+  }, [refreshKey, isAdmin, user?.employeeId]);
 
   useEffect(() => {
     const fetchContractTypes = async () => {
@@ -280,12 +294,20 @@ export default function ContractPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Quản lý Hợp đồng</h1>
-          <p className="text-muted-foreground">
-            Quản lý hợp đồng lao động của nhân viên
-          </p>
-        </div>
+        {isAdmin ? (
+          <div>
+            <h1 className="text-3xl font-bold">Quản lý Hợp đồng</h1>
+            <p className="text-muted-foreground">
+              Quản lý hợp đồng lao động của nhân viên
+            </p>
+          </div>) : (
+          <div>
+            <h1 className="text-3xl font-bold">Hợp đồng của tôi</h1>
+            <p className="text-muted-foreground">
+              Xem danh sách hợp đồng lao động của bạn
+            </p>
+          </div>
+        )}
         <div className="flex gap-2">
           {isAdmin && (
             <>

@@ -680,7 +680,7 @@ export default function AdminLeaveRequestPage() {
                     ) : (
                       <div>
                         <p className="text-sm text-muted-foreground">
-                          Click để chọn file đơn viết tay
+                          Click để chọn file
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           PDF, JPG, PNG (tối đa 10MB)

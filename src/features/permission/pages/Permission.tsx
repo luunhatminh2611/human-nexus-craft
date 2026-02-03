@@ -142,17 +142,6 @@ const PermissionManagementUI = () => {
     }));
   };
 
-  const getPermissionLabel = (index) => {
-    const labels = ['C', 'R', 'U', 'D', 'A'];
-    return labels[index];
-  };
-
-  const canEnablePermission = (accountId, module, item, permIndex) => {
-    const account = accounts.find(a => a.id === accountId);
-    const rolePerms = rolePermissions[account.role][module][item];
-    return rolePerms[permIndex] === true;
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -296,13 +285,13 @@ const PermissionManagementUI = () => {
           {activeTab === 'role' && (
             <div className="space-y-6">
               <div className="pb-4 border-b">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Phân quyền theo chức vụ</h2>
-                <div className="flex gap-4 text-sm">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">C: Thêm</span>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">R: Xem</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">U: Sửa</span>
-                  <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full">D: Xóa</span>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full">A: Duyệt</span>
+                <h2 className="text-xl font-semibold text-gray-900 mb-3">Phân quyền theo chức vụ</h2>
+                <div className="flex gap-3 text-sm flex-wrap">
+                  <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md font-medium">C = Thêm (Create)</span>
+                  <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-md font-medium">R = Xem (Read)</span>
+                  <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-md font-medium">U = Sửa (Update)</span>
+                  <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-md font-medium">D = Xóa (Delete)</span>
+                  <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md font-medium">A = Duyệt (Approve)</span>
                 </div>
               </div>
 
@@ -310,12 +299,48 @@ const PermissionManagementUI = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-900">Module</th>
+                      <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-900 sticky left-0 bg-gray-50 z-10">Module</th>
                       <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-900">Sub-module</th>
-                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900">Admin</th>
-                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900">Giám đốc</th>
-                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900">Trưởng phòng</th>
-                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900">Nhân viên</th>
+                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900" colSpan={5}>
+                        <div className="mb-1">Admin</div>
+                        <div className="flex justify-center gap-2 text-xs font-normal">
+                          <span className="w-8 text-blue-600">C</span>
+                          <span className="w-8 text-green-600">R</span>
+                          <span className="w-8 text-yellow-600">U</span>
+                          <span className="w-8 text-red-600">D</span>
+                          <span className="w-8 text-purple-600">A</span>
+                        </div>
+                      </th>
+                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900" colSpan={5}>
+                        <div className="mb-1">Giám đốc</div>
+                        <div className="flex justify-center gap-2 text-xs font-normal">
+                          <span className="w-8 text-blue-600">C</span>
+                          <span className="w-8 text-green-600">R</span>
+                          <span className="w-8 text-yellow-600">U</span>
+                          <span className="w-8 text-red-600">D</span>
+                          <span className="w-8 text-purple-600">A</span>
+                        </div>
+                      </th>
+                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900" colSpan={5}>
+                        <div className="mb-1">Trưởng phòng</div>
+                        <div className="flex justify-center gap-2 text-xs font-normal">
+                          <span className="w-8 text-blue-600">C</span>
+                          <span className="w-8 text-green-600">R</span>
+                          <span className="w-8 text-yellow-600">U</span>
+                          <span className="w-8 text-red-600">D</span>
+                          <span className="w-8 text-purple-600">A</span>
+                        </div>
+                      </th>
+                      <th className="border border-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900" colSpan={5}>
+                        <div className="mb-1">Nhân viên</div>
+                        <div className="flex justify-center gap-2 text-xs font-normal">
+                          <span className="w-8 text-blue-600">C</span>
+                          <span className="w-8 text-green-600">R</span>
+                          <span className="w-8 text-yellow-600">U</span>
+                          <span className="w-8 text-red-600">D</span>
+                          <span className="w-8 text-purple-600">A</span>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -324,39 +349,39 @@ const PermissionManagementUI = () => {
                         {module.items.map((item, itemIdx) => (
                           <tr key={itemIdx} className="hover:bg-gray-50">
                             {itemIdx === 0 && (
-                              <td rowSpan={module.items.length} className="border border-gray-200 px-4 py-3 text-sm font-medium text-gray-900 bg-gray-50">
+                              <td rowSpan={module.items.length} className="border border-gray-200 px-4 py-3 text-sm font-medium text-gray-900 bg-gray-50 sticky left-0 z-10">
                                 {module.module}
                               </td>
                             )}
                             <td className="border border-gray-200 px-4 py-3 text-sm text-gray-700">{item}</td>
-                            <td className="border border-gray-200 px-4 py-3 text-center">
-                              <div className="flex justify-center gap-1">
-                                {rolePermissions['Admin'][module.module][item].map((checked, idx) => (
-                                  <input key={idx} type="checkbox" checked={checked} className="w-4 h-4" />
-                                ))}
-                              </div>
-                            </td>
-                            <td className="border border-gray-200 px-4 py-3 text-center">
-                              <div className="flex justify-center gap-1">
-                                {rolePermissions['Giám đốc'][module.module][item].map((checked, idx) => (
-                                  <input key={idx} type="checkbox" checked={checked} className="w-4 h-4" />
-                                ))}
-                              </div>
-                            </td>
-                            <td className="border border-gray-200 px-4 py-3 text-center">
-                              <div className="flex justify-center gap-1">
-                                {rolePermissions['Trưởng phòng'][module.module][item].map((checked, idx) => (
-                                  <input key={idx} type="checkbox" checked={checked} className="w-4 h-4" />
-                                ))}
-                              </div>
-                            </td>
-                            <td className="border border-gray-200 px-4 py-3 text-center">
-                              <div className="flex justify-center gap-1">
-                                {rolePermissions['Nhân viên'][module.module][item].map((checked, idx) => (
-                                  <input key={idx} type="checkbox" checked={checked} className="w-4 h-4" />
-                                ))}
-                              </div>
-                            </td>
+                            
+                            {/* Admin */}
+                            {rolePermissions['Admin'][module.module][item].map((checked, permIdx) => (
+                              <td key={`admin-${permIdx}`} className="border border-gray-200 px-2 py-3 text-center">
+                                <input type="checkbox" checked={checked} readOnly className="w-4 h-4 cursor-pointer" />
+                              </td>
+                            ))}
+                            
+                            {/* Giám đốc */}
+                            {rolePermissions['Giám đốc'][module.module][item].map((checked, permIdx) => (
+                              <td key={`gd-${permIdx}`} className="border border-gray-200 px-2 py-3 text-center">
+                                <input type="checkbox" checked={checked} readOnly className="w-4 h-4 cursor-pointer" />
+                              </td>
+                            ))}
+                            
+                            {/* Trưởng phòng */}
+                            {rolePermissions['Trưởng phòng'][module.module][item].map((checked, permIdx) => (
+                              <td key={`tp-${permIdx}`} className="border border-gray-200 px-2 py-3 text-center">
+                                <input type="checkbox" checked={checked} readOnly className="w-4 h-4 cursor-pointer" />
+                              </td>
+                            ))}
+                            
+                            {/* Nhân viên */}
+                            {rolePermissions['Nhân viên'][module.module][item].map((checked, permIdx) => (
+                              <td key={`nv-${permIdx}`} className="border border-gray-200 px-2 py-3 text-center">
+                                <input type="checkbox" checked={checked} readOnly className="w-4 h-4 cursor-pointer" />
+                              </td>
+                            ))}
                           </tr>
                         ))}
                       </React.Fragment>
@@ -381,20 +406,19 @@ const PermissionManagementUI = () => {
             <div className="space-y-6">
               <div className="pb-4 border-b">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Phân quyền theo tài khoản</h2>
-                <p className="text-sm text-gray-600">Chỉ có thể tắt bớt quyền. Để thêm quyền, chỉnh sửa quyền cho chức vụ</p>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Phân quyền theo chức vụ</h2>
-                <div className="flex gap-4 text-sm">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">C: Thêm</span>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full">R: Xem</span>
-                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full">U: Sửa</span>
-                  <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full">D: Xóa</span>
-                  <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full">A: Duyệt</span>
+                <p className="text-sm text-gray-600 mb-3">Chỉ có thể tắt bớt quyền. Để thêm quyền, chỉnh sửa quyền cho chức vụ</p>
+                <div className="flex gap-3 text-sm flex-wrap">
+                  <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md font-medium">C = Thêm (Create)</span>
+                  <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-md font-medium">R = Xem (Read)</span>
+                  <span className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-md font-medium">U = Sửa (Update)</span>
+                  <span className="px-3 py-1.5 bg-red-100 text-red-700 rounded-md font-medium">D = Xóa (Delete)</span>
+                  <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md font-medium">A = Duyệt (Approve)</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
                 {/* Left: Account List */}
-                <div className="col-span-1 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div className="col-span-1 border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-[600px] overflow-y-auto">
                   <div className="mb-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -441,55 +465,68 @@ const PermissionManagementUI = () => {
                 <div className="col-span-2 border border-gray-200 rounded-lg p-4">
                   {selectedAccount ? (
                     <>
-                      <div className="mb-6 pb-4 border-b">
+                      <div className="mb-4 pb-4 border-b">
                         <h3 className="text-lg font-semibold text-gray-900">Quyền của: {selectedAccount.name}</h3>
                         <p className="text-sm text-gray-600 mt-1">{selectedAccount.department} • {selectedAccount.role}</p>
                         <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md flex gap-2">
                           <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-                          <p className="text-xs text-blue-700">Quyền mặc định dựa trên chức vụ. Chỉ có thể <strong>tắt</strong> quyền riêng cho người này.</p>
+                          <p className="text-xs text-blue-700">
+                            Quyền mặc định dựa trên chức vụ <strong>{selectedAccount.role}</strong>. Checkbox xám là quyền không có ở chức vụ (không thể bật). Chỉ có thể <strong>tắt</strong> quyền riêng cho tài khoản này.
+                          </p>
                         </div>
                       </div>
 
-                      <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                        {moduleSubModules.map((module) => (
-                          <div key={module.module} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <h4 className="font-semibold text-gray-900 mb-3 text-sm">{module.module}</h4>
-                            <div className="space-y-2">
-                              {module.items.map((item) => {
-                                const perms = getAccountPermissions(selectedAccount.id)?.[module.module]?.[item] || [];
-                                const rolePerms = rolePermissions[selectedAccount.role]?.[module.module]?.[item] || [];
+                      <div className="overflow-x-auto max-h-[450px] overflow-y-auto">
+                        <table className="w-full border-collapse">
+                          <thead className="sticky top-0 bg-white z-10">
+                            <tr className="bg-gray-50 border-b-2 border-gray-300">
+                              <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-900 sticky left-0 bg-gray-50 z-20">Module</th>
+                              <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-900">Sub-module</th>
+                              <th className="border border-gray-200 px-2 py-3 text-center text-xs font-semibold text-blue-600">C<br/>Thêm</th>
+                              <th className="border border-gray-200 px-2 py-3 text-center text-xs font-semibold text-green-600">R<br/>Xem</th>
+                              <th className="border border-gray-200 px-2 py-3 text-center text-xs font-semibold text-yellow-600">U<br/>Sửa</th>
+                              <th className="border border-gray-200 px-2 py-3 text-center text-xs font-semibold text-red-600">D<br/>Xóa</th>
+                              <th className="border border-gray-200 px-2 py-3 text-center text-xs font-semibold text-purple-600">A<br/>Duyệt</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {moduleSubModules.map((module, idx) => (
+                              <React.Fragment key={idx}>
+                                {module.items.map((item, itemIdx) => {
+                                  const perms = getAccountPermissions(selectedAccount.id)?.[module.module]?.[item] || [];
+                                  const rolePerms = rolePermissions[selectedAccount.role]?.[module.module]?.[item] || [];
 
-                                return (
-                                  <div key={item} className="flex items-center justify-between text-sm">
-                                    <span className="text-gray-700 flex-1">{item}</span>
-                                    <div className="flex gap-1">
-                                      {perms.map((checked, idx) => (
-                                        <button
-                                          key={idx}
-                                          onClick={() => {
-                                            if (rolePerms[idx]) {
-                                              updateAccountPermission(selectedAccount.id, module.module, item, idx, !checked);
-                                            }
-                                          }}
-                                          disabled={!rolePerms[idx]}
-                                          title={!rolePerms[idx] ? 'Thêm quyền này từ chức vụ' : getPermissionLabel(idx)}
-                                          className={`w-7 h-7 rounded text-xs font-medium flex items-center justify-center transition-colors ${!rolePerms[idx]
-                                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                              : checked
-                                                ? 'bg-green-600 text-white'
-                                                : 'bg-gray-300 text-gray-600 hover:bg-gray-400'
-                                            }`}
-                                        >
-                                          {getPermissionLabel(idx)}
-                                        </button>
+                                  return (
+                                    <tr key={itemIdx} className="hover:bg-gray-50">
+                                      {itemIdx === 0 && (
+                                        <td rowSpan={module.items.length} className="border border-gray-200 px-4 py-3 text-sm font-medium text-gray-900 bg-gray-50 sticky left-0 z-10">
+                                          {module.module}
+                                        </td>
+                                      )}
+                                      <td className="border border-gray-200 px-4 py-3 text-sm text-gray-700">{item}</td>
+                                      
+                                      {perms.map((checked, permIdx) => (
+                                        <td key={permIdx} className="border border-gray-200 px-2 py-3 text-center">
+                                          <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            disabled={!rolePerms[permIdx]}
+                                            onChange={() => {
+                                              if (rolePerms[permIdx]) {
+                                                updateAccountPermission(selectedAccount.id, module.module, item, permIdx, !checked);
+                                              }
+                                            }}
+                                            className={`w-4 h-4 ${!rolePerms[permIdx] ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'}`}
+                                          />
+                                        </td>
                                       ))}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
+                                    </tr>
+                                  );
+                                })}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
 
                       <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
@@ -505,7 +542,7 @@ const PermissionManagementUI = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400">
+                    <div className="h-full flex items-center justify-center text-gray-400 min-h-[400px]">
                       <div className="text-center">
                         <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
                         <p>Chọn một tài khoản để cấu hình quyền</p>

@@ -61,6 +61,11 @@ export default function EmployeeDocumentsPage() {
 
     let filtered = [...mockEmployeeDocuments];
 
+    // Nếu không phải admin, chỉ hiển thị tài liệu của chính user
+    if (!isAdmin && user?.employeeId) {
+      filtered = filtered.filter(d => d.employeeId === user.employeeId);
+    }
+
     if (typeFilter !== 'ALL') {
       filtered = filtered.filter(d => d.documentType === typeFilter);
     }
@@ -152,18 +157,32 @@ export default function EmployeeDocumentsPage() {
   const startIndex = page * pageSize + 1;
   const endIndex = Math.min((page + 1) * pageSize, totalItems);
 
-  const employees = Array.from(new Set(mockEmployeeDocuments.map(d => ({
+  // Get employees list - nếu không phải admin chỉ lấy dữ liệu của chính user
+  let employees = Array.from(new Set(mockEmployeeDocuments.map(d => ({
     id: d.employeeId,
     name: d.employeeName
   }))));
+
+  if (!isAdmin && user?.employeeId) {
+    const userDocuments = mockEmployeeDocuments.filter(d => d.employeeId === user.employeeId);
+    employees = Array.from(new Set(userDocuments.map(d => ({
+      id: d.employeeId,
+      name: d.employeeName
+    }))));
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý Hồ sơ Nhân viên</h1>
+          <h1 className="text-3xl font-bold">
+            {isAdmin ? 'Quản lý Hồ sơ Nhân viên' : 'Hồ sơ của tôi'}
+          </h1>
           <p className="text-muted-foreground">
-            Quản lý tài liệu và hồ sơ của tất cả nhân viên
+            {isAdmin 
+              ? 'Quản lý tài liệu và hồ sơ của tất cả nhân viên'
+              : 'Xem và quản lý tài liệu hồ sơ của bạn'
+            }
           </p>
         </div>
         {isAdmin && (
@@ -189,24 +208,29 @@ export default function EmployeeDocumentsPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm kiếm theo tên nhân viên, tên tài liệu"
+              placeholder={isAdmin 
+                ? 'Tìm kiếm theo tên nhân viên, tên tài liệu'
+                : 'Tìm kiếm theo tên tài liệu'
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
 
-          <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Nhân viên" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả nhân viên</SelectItem>
-              {employees.map(emp => (
-                <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isAdmin && (
+            <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
+              <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Nhân viên" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Tất cả nhân viên</SelectItem>
+                {employees.map(emp => (
+                  <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-full md:w-[200px]">
@@ -233,11 +257,11 @@ export default function EmployeeDocumentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tên tài liệu</TableHead>
-                <TableHead>Nhân viên</TableHead>
+                {isAdmin && <TableHead>Nhân viên</TableHead>}
                 <TableHead>Loại</TableHead>
                 <TableHead>File</TableHead>
                 <TableHead>Ngày upload</TableHead>
-                <TableHead>Người upload</TableHead>
+                {isAdmin && <TableHead>Người upload</TableHead>}
                 <TableHead>Đánh dấu</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
@@ -245,7 +269,7 @@ export default function EmployeeDocumentsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -254,7 +278,7 @@ export default function EmployeeDocumentsPage() {
                 </TableRow>
               ) : documents.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-8 w-8" />
                       <p>Không tìm thấy tài liệu nào</p>
@@ -282,12 +306,14 @@ export default function EmployeeDocumentsPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{doc.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{doc.departmentName}</p>
-                      </div>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{doc.employeeName}</p>
+                          <p className="text-sm text-muted-foreground">{doc.departmentName}</p>
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell>
                       {getTypeBadge(doc.documentType)}
                     </TableCell>
@@ -306,9 +332,11 @@ export default function EmployeeDocumentsPage() {
                         {new Date(doc.uploadedAt).toLocaleDateString('vi-VN')}
                       </span>
                     </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{doc.uploadedBy}</span>
-                    </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <span className="text-sm">{doc.uploadedBy}</span>
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         {doc.isImportant && (

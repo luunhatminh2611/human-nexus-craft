@@ -169,6 +169,12 @@ export default function FamilyVisitList() {
           <h1 className="text-3xl font-bold">{pageTitle}</h1>
           <p className="text-muted-foreground">{pageDescription}</p>
         </div>
+        {isAdmin && (
+          <Button onClick={handleAdd}>
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm lượt thăm
+          </Button>
+        )}
       </div>
 
       {/* FILTERS */}
@@ -206,13 +212,6 @@ export default function FamilyVisitList() {
               <SelectItem value="Chưa thăm">Chưa thăm</SelectItem>
             </SelectContent>
           </Select>
-
-          {isAdmin && (
-            <Button onClick={handleAdd}>
-              <Plus className="h-4 w-4 mr-2" />
-              Thêm mới
-            </Button>
-          )}
         </div>
       </Card>
 
