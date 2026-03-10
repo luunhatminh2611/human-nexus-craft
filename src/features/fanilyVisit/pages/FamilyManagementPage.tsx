@@ -137,7 +137,7 @@ export default function FamilyRelationshipList() {
           }}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Thêm thân nhân
+          Thêm quan hệ gia đình
         </Button>
       </div>
 

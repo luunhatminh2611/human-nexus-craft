@@ -255,7 +255,7 @@ export default function RelativeFormModal({
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Hủy</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Đang lưu...' : relative ? 'Cập nhật' : 'Thêm mới'}
+            {isSubmitting ? 'Đang lưu...' : relative ? 'Xác nhận' : 'Xác nhận'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useState, useRef } from 'react';
 import {
   LogOut,
   User,
@@ -34,6 +34,18 @@ export const Header = memo(({
 
   const { user, logout } = useAuthStore();
 
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleLogout = async () => {
     const result = await logout();
     window.location.href = "/";
@@ -59,7 +71,7 @@ export const Header = memo(({
   const isMainItemActive = (item: any) => {
     // Nếu có submenu, check xem có submenu nào active không
     if (item.submenu && item.submenu.length > 0) {
-      return item.submenu.some((subItem: any) => 
+      return item.submenu.some((subItem: any) =>
         subItem.path && location.pathname === subItem.path
       );
     }
@@ -114,7 +126,7 @@ export const Header = memo(({
       </div>
 
       {/* Navigation bar */}
-      <nav className="flex items-center px-6 py-2 gap-1">
+      <nav ref={navRef} className="flex items-center px-6 py-2 gap-1">
         {navigationItems.map((item) => {
           const active = isMainItemActive(item);
           const hasSubmenu = item.submenu && item.submenu.length > 0;

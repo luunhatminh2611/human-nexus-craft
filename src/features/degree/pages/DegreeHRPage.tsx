@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, AlertCircle, FileText, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Eye, ChevronLeft, ChevronRight, AlertCircle, FileText, Plus, Edit, Trash2, GraduationCap } from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
@@ -29,15 +29,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/components/ui/alert-dialog';
-import { mockDegrees, type Degree, calculateStatistics } from '../../../mock/degree';
+import { certificateApi } from '@/features/degree/api/degree';
 import DegreeDetailModal from '../components/DegreeDetailModal';
 import DegreeFormModal from '../components/DegreeFormModal';
+import BulkAddCertificateModal from '../components/BulkAddDegree';
+
+export interface Certificate {
+  id: number;
+  certificateNumber?: string;
+  certificateName: string;
+  certificateType: string;
+  organization: string;
+  issueDate: string;
+  expiryDate?: string;
+  downloadUrl?: string;  // ✅ đổi từ attachment sang downloadUrl
+  note?: string;
+  deleted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  employeeId?: number;
+  employeeName?: string;
+  employeeCode?: string;
+  department?: string;
+}
 
 export default function DegreeHRPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
-  const [degrees, setDegrees] = useState<Degree[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -45,120 +64,110 @@ export default function DegreeHRPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDegreeId, setSelectedDegreeId] = useState<string | null>(null);
+  const [selectedCertificateId, setSelectedCertificateId] = useState<number | null>(null);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [degreeToDelete, setDegreeToDelete] = useState<Degree | null>(null);
+  const [certificateToDelete, setCertificateToDelete] = useState<Certificate | null>(null);
+  const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
 
   useEffect(() => {
-    fetchDegrees();
-  }, [page, pageSize, searchTerm, typeFilter, departmentFilter, refreshKey]);
+    fetchCertificates();
+  }, [page, pageSize, searchTerm, typeFilter, refreshKey]);
 
-  const fetchDegrees = async () => {
+  const fetchCertificates = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      const data = await certificateApi.getAll();
+      let filtered: Certificate[] = data || [];
 
-    let filtered = [...mockDegrees];
+      if (typeFilter !== 'ALL') {
+        filtered = filtered.filter((c) => c.certificateType === typeFilter);
+      }
 
-    if (typeFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.type === typeFilter);
+      if (searchTerm) {
+        filtered = filtered.filter(
+          (c) =>
+            c.certificateName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.organization?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.certificateNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.employeeName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.employeeCode?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      setTotalItems(filtered.length);
+      const start = page * pageSize;
+      setCertificates(filtered.slice(start, start + pageSize));
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách bằng cấp:', error);
+    } finally {
+      setIsLoading(false);
     }
-
-    if (departmentFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.department === departmentFilter);
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter(d =>
-        d.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.institution.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setTotalItems(filtered.length);
-
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setDegrees(filtered.slice(start, end));
-
-    setIsLoading(false);
   };
 
-  const handleOpenFormModal = (degree?: Degree) => {
-    setSelectedDegree(degree || null);
+  const handleOpenFormModal = (cert?: Certificate) => {
+    setSelectedCertificate(cert || null);
     setIsFormModalOpen(true);
   };
 
   const handleCloseFormModal = () => {
     setIsFormModalOpen(false);
-    setSelectedDegree(null);
+    setSelectedCertificate(null);
   };
 
   const handleFormSuccess = () => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
     handleCloseFormModal();
   };
 
-  const handleOpenDetailModal = (id: string) => {
-    setSelectedDegreeId(id);
+  const handleOpenDetailModal = (id: number) => {
+    setSelectedCertificateId(id);
     setIsDetailModalOpen(true);
   };
 
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
-    setSelectedDegreeId(null);
+    setSelectedCertificateId(null);
   };
 
-  const handleDeleteClick = (degree: Degree) => {
-    setDegreeToDelete(degree);
+  const handleDeleteClick = (cert: Certificate) => {
+    setCertificateToDelete(cert);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!degreeToDelete) return;
-    
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const index = mockDegrees.findIndex(d => d.id === degreeToDelete.id);
-    if (index > -1) {
-      mockDegrees.splice(index, 1);
+    if (!certificateToDelete) return;
+    try {
+      await certificateApi.delete(certificateToDelete.id);
+      setRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      console.error('Lỗi khi xóa bằng cấp:', error);
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setCertificateToDelete(null);
     }
-    
-    setIsDeleteDialogOpen(false);
-    setDegreeToDelete(null);
-    setRefreshKey(prev => prev + 1);
   };
 
   const getTypeBadge = (type: string) => {
-    const typeConfig = {
-      'EDUCATION': { label: 'Học vấn', className: 'bg-blue-100 text-blue-800' },
-      'CERTIFICATION': { label: 'Chứng chỉ', className: 'bg-purple-100 text-purple-800' },
-      'LICENSE': { label: 'Giấy phép', className: 'bg-orange-100 text-orange-800' },
+    const typeConfig: Record<string, { label: string; className: string }> = {
+      EDUCATION: { label: 'Học vấn', className: 'bg-blue-100 text-blue-800' },
+      CERTIFICATION: { label: 'Chứng chỉ', className: 'bg-purple-100 text-purple-800' },
+      LICENSE: { label: 'Giấy phép', className: 'bg-orange-100 text-orange-800' },
     };
-
     const config = typeConfig[type];
     if (!config) return null;
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
-  const getExpiryWarning = (degree: Degree) => {
-    if (!degree.expiryDate) return null;
-
+  const getExpiryWarning = (expiryDate?: string) => {
+    if (!expiryDate) return null;
     const now = new Date();
-    const expiryDate = new Date(degree.expiryDate);
-    const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-    if (daysUntilExpiry < 0) {
+    const expiry = new Date(expiryDate);
+    const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) {
       return (
         <div className="flex items-center gap-1 text-red-600 text-xs">
           <AlertCircle className="h-3 w-3" />
@@ -166,42 +175,39 @@ export default function DegreeHRPage() {
         </div>
       );
     }
-
-    if (daysUntilExpiry <= 30) {
+    if (days <= 30) {
       return (
         <div className="flex items-center gap-1 text-orange-600 text-xs">
           <AlertCircle className="h-3 w-3" />
-          <span>Còn {daysUntilExpiry} ngày</span>
+          <span>Còn {days} ngày</span>
         </div>
       );
     }
-
     return null;
   };
 
-  const stats = calculateStatistics(mockDegrees);
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = page * pageSize + 1;
   const endIndex = Math.min((page + 1) * pageSize, totalItems);
-
-  const departments = Array.from(new Set(mockDegrees.map(d => d.department)));
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Quản lý bằng cấp</h1>
-          <p className="text-muted-foreground">
-            Lưu trữ và quản lý bằng cấp của tất cả nhân viên
-          </p>
+          <h1 className="text-3xl font-bold">Bằng cấp</h1>
+          <p className="text-muted-foreground">Lưu trữ và quản lý bằng cấp của tất cả nhân viên</p>
         </div>
-        <Button onClick={() => handleOpenFormModal()}>
-          <Plus className="h-4 w-4 mr-2" />
-          Thêm bằng cấp
-        </Button>
+        <div className='flex gap-2'>
+          <Button onClick={() => handleOpenFormModal()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Thêm bằng cấp
+          </Button>
+          <Button onClick={() => setIsBulkAddOpen(true)} variant="outline">
+            <GraduationCap className="h-4 w-4 mr-2" />
+            Thêm hàng loạt
+          </Button>
+        </div>
       </div>
-
- 
 
       {/* Filters */}
       <Card className="p-4">
@@ -215,18 +221,6 @@ export default function DegreeHRPage() {
               className="pl-10"
             />
           </div>
-
-          <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Phòng ban" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">Tất cả phòng ban</SelectItem>
-              {departments.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-full md:w-[180px]">
@@ -268,7 +262,7 @@ export default function DegreeHRPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : degrees.length === 0 ? (
+              ) : certificates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -278,57 +272,46 @@ export default function DegreeHRPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                degrees.map((degree) => (
-                  <TableRow key={degree.id}>
+                certificates.map((cert) => (
+                  <TableRow key={cert.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{degree.employeeName}</p>
-                        <p className="text-sm text-muted-foreground">{degree.employeeCode}</p>
-                        <p className="text-xs text-muted-foreground">{degree.department}</p>
+                        <p className="font-medium">{cert.employeeName || '-'}</p>
                       </div>
                     </TableCell>
+                    <TableCell>{getTypeBadge(cert.certificateType)}</TableCell>
                     <TableCell>
-                      {getTypeBadge(degree.type)}
+                      <p className="font-medium text-sm">{cert.certificateName}</p>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{degree.name}</p>
-                        {degree.major && (
-                          <p className="text-xs text-muted-foreground">{degree.major}</p>
-                        )}
-                      </div>
+                      <span className="text-sm">{cert.organization}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">{degree.institution}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{degree.certificateNumber || '-'}</span>
+                      <span className="text-sm">{cert.certificateNumber || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {new Date(degree.issueDate).toLocaleDateString('vi-VN')}
+                        {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString('vi-VN') : '-'}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        {degree.expiryDate ? (
-                          <>
-                            <span className="text-sm">
-                              {new Date(degree.expiryDate).toLocaleDateString('vi-VN')}
-                            </span>
-                            {getExpiryWarning(degree)}
-                          </>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Vô thời hạn</span>
-                        )}
-                      </div>
+                      {cert.expiryDate ? (
+                        <div>
+                          <span className="text-sm">
+                            {new Date(cert.expiryDate).toLocaleDateString('vi-VN')}
+                          </span>
+                          {getExpiryWarning(cert.expiryDate)}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Vô thời hạn</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenDetailModal(degree.id)}
+                          onClick={() => handleOpenDetailModal(cert.id)}
                           title="Xem chi tiết"
                         >
                           <Eye className="h-4 w-4" />
@@ -336,7 +319,7 @@ export default function DegreeHRPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenFormModal(degree)}
+                          onClick={() => handleOpenFormModal(cert)}
                           title="Chỉnh sửa"
                         >
                           <Edit className="h-4 w-4" />
@@ -344,7 +327,7 @@ export default function DegreeHRPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteClick(degree)}
+                          onClick={() => handleDeleteClick(cert)}
                           title="Xóa"
                           className="text-red-600 hover:text-red-700"
                         >
@@ -360,19 +343,15 @@ export default function DegreeHRPage() {
         </div>
 
         {/* Pagination */}
-        {!isLoading && degrees.length > 0 && (
+        {!isLoading && certificates.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <div className="text-sm text-muted-foreground">
               Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
             </div>
-
             <div className="flex items-center gap-2">
               <Select
                 value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  setPage(0);
-                }}
+                onValueChange={(value) => { setPageSize(Number(value)); setPage(0); }}
               >
                 <SelectTrigger className="w-24">
                   <SelectValue />
@@ -386,43 +365,15 @@ export default function DegreeHRPage() {
               </Select>
 
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                >
-                  Đầu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p - 1)}
-                  disabled={page === 0}
-                >
+                <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0}>Đầu</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-
-                <span className="px-3 text-sm">
-                  Trang {page + 1} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
+                <span className="px-3 text-sm">Trang {page + 1} / {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages - 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Cuối
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>Cuối</Button>
               </div>
             </div>
           </div>
@@ -433,14 +384,20 @@ export default function DegreeHRPage() {
       <DegreeDetailModal
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
-        degreeId={selectedDegreeId}
+        certificateId={selectedCertificateId}
       />
 
       <DegreeFormModal
         isOpen={isFormModalOpen}
         onClose={handleCloseFormModal}
-        degree={selectedDegree}
+        certificate={selectedCertificate}
         onSuccess={handleFormSuccess}
+      />
+
+      <BulkAddCertificateModal
+        isOpen={isBulkAddOpen}
+        onClose={() => setIsBulkAddOpen(false)}
+        onSuccess={() => fetchCertificates()}
       />
 
       {/* Delete Dialog */}
@@ -449,16 +406,13 @@ export default function DegreeHRPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa bằng cấp "{degreeToDelete?.name}" của nhân viên {degreeToDelete?.employeeName}? 
+              Bạn có chắc chắn muốn xóa bằng cấp "{certificateToDelete?.certificateName}"?
               Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
               Xóa
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -194,7 +194,7 @@ export default function MyFamilyMembersPage() {
             title={!canAddMore ? `Đã đạt giới hạn ${MAX_FAMILY_MEMBERS} thành viên` : ''}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Thêm thân nhân
+            Thêm quan hệ gia đình
           </Button>
         </div>
       </Card>

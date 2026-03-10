@@ -1,7 +1,7 @@
 import { Layout } from '@/shared/components/layouts/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import mockData from '@/mock/data';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Users,
   UserPlus,
@@ -13,6 +13,8 @@ import {
   Clock,
   Briefcase,
   Activity,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   BarChart,
@@ -29,20 +31,23 @@ import {
 } from 'recharts';
 import { Button } from '@/shared/components/ui/button/Button2';
 
+const DEPT_PAGE_SIZE = 4;
+
 export default function AdminDashboard() {
   const employees = mockData.employees;
   const departments = mockData.departments;
 
+  // ==================== PHÂN TRANG PHÒNG BAN ====================
+  const [deptPage, setDeptPage] = useState(0);
+
   // ==================== 1. NHÂN SỰ TỔNG QUAN ====================
 
-  // Tính số lượng nhân sự theo phòng ban
   const deptStats = useMemo(() => {
     return departments.map((dept) => {
       const activeCount = employees.filter(
         (e) => e.departmentId === dept.id && e.status !== 'Resigned'
       ).length;
 
-      // Biến động 30 ngày (tuyển mới - nghỉ việc)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -69,6 +74,13 @@ export default function AdminDashboard() {
 
   const totalActive = employees.filter((e) => e.status !== 'Resigned').length;
 
+  // Phân trang phòng ban
+  const totalDeptPages = Math.ceil(deptStats.length / DEPT_PAGE_SIZE);
+  const pagedDeptStats = deptStats.slice(
+    deptPage * DEPT_PAGE_SIZE,
+    (deptPage + 1) * DEPT_PAGE_SIZE
+  );
+
   // ==================== 2. VẬN HÀNH NHÂN SỰ ====================
 
   const onLeaveToday = employees.filter((e) => e.status === 'On Leave').length;
@@ -76,22 +88,17 @@ export default function AdminDashboard() {
     (req) => req.status === 'Pending'
   ).length;
 
-  // ==================== 3. TUYỂN DỤNG & ĐÀO TẠO ====================
+  // ==================== 3 & 4. DATA ====================
 
-  // Tin tuyển dụng - giả sử = số vị trí còn thiếu người
-  const recruitmentPosts = 5; // Mock data
+  const recruitmentPosts = 5;
 
-  // Tuyển dụng mới 30 ngày
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const newHires30Days = employees.filter(
     (e) => new Date(e.startDate) > thirtyDaysAgo && e.status !== 'Resigned'
   ).length;
 
-  // Khóa đào tạo
   const totalTrainings = mockData.trainings.length;
-
-  // Hoàn thành đào tạo
   const completedTrainings = mockData.trainings.filter(
     (t) => t.status === 'Completed'
   ).length;
@@ -99,9 +106,6 @@ export default function AdminDashboard() {
     (completedTrainings / totalTrainings) * 100
   );
 
-  // ==================== 4. XU HƯỚNG & PHÂN BỔ ====================
-
-  // Chart 1: Xu hướng nhân sự 12 tháng
   const headcountTrend = [
     { month: 'T1', count: 78 },
     { month: 'T2', count: 82 },
@@ -117,14 +121,12 @@ export default function AdminDashboard() {
     { month: 'T12', count: totalActive },
   ];
 
-  // Chart 2: Phân bổ theo phòng ban (%)
   const deptDistribution = deptStats.map((dept) => ({
     name: dept.name,
     value: dept.count,
     percentage: Math.round((dept.count / totalActive) * 100),
   }));
 
-  // Chart 3: Phân bổ theo cấp/bậc
   const gradeDistribution = [
     {
       grade: 'Nhân viên',
@@ -148,7 +150,7 @@ export default function AdminDashboard() {
     },
   ];
 
-  // ==================== 5. HOẠT ĐỘNG GÀN ĐÂY ====================
+  // ==================== 5. HOẠT ĐỘNG GẦN ĐÂY ====================
 
   const recentActivities = [
     {
@@ -218,8 +220,8 @@ export default function AdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 md:grid-cols-2">
-                {deptStats.map((dept, idx) => (
+              <div className="grid gap-3 md:grid-cols-2 min-h-[160px]">
+                {pagedDeptStats.map((dept, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex-1">
                       <p className="text-2xl font-medium">{dept.name}</p>
@@ -240,13 +242,51 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
-
               </div>
+
+              {/* Pagination */}
+              {totalDeptPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-3 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Trang {deptPage + 1} / {totalDeptPages} · {deptStats.length} phòng ban
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setDeptPage((p) => Math.max(0, p - 1))}
+                      disabled={deptPage === 0}
+                      className="p-1.5 rounded-md border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    {Array.from({ length: totalDeptPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setDeptPage(i)}
+                        className={`w-7 h-7 rounded-md text-sm font-medium transition-colors ${
+                          i === deptPage
+                            ? 'bg-primary text-primary-foreground'
+                            : 'border hover:bg-muted'
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setDeptPage((p) => Math.min(totalDeptPages - 1, p + 1))}
+                      disabled={deptPage === totalDeptPages - 1}
+                      className="p-1.5 rounded-md border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
 
+      {/* ==================== 2. VẬN HÀNH NHÂN SỰ ==================== */}
       <div>
         <h2 className="text-xl font-semibold mb-4">2. Vận hành nhân sự</h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -356,67 +396,9 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ==================== 3. TUYỂN DỤNG & ĐÀO TẠO ==================== */}
+      {/* ==================== 3. XU HƯỚNG & PHÂN BỔ ==================== */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">3. Tuyển dụng & Đào tạo</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Tin tuyển dụng</CardTitle>
-              <Briefcase className="h-4 w-4 text-[#1a8649]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{recruitmentPosts}</div>
-              <p className="text-xs text-muted-foreground mt-1">vị trí đang tuyển</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Tuyển dụng mới
-              </CardTitle>
-              <UserPlus className="h-4 w-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">{newHires30Days}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                nhân viên (30 ngày)
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Khóa đào tạo</CardTitle>
-              <GraduationCap className="h-4 w-4 text-[#1a8649]" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalTrainings}</div>
-              <p className="text-xs text-muted-foreground mt-1">khóa học</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">
-                Hoàn thành đào tạo
-              </CardTitle>
-              <GraduationCap className="h-4 w-4 text-success" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">{trainingCompletionRate}%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {completedTrainings}/{totalTrainings} khóa
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* ==================== 4. XU HƯỚNG & PHÂN BỔ ==================== */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">4. Xu hướng & Phân bổ</h2>
+        <h2 className="text-xl font-semibold mb-4">3. Xu hướng & Phân bổ</h2>
         <div className="grid gap-4 md:grid-cols-2">
           {/* Chart 1: Xu hướng nhân sự */}
           <Card>
@@ -548,6 +530,64 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* ==================== 4. TUYỂN DỤNG & ĐÀO TẠO ==================== */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">4. Tuyển dụng & Đào tạo</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Tin tuyển dụng</CardTitle>
+              <Briefcase className="h-4 w-4 text-[#1a8649]" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{recruitmentPosts}</div>
+              <p className="text-xs text-muted-foreground mt-1">vị trí đang tuyển</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                Tuyển dụng mới
+              </CardTitle>
+              <UserPlus className="h-4 w-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">{newHires30Days}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                nhân viên (30 ngày)
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Khóa đào tạo</CardTitle>
+              <GraduationCap className="h-4 w-4 text-[#1a8649]" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalTrainings}</div>
+              <p className="text-xs text-muted-foreground mt-1">khóa học</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">
+                Hoàn thành đào tạo
+              </CardTitle>
+              <GraduationCap className="h-4 w-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">{trainingCompletionRate}%</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {completedTrainings}/{totalTrainings} khóa
+              </p>
             </CardContent>
           </Card>
         </div>

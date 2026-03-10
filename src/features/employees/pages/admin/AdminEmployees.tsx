@@ -769,7 +769,7 @@ export default function Employees() {
               </Button2>
             )}
             <div>
-              <h1 className="text-3xl font-bold">Quản lý nhân viên</h1>
+              <h1 className="text-3xl font-bold">Nhân viên</h1>
               <p className="text-muted-foreground">
                 {activeTab === 'employees'
                   ? `Quản lý danh sách nhân viên (${filteredEmployees.length}/${employees.length})`

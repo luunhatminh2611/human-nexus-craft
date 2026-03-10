@@ -19,92 +19,88 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/components/tables/table';
-import { mockDegrees, type Degree, calculateStatistics } from '../../../mock/degree';
+import { certificateApi } from '@/features/degree/api/degree';
 import DegreeDetailModal from '../components/DegreeDetailModal';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import type { Certificate } from '../pages/DegreeHRPage';
 
 export default function DegreeEmployeePage() {
   const { user } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [degrees, setDegrees] = useState<Degree[]>([]);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDegreeId, setSelectedDegreeId] = useState<string | null>(null);
+  const [selectedCertificateId, setSelectedCertificateId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchDegrees();
+    fetchCertificates();
   }, [searchTerm, typeFilter, user]);
 
-  const fetchDegrees = async () => {
+  const fetchCertificates = async () => {
+    if (!user?.employeeId) return;
     setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    let filtered = [...mockDegrees];
-    
-    // Lọc theo user hiện tại
-    if (user?.employeeId) {
-      filtered = filtered.filter(d => d.employeeId === user.employeeId);
+    try {
+      const data = await certificateApi.getByEmployeeId(user.employeeId);
+      let filtered: Certificate[] = data?.data || data || [];
+
+      if (typeFilter !== 'ALL') {
+        filtered = filtered.filter((c) => c.certificateType === typeFilter);
+      }
+
+      if (searchTerm) {
+        filtered = filtered.filter(
+          (c) =>
+            c.certificateName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.organization?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      setCertificates(filtered);
+    } catch (error) {
+      console.error('Lỗi khi tải bằng cấp:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (typeFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.type === typeFilter);
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(d =>
-        d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.institution.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setDegrees(filtered);
-    setIsLoading(false);
   };
 
-  const handleOpenDetailModal = (id: string) => {
-    setSelectedDegreeId(id);
+  const handleOpenDetailModal = (id: number) => {
+    setSelectedCertificateId(id);
     setIsDetailModalOpen(true);
   };
 
   const handleCloseDetailModal = () => {
     setIsDetailModalOpen(false);
-    setSelectedDegreeId(null);
+    setSelectedCertificateId(null);
   };
 
-  const handleDownload = (degree: Degree) => {
-    // Simulate download
-    console.log('Downloading document:', degree.documentUrl);
-    alert(`Đang tải xuống tài liệu: ${degree.name}`);
+  const handleDownload = (cert: Certificate) => {
+    if (!cert.downloadUrl) return;
+    const a = document.createElement('a');
+    a.href = cert.downloadUrl;
+    a.target = '_blank';
+    a.click();
   };
+
 
   const getTypeBadge = (type: string) => {
-    const typeConfig = {
-      'EDUCATION': { label: 'Học vấn', className: 'bg-blue-100 text-blue-800' },
-      'CERTIFICATION': { label: 'Chứng chỉ', className: 'bg-purple-100 text-purple-800' },
-      'LICENSE': { label: 'Giấy phép', className: 'bg-orange-100 text-orange-800' },
+    const typeConfig: Record<string, { label: string; className: string }> = {
+      EDUCATION: { label: 'Học vấn', className: 'bg-blue-100 text-blue-800' },
+      CERTIFICATION: { label: 'Chứng chỉ', className: 'bg-purple-100 text-purple-800' },
+      LICENSE: { label: 'Giấy phép', className: 'bg-orange-100 text-orange-800' },
     };
-
     const config = typeConfig[type];
     if (!config) return null;
-
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
-  const getExpiryWarning = (degree: Degree) => {
-    if (!degree.expiryDate) return null;
-    
+  const getExpiryWarning = (expiryDate?: string) => {
+    if (!expiryDate) return null;
     const now = new Date();
-    const expiryDate = new Date(degree.expiryDate);
-    const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysUntilExpiry < 0) {
+    const expiry = new Date(expiryDate);
+    const days = Math.floor((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) {
       return (
         <div className="flex items-center gap-1 text-red-600 text-xs mt-1">
           <AlertCircle className="h-3 w-3" />
@@ -112,29 +108,23 @@ export default function DegreeEmployeePage() {
         </div>
       );
     }
-
-    if (daysUntilExpiry <= 30) {
+    if (days <= 30) {
       return (
         <div className="flex items-center gap-1 text-orange-600 text-xs mt-1">
           <AlertCircle className="h-3 w-3" />
-          <span>Còn {daysUntilExpiry} ngày</span>
+          <span>Còn {days} ngày</span>
         </div>
       );
     }
-    
     return null;
   };
-
-  const stats = calculateStatistics(degrees);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Bằng cấp của tôi</h1>
-          <p className="text-muted-foreground">
-            Xem danh sách bằng cấp, chứng chỉ và giấy phép của bạn
-          </p>
+          <p className="text-muted-foreground">Xem danh sách bằng cấp, chứng chỉ và giấy phép của bạn</p>
         </div>
       </div>
 
@@ -149,7 +139,6 @@ export default function DegreeEmployeePage() {
         </div>
       </Card>
 
-
       {/* Filters */}
       <Card className="p-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -162,7 +151,6 @@ export default function DegreeEmployeePage() {
               className="pl-10"
             />
           </div>
-
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Loại" />
@@ -202,7 +190,7 @@ export default function DegreeEmployeePage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : degrees.length === 0 ? (
+              ) : certificates.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -213,61 +201,47 @@ export default function DegreeEmployeePage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                degrees.map((degree) => (
-                  <TableRow key={degree.id}>
+                certificates.map((cert) => (
+                  <TableRow key={cert.id}>
+                    <TableCell>{getTypeBadge(cert.certificateType)}</TableCell>
                     <TableCell>
-                      {getTypeBadge(degree.type)}
+                      <p className="font-medium text-sm">{cert.certificateName}</p>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{degree.name}</p>
-                        {degree.major && (
-                          <p className="text-xs text-muted-foreground">{degree.major}</p>
-                        )}
-                      </div>
+                      <span className="text-sm">{cert.organization}</span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">{degree.institution}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm">{degree.certificateNumber || '-'}</span>
+                      <span className="text-sm">{cert.certificateNumber || '-'}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {new Date(degree.issueDate).toLocaleDateString('vi-VN')}
+                        {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString('vi-VN') : '-'}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        {degree.expiryDate ? (
-                          <>
-                            <span className="text-sm">
-                              {new Date(degree.expiryDate).toLocaleDateString('vi-VN')}
-                            </span>
-                            {getExpiryWarning(degree)}
-                          </>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Vô thời hạn</span>
-                        )}
-                      </div>
+                      {cert.expiryDate ? (
+                        <div>
+                          <span className="text-sm">
+                            {new Date(cert.expiryDate).toLocaleDateString('vi-VN')}
+                          </span>
+                          {getExpiryWarning(cert.expiryDate)}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Vô thời hạn</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenDetailModal(degree.id)}
+                          onClick={() => handleOpenDetailModal(cert.id)}
                           title="Xem chi tiết"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {degree.documentUrl && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(degree)}
-                            title="Tải xuống"
-                          >
+                        {cert.downloadUrl && (
+                          <Button variant="ghost" size="sm" onClick={() => handleDownload(cert)}>
                             <Download className="h-4 w-4" />
                           </Button>
                         )}
@@ -281,11 +255,10 @@ export default function DegreeEmployeePage() {
         </div>
       </Card>
 
-      {/* Detail Modal */}
       <DegreeDetailModal
         isOpen={isDetailModalOpen}
         onClose={handleCloseDetailModal}
-        degreeId={selectedDegreeId}
+        certificateId={selectedCertificateId}
       />
     </div>
   );

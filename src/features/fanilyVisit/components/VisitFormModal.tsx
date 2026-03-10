@@ -1,401 +1,266 @@
 import { useState, useEffect } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/shared/components/ui/select';
-import { toast } from '@/shared/hooks/use-toast';
-import familyVisitApi from '../api/familyVisitApi';
-import { relationships, visitTypes } from '@/mock/familyVisitData';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { employeeVisitApi, EmployeeVisit, EmployeeVisitPayload } from '../api/familyVisitApi';
+import { employeeApi } from '@/features/employees/api/employeeApi';
 
-interface FamilyVisitFormModalProps {
+interface EmployeeOption {
+  id: number;
+  fullName: string;
+  employeeCode: string;
+  departmentName?: string;
+}
+
+const VISIT_TYPES = ['Thăm ốm', 'Thăm hiếu', 'Thăm hỷ', 'Thăm sinh nhật', 'Thăm khác'];
+const RELATIONSHIPS = ['Bố', 'Mẹ', 'Vợ', 'Chồng', 'Con', 'Anh', 'Chị', 'Em', 'Ông', 'Bà', 'Khác'];
+
+interface Props {
   isOpen: boolean;
   onClose: () => void;
-  visit?: any | null;
+  visit?: EmployeeVisit | null;
   employeeId?: number;
   onSuccess: () => void;
 }
 
-export default function FamilyVisitFormModal({
-  isOpen,
-  onClose,
-  visit,
-  employeeId,
-  onSuccess,
-}: FamilyVisitFormModalProps) {
+export default function FamilyVisitFormModal({ isOpen, onClose, visit, employeeId, onSuccess }: Props) {
+  const [allEmployees, setAllEmployees] = useState<EmployeeOption[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const [formData, setFormData] = useState({
-    employeeId: (employeeId || '').toString(),
+    employeeId: '',
     visitType: '',
     visitDate: '',
-    visitPerson: '',
-    relationShip: '',
+    visitedPerson: '',
+    relationship: '',
     reason: '',
     giftAmount: '',
     giftDescription: '',
-    notes: '',
-    visitedBy: '',
+    representative: '',
+    note: '',
     status: 'Chưa thăm',
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Mock employees for selection
-  const mockEmployees = [
-    { id: 18, code: 'EMP002', fullName: 'Trần Thị Minh', department: 'Phòng Nhân sự' },
-    { id: 25, code: 'EMP009', fullName: 'Lê Văn Hùng', department: 'Phòng Kinh doanh' },
-    { id: 30, code: 'EMP014', fullName: 'Phạm Thị Lan', department: 'Phòng Nhân sự' },
-    { id: 35, code: 'EMP019', fullName: 'Hoàng Văn Nam', department: 'Phòng Kỹ thuật' },
-  ];
-
   useEffect(() => {
-    if (isOpen) {
-      if (visit) {
-        setFormData({
-          employeeId: visit.employee.id.toString(),
-          visitType: visit.visitType,
-          visitDate: visit.visitDate,
-          visitPerson: visit.visitPerson,
-          relationShip: visit.relationShip,
-          reason: visit.reason,
-          giftAmount: visit.giftAmount.toString(),
-          giftDescription: visit.giftDescription,
-          notes: visit.notes || '',
-          visitedBy: visit.visitedBy || '',
-          status: visit.status,
-        });
-      } else {
-        const today = new Date().toISOString().split('T')[0];
-        setFormData({
-          employeeId: (employeeId?.toString() || ''),
-          visitType: '',
-          visitDate: today,
-          visitPerson: '',
-          relationShip: '',
-          reason: '',
-          giftAmount: '',
-          giftDescription: '',
-          notes: '',
-          visitedBy: '',
-          status: 'Chưa thăm',
-        });
-      }
-      setErrors({});
+    if (!isOpen) return;
+    employeeApi.getAll().then(data => setAllEmployees(data || [])).catch(console.error);
+
+    if (visit) {
+      setFormData({
+        employeeId: visit.employeeId.toString(),
+        visitType: visit.visitType,
+        visitDate: visit.visitDate,
+        visitedPerson: visit.visitedPerson,
+        relationship: visit.relationship,
+        reason: visit.reason,
+        giftAmount: visit.giftAmount.toString(),
+        giftDescription: visit.giftDescription || '',
+        representative: visit.representative || '',
+        note: visit.note || '',
+        status: visit.status,
+      });
+    } else {
+      setFormData({
+        employeeId: employeeId?.toString() || '',
+        visitType: '',
+        visitDate: new Date().toISOString().split('T')[0],
+        visitedPerson: '',
+        relationship: '',
+        reason: '',
+        giftAmount: '',
+        giftDescription: '',
+        representative: '',
+        note: '',
+        status: 'Chưa thăm',
+      });
     }
+    setErrors({});
   }, [isOpen, visit, employeeId]);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  const set = (field: string, value: string) =>
+    setFormData(prev => ({ ...prev, [field]: value }));
 
-    if (!formData.employeeId) {
-      newErrors.employeeId = 'Vui lòng chọn nhân viên';
-    }
-    if (!formData.visitType) {
-      newErrors.visitType = 'Vui lòng chọn loại thăm';
-    }
-    if (!formData.visitDate) {
-      newErrors.visitDate = 'Vui lòng chọn ngày thăm';
-    }
-    if (!formData.visitPerson) {
-      newErrors.visitPerson = 'Vui lòng nhập người được thăm';
-    }
-    if (!formData.relationShip) {
-      newErrors.relationShip = 'Vui lòng chọn quan hệ';
-    }
-    if (!formData.reason) {
-      newErrors.reason = 'Vui lòng nhập lý do';
-    }
-    if (!formData.giftAmount || Number(formData.giftAmount) <= 0) {
-      newErrors.giftAmount = 'Vui lòng nhập số tiền hợp lệ';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!formData.employeeId) e.employeeId = 'Vui lòng chọn nhân viên';
+    if (!formData.visitType) e.visitType = 'Vui lòng chọn loại thăm';
+    if (!formData.visitDate) e.visitDate = 'Vui lòng chọn ngày thăm';
+    if (!formData.visitedPerson.trim()) e.visitedPerson = 'Vui lòng nhập người được thăm';
+    if (!formData.relationship) e.relationship = 'Vui lòng chọn quan hệ';
+    if (!formData.reason.trim()) e.reason = 'Vui lòng nhập lý do';
+    if (!formData.giftAmount || Number(formData.giftAmount) < 0) e.giftAmount = 'Vui lòng nhập số tiền hợp lệ';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
+  const handleSubmit = async () => {
+    if (!validate()) return;
     setIsSubmitting(true);
-
     try {
-      const selectedEmployee = mockEmployees.find(
-        emp => emp.id === Number(formData.employeeId)
-      );
-
-      const payload = {
-        employee: {
-          id: Number(formData.employeeId),
-          code: selectedEmployee?.code || '',
-          fullName: selectedEmployee?.fullName || '',
-          department: { name: selectedEmployee?.department || '' }
-        },
+      const payload: EmployeeVisitPayload = {
+        employeeId: Number(formData.employeeId),
         visitType: formData.visitType,
         visitDate: formData.visitDate,
-        visitPerson: formData.visitPerson,
-        relationShip: formData.relationShip,
+        visitedPerson: formData.visitedPerson,
+        relationship: formData.relationship,
         reason: formData.reason,
         giftAmount: Number(formData.giftAmount),
         giftDescription: formData.giftDescription,
-        notes: formData.notes,
-        visitedBy: formData.visitedBy,
+        representative: formData.representative,
+        note: formData.note,
         status: formData.status,
       };
 
       if (visit) {
-        await familyVisitApi.update(visit.id, payload);
-        toast({
-          title: 'Thành công',
-          description: 'Đã cập nhật thông tin thăm người thân',
-        });
+        await employeeVisitApi.update(visit.id, payload);
+        toast.success('Đã cập nhật thông tin thăm người thân');
       } else {
-        await familyVisitApi.create(payload);
-        toast({
-          title: 'Thành công',
-          description: 'Đã thêm mới lượt thăm người thân',
-        });
+        await employeeVisitApi.create(payload);
+        toast.success('Đã thêm mới lượt thăm người thân');
       }
-
       onSuccess();
-      onClose();
-    } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: visit ? 'Không thể cập nhật' : 'Không thể thêm mới',
-        variant: 'destructive',
-      });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || (visit ? 'Không thể cập nhật' : 'Không thể thêm mới'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const field = (label: string, key: string, required = false) => (
+    <div className="space-y-1">
+      <Label className="text-xs">{label} {required && <span className="text-red-500">*</span>}</Label>
+      <Input
+        value={(formData as any)[key]}
+        onChange={e => set(key, e.target.value)}
+        className={`h-8 text-sm ${errors[key] ? 'border-red-500' : ''}`}
+      />
+      {errors[key] && <p className="text-xs text-red-500">{errors[key]}</p>}
+    </div>
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {visit ? 'Chỉnh sửa thông tin thăm người thân' : 'Thêm lượt thăm người thân'}
-          </DialogTitle>
+          <DialogTitle>{visit ? 'Chỉnh sửa thăm người thân' : 'Thêm lượt thăm người thân'}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Employee Selection */}
-          <div className="space-y-2">
-            <Label>
-              Nhân viên <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={formData.employeeId}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, employeeId: value }))
-              }
-              disabled={!!employeeId || !!visit}
-            >
-              <SelectTrigger className={errors.employeeId ? 'border-red-500' : ''}>
+        <div className="space-y-4 py-2">
+          {/* Nhân viên */}
+          <div className="space-y-1">
+            <Label className="text-xs">Nhân viên <span className="text-red-500">*</span></Label>
+            <Select value={formData.employeeId} onValueChange={v => set('employeeId', v)} disabled={!!employeeId || !!visit}>
+              <SelectTrigger className={`text-sm ${errors.employeeId ? 'border-red-500' : ''}`}>
                 <SelectValue placeholder="Chọn nhân viên" />
               </SelectTrigger>
               <SelectContent>
-                {mockEmployees.map((emp) => (
-                  <SelectItem key={emp.id} value={emp.id.toString()}>
-                    {emp.fullName} ({emp.code}) - {emp.department}
+                {allEmployees.map(e => (
+                  <SelectItem key={e.id} value={e.id.toString()}>
+                    {e.fullName} ({e.employeeCode}){e.departmentName ? ` · ${e.departmentName}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.employeeId && (
-              <p className="text-sm text-red-500">{errors.employeeId}</p>
-            )}
+            {errors.employeeId && <p className="text-xs text-red-500">{errors.employeeId}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Visit Type */}
-            <div className="space-y-2">
-              <Label>
-                Loại thăm <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.visitType}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, visitType: value }))
-                }
-              >
-                <SelectTrigger className={errors.visitType ? 'border-red-500' : ''}>
+            {/* Loại thăm */}
+            <div className="space-y-1">
+              <Label className="text-xs">Loại thăm <span className="text-red-500">*</span></Label>
+              <Select value={formData.visitType} onValueChange={v => set('visitType', v)}>
+                <SelectTrigger className={`text-sm ${errors.visitType ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Chọn loại" />
                 </SelectTrigger>
                 <SelectContent>
-                  {visitTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
+                  {VISIT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {errors.visitType && (
-                <p className="text-sm text-red-500">{errors.visitType}</p>
-              )}
+              {errors.visitType && <p className="text-xs text-red-500">{errors.visitType}</p>}
             </div>
 
-            {/* Visit Date */}
-            <div className="space-y-2">
-              <Label>
-                Ngày thăm <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="date"
-                value={formData.visitDate}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, visitDate: e.target.value }))
-                }
-                className={errors.visitDate ? 'border-red-500' : ''}
-              />
-              {errors.visitDate && (
-                <p className="text-sm text-red-500">{errors.visitDate}</p>
-              )}
+            {/* Ngày thăm */}
+            <div className="space-y-1">
+              <Label className="text-xs">Ngày thăm <span className="text-red-500">*</span></Label>
+              <Input type="date" value={formData.visitDate} onChange={e => set('visitDate', e.target.value)}
+                className={`h-8 text-sm ${errors.visitDate ? 'border-red-500' : ''}`} />
+              {errors.visitDate && <p className="text-xs text-red-500">{errors.visitDate}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Visit Person */}
-            <div className="space-y-2">
-              <Label>
-                Người được thăm <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                value={formData.visitPerson}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, visitPerson: e.target.value }))
-                }
-                placeholder="VD: Mẹ, Bố, Con..."
-                className={errors.visitPerson ? 'border-red-500' : ''}
-              />
-              {errors.visitPerson && (
-                <p className="text-sm text-red-500">{errors.visitPerson}</p>
-              )}
+            {/* Người được thăm */}
+            <div className="space-y-1">
+              <Label className="text-xs">Người được thăm <span className="text-red-500">*</span></Label>
+              <Input value={formData.visitedPerson} onChange={e => set('visitedPerson', e.target.value)}
+                placeholder="VD: Mẹ, Bố, Con..." className={`h-8 text-sm ${errors.visitedPerson ? 'border-red-500' : ''}`} />
+              {errors.visitedPerson && <p className="text-xs text-red-500">{errors.visitedPerson}</p>}
             </div>
 
-            {/* Relationship */}
-            <div className="space-y-2">
-              <Label>
-                Quan hệ <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.relationShip}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, relationShip: value }))
-                }
-              >
-                <SelectTrigger className={errors.relationShip ? 'border-red-500' : ''}>
+            {/* Quan hệ */}
+            <div className="space-y-1">
+              <Label className="text-xs">Quan hệ <span className="text-red-500">*</span></Label>
+              <Select value={formData.relationship} onValueChange={v => set('relationship', v)}>
+                <SelectTrigger className={`text-sm ${errors.relationship ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Chọn quan hệ" />
                 </SelectTrigger>
                 <SelectContent>
-                  {relationships.map((rel) => (
-                    <SelectItem key={rel} value={rel}>
-                      {rel}
-                    </SelectItem>
-                  ))}
+                  {RELATIONSHIPS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
-              {errors.relationShip && (
-                <p className="text-sm text-red-500">{errors.relationShip}</p>
-              )}
+              {errors.relationship && <p className="text-xs text-red-500">{errors.relationship}</p>}
             </div>
           </div>
 
-          {/* Reason */}
-          <div className="space-y-2">
-            <Label>
-              Lý do <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              value={formData.reason}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, reason: e.target.value }))
-              }
-              placeholder="Mô tả chi tiết lý do thăm hỏi..."
-              rows={3}
-              className={errors.reason ? 'border-red-500' : ''}
-            />
-            {errors.reason && (
-              <p className="text-sm text-red-500">{errors.reason}</p>
-            )}
+          {/* Lý do */}
+          <div className="space-y-1">
+            <Label className="text-xs">Lý do <span className="text-red-500">*</span></Label>
+            <Textarea value={formData.reason} onChange={e => set('reason', e.target.value)}
+              placeholder="Mô tả lý do thăm hỏi..." rows={2}
+              className={`text-sm ${errors.reason ? 'border-red-500' : ''}`} />
+            {errors.reason && <p className="text-xs text-red-500">{errors.reason}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Gift Amount */}
-            <div className="space-y-2">
-              <Label>
-                Số tiền quà tặng (VNĐ) <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                type="number"
-                value={formData.giftAmount}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, giftAmount: e.target.value }))
-                }
-                placeholder="3000000"
-                className={errors.giftAmount ? 'border-red-500' : ''}
-              />
-              {errors.giftAmount && (
-                <p className="text-sm text-red-500">{errors.giftAmount}</p>
-              )}
+            {/* Số tiền */}
+            <div className="space-y-1">
+              <Label className="text-xs">Số tiền quà tặng (VNĐ) <span className="text-red-500">*</span></Label>
+              <Input type="number" value={formData.giftAmount} onChange={e => set('giftAmount', e.target.value)}
+                placeholder="0" className={`h-8 text-sm ${errors.giftAmount ? 'border-red-500' : ''}`} />
+              {errors.giftAmount && <p className="text-xs text-red-500">{errors.giftAmount}</p>}
             </div>
 
-            {/* Gift Description */}
-            <div className="space-y-2">
-              <Label>Mô tả quà tặng</Label>
-              <Input
-                value={formData.giftDescription}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    giftDescription: e.target.value,
-                  }))
-                }
-                placeholder="VD: Tiền mặt, vòng hoa..."
-              />
+            {/* Mô tả quà */}
+            <div className="space-y-1">
+              <Label className="text-xs">Mô tả quà tặng</Label>
+              <Input value={formData.giftDescription} onChange={e => set('giftDescription', e.target.value)}
+                placeholder="VD: Tiền mặt, vòng hoa..." className="h-8 text-sm" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Visited By */}
-            <div className="space-y-2">
-              <Label>Người đại diện thăm</Label>
-              <Input
-                value={formData.visitedBy}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, visitedBy: e.target.value }))
-                }
-                placeholder="VD: Giám đốc, Trưởng phòng..."
-              />
+            {/* Người đại diện */}
+            <div className="space-y-1">
+              <Label className="text-xs">Người đại diện thăm</Label>
+              <Input value={formData.representative} onChange={e => set('representative', e.target.value)}
+                placeholder="VD: Giám đốc, Trưởng phòng..." className="h-8 text-sm" />
             </div>
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label>Trạng thái</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, status: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+            {/* Trạng thái */}
+            <div className="space-y-1">
+              <Label className="text-xs">Trạng thái</Label>
+              <Select value={formData.status} onValueChange={v => set('status', v)}>
+                <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Chưa thăm">Chưa thăm</SelectItem>
                   <SelectItem value="Đã thăm">Đã thăm</SelectItem>
@@ -404,26 +269,19 @@ export default function FamilyVisitFormModal({
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label>Ghi chú</Label>
-            <Textarea
-              value={formData.notes}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, notes: e.target.value }))
-              }
-              placeholder="Ghi chú bổ sung (nếu có)..."
-              rows={3}
-            />
+          {/* Ghi chú */}
+          <div className="space-y-1">
+            <Label className="text-xs">Ghi chú</Label>
+            <Textarea value={formData.note} onChange={e => set('note', e.target.value)}
+              placeholder="Ghi chú bổ sung..." rows={2} className="text-sm" />
           </div>
-        </form>
+        </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Hủy
-          </Button>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Hủy</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Đang lưu...' : visit ? 'Xác nhận' : 'Xác nhận'}
+            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isSubmitting ? 'Đang lưu...' : 'Xác nhận'}
           </Button>
         </DialogFooter>
       </DialogContent>
