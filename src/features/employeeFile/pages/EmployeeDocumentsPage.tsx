@@ -1,205 +1,160 @@
 // pages/hr/documents/EmployeeDocumentsPage.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Plus, FileText, AlertCircle, Download, Trash2 } from 'lucide-react';
+import {
+  Search, Eye, ChevronLeft, ChevronRight, Plus, FileText,
+  AlertCircle, Download, Trash2, ListPlus,
+} from 'lucide-react';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button/Button2';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/shared/components/tables/table';
-import { 
-  mockEmployeeDocuments, 
-  type EmployeeDocument, 
-  calculateDocumentStatistics,
-  documentTypeLabels 
-} from '../../../mock/employeeFile';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/shared/components/ui/alert-dialog';
+import { toast } from 'sonner';
+import { useAuthStore } from '@/features/employees/hooks/useAuth';
+import { employeeDocumentApi } from '../api/document';
 import DocumentDetailModal from '../components/DocumentDetailModal';
 import UploadDocumentModal from '../components/UploadDocumentModal';
-import { useAuthStore } from '@/features/employees/hooks/useAuth';
-import { Alert, AlertDescription } from '@/shared/components/ui/alert';
+import BulkAddDocumentModal from '../components/BulkAddDocument';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+const DOC_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
+  RECRUITMENT: { label: 'Hồ sơ tuyển dụng', className: 'bg-blue-100 text-blue-800' },
+  CONTRACT:    { label: 'Hợp đồng',          className: 'bg-purple-100 text-purple-800' },
+  INSURANCE:   { label: 'Bảo hiểm & Thuế',   className: 'bg-green-100 text-green-800' },
+  CERTIFICATE: { label: 'Bằng cấp',           className: 'bg-yellow-100 text-yellow-800' },
+  DECISION:    { label: 'Quyết định',          className: 'bg-indigo-100 text-indigo-800' },
+  TRAINING:    { label: 'Đào tạo',             className: 'bg-pink-100 text-pink-800' },
+  OTHER:       { label: 'Khác',                className: 'bg-gray-100 text-gray-800' },
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function EmployeeDocumentsPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles === 'ADMIN';
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('ALL');
-  const [employeeFilter, setEmployeeFilter] = useState<string>('ALL');
-  const [documents, setDocuments] = useState<EmployeeDocument[]>([]);
+  // Data
+  const [allDocs, setAllDocs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Modals
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
-
+  const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [docToDelete, setDocToDelete] = useState<any>(null);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [page, pageSize, searchTerm, typeFilter, employeeFilter, refreshKey]);
-
-  const fetchDocuments = async () => {
+  // ─── Fetch ──────────────────────────────────────────────────────────────────
+  const fetchDocs = useCallback(async () => {
+    if (!user) return;
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
-
-    let filtered = [...mockEmployeeDocuments];
-
-    // Nếu không phải admin, chỉ hiển thị tài liệu của chính user
-    if (!isAdmin && user?.employeeId) {
-      filtered = filtered.filter(d => d.employeeId === user.employeeId);
+    try {
+      if (isAdmin) {
+        // Admin có getAll thật
+        const data = await employeeDocumentApi.getAll();
+        setAllDocs(data || []);
+      } else {
+        // Employee: chỉ lấy của mình
+        const data = await employeeDocumentApi.getByEmployeeId(user.employeeId);
+        setAllDocs(data || []);
+      }
+    } catch {
+      toast.error('Không thể tải danh sách tài liệu');
+    } finally {
+      setIsLoading(false);
     }
+  }, [user, isAdmin]);
 
-    if (typeFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.documentType === typeFilter);
+  useEffect(() => { fetchDocs(); }, [fetchDocs, refreshKey]);
+
+  // ─── Delete ─────────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!docToDelete) return;
+    try {
+      await employeeDocumentApi.delete(docToDelete.id);
+      toast.success('Đã xóa tài liệu');
+      setRefreshKey(p => p + 1);
+    } catch {
+      toast.error('Không thể xóa tài liệu');
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDocToDelete(null);
     }
+  };
 
-    if (employeeFilter !== 'ALL') {
-      filtered = filtered.filter(d => d.employeeId === employeeFilter);
-    }
-
+  // ─── Filter + Paginate ──────────────────────────────────────────────────────
+  const filtered = allDocs.filter(d => {
+    if (typeFilter !== 'ALL' && d.documentType !== typeFilter) return false;
     if (searchTerm) {
-      filtered = filtered.filter(d =>
-        d.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.documentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        d.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (d.decisionNumber && d.decisionNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+      const s = searchTerm.toLowerCase();
+      return (
+        d.documentName?.toLowerCase().includes(s) ||
+        d.fileName?.toLowerCase().includes(s) ||
+        d.description?.toLowerCase().includes(s)
       );
     }
+    return true;
+  });
 
-    setTotalItems(filtered.length);
-
-    const start = page * pageSize;
-    const end = start + pageSize;
-    setDocuments(filtered.slice(start, end));
-
-    setIsLoading(false);
-  };
-
-  const handleOpenDetailModal = (id: string) => {
-    setSelectedDocumentId(id);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedDocumentId(null);
-  };
-
-  const handleOpenUploadModal = () => {
-    setIsUploadModalOpen(true);
-  };
-
-  const handleCloseUploadModal = () => {
-    setIsUploadModalOpen(false);
-  };
-
-  const handleSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const handleDownload = (doc: EmployeeDocument) => {
-    console.log('Downloading document:', doc.id);
-    // Implement download logic
-  };
-
-  const handleDelete = async (doc: EmployeeDocument) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa tài liệu "${doc.documentName}"?`)) {
-      return;
-    }
-    console.log('Deleting document:', doc.id);
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const getTypeBadge = (type: string) => {
-    const typeConfig = {
-      'RECRUITMENT': { label: documentTypeLabels.RECRUITMENT, className: 'bg-blue-100 text-blue-800' },
-      'CONTRACT': { label: documentTypeLabels.CONTRACT, className: 'bg-purple-100 text-purple-800' },
-      'INSURANCE': { label: documentTypeLabels.INSURANCE, className: 'bg-green-100 text-green-800' },
-      'CERTIFICATE': { label: documentTypeLabels.CERTIFICATE, className: 'bg-yellow-100 text-yellow-800' },
-      'DECISION': { label: documentTypeLabels.DECISION, className: 'bg-indigo-100 text-indigo-800' },
-      'TRAINING': { label: documentTypeLabels.TRAINING, className: 'bg-pink-100 text-pink-800' },
-      'OTHER': { label: documentTypeLabels.OTHER, className: 'bg-gray-100 text-gray-800' },
-    };
-
-    const config = typeConfig[type] || { label: type, className: '' };
-    return <Badge className={config.className}>{config.label}</Badge>;
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-  };
-
-  const getFileIcon = (fileType: string) => {
-    return <FileText className="h-4 w-4" />;
-  };
-
-  const stats = calculateDocumentStatistics(mockEmployeeDocuments);
-  const totalPages = Math.ceil(totalItems / pageSize);
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const paginated = filtered.slice(page * pageSize, page * pageSize + pageSize);
   const startIndex = page * pageSize + 1;
   const endIndex = Math.min((page + 1) * pageSize, totalItems);
 
-  // Get employees list - nếu không phải admin chỉ lấy dữ liệu của chính user
-  let employees = Array.from(new Set(mockEmployeeDocuments.map(d => ({
-    id: d.employeeId,
-    name: d.employeeName
-  }))));
-
-  if (!isAdmin && user?.employeeId) {
-    const userDocuments = mockEmployeeDocuments.filter(d => d.employeeId === user.employeeId);
-    employees = Array.from(new Set(userDocuments.map(d => ({
-      id: d.employeeId,
-      name: d.employeeName
-    }))));
-  }
-
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">
-            {isAdmin ? 'Quản lý Hồ sơ Nhân viên' : 'Hồ sơ của tôi'}
-          </h1>
+          <h1 className="text-3xl font-bold">Hồ sơ</h1>
           <p className="text-muted-foreground">
-            {isAdmin 
+            {isAdmin
               ? 'Quản lý tài liệu và hồ sơ của tất cả nhân viên'
-              : 'Xem và quản lý tài liệu hồ sơ của bạn'
-            }
+              : 'Xem tài liệu hồ sơ của bạn'}
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={handleOpenUploadModal}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tải lên tài liệu
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsBulkModalOpen(true)}>
+              <ListPlus className="h-4 w-4 mr-2" /> Thêm hàng loạt
+            </Button>
+            <Button onClick={() => setIsUploadModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" /> Thêm hồ sơ
+            </Button>
+          </div>
         )}
       </div>
 
-      {stats.expiringSoon > 0 && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <AlertCircle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
-            Có {stats.expiringSoon} tài liệu sắp hết hạn trong vòng 30 ngày. Vui lòng kiểm tra và cập nhật.
-          </AlertDescription>
-        </Alert>
+      {/* Employee info banner */}
+      {!isAdmin && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium mb-1">Thông tin hồ sơ</p>
+              <p>Tài liệu hồ sơ được quản lý bởi phòng Nhân sự. Nếu cần cập nhật, vui lòng liên hệ phòng Nhân sự.</p>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* Filters */}
@@ -208,43 +163,21 @@ export default function EmployeeDocumentsPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={isAdmin 
-                ? 'Tìm kiếm theo tên nhân viên, tên tài liệu'
-                : 'Tìm kiếm theo tên tài liệu'
-              }
+              placeholder={isAdmin ? 'Tìm theo tên tài liệu, mô tả, tên file...' : 'Tìm theo tên tài liệu...'}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => { setSearchTerm(e.target.value); setPage(0); }}
               className="pl-10"
             />
           </div>
-
-          {isAdmin && (
-            <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Nhân viên" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tất cả nhân viên</SelectItem>
-                {employees.map(emp => (
-                  <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter} onValueChange={v => { setTypeFilter(v); setPage(0); }}>
             <SelectTrigger className="w-full md:w-[200px]">
               <SelectValue placeholder="Loại tài liệu" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Tất cả loại</SelectItem>
-              <SelectItem value="RECRUITMENT">Hồ sơ tuyển dụng</SelectItem>
-              <SelectItem value="CONTRACT">Hợp đồng</SelectItem>
-              <SelectItem value="INSURANCE">Bảo hiểm & Thuế</SelectItem>
-              <SelectItem value="CERTIFICATE">Bằng cấp</SelectItem>
-              <SelectItem value="DECISION">Quyết định</SelectItem>
-              <SelectItem value="TRAINING">Đào tạo</SelectItem>
-              <SelectItem value="OTHER">Khác</SelectItem>
+              {Object.entries(DOC_TYPE_CONFIG).map(([v, cfg]) => (
+                <SelectItem key={v} value={v}>{cfg.label}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -257,126 +190,77 @@ export default function EmployeeDocumentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tên tài liệu</TableHead>
-                {isAdmin && <TableHead>Nhân viên</TableHead>}
                 <TableHead>Loại</TableHead>
                 <TableHead>File</TableHead>
-                <TableHead>Ngày upload</TableHead>
-                {isAdmin && <TableHead>Người upload</TableHead>}
-                <TableHead>Đánh dấu</TableHead>
+                <TableHead>Mô tả</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-10">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : documents.length === 0 ? (
+              ) : paginated.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
+                  <TableCell colSpan={5} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <FileText className="h-8 w-8" />
-                      <p>Không tìm thấy tài liệu nào</p>
+                      <p>{isAdmin ? 'Không tìm thấy tài liệu nào' : 'Bạn chưa có tài liệu nào'}</p>
+                      {!isAdmin && <p className="text-sm">Liên hệ phòng Nhân sự để cập nhật hồ sơ</p>}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                documents.map((doc) => (
+                paginated.map(doc => (
                   <TableRow key={doc.id}>
                     <TableCell>
                       <div className="flex items-start gap-2">
-                        {getFileIcon(doc.fileType)}
-                        <div>
-                          <p className="font-medium">{doc.documentName}</p>
-                          {doc.decisionNumber && (
-                            <p className="text-xs text-muted-foreground">
-                              Số: {doc.decisionNumber}
-                            </p>
-                          )}
-                          {doc.expiryDate && (
-                            <p className="text-xs text-muted-foreground">
-                              HSD: {new Date(doc.expiryDate).toLocaleDateString('vi-VN')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{doc.employeeName}</p>
-                          <p className="text-sm text-muted-foreground">{doc.departmentName}</p>
-                        </div>
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      {getTypeBadge(doc.documentType)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p className="font-mono text-xs truncate max-w-[150px]">
-                          {doc.fileName}
-                        </p>
-                        <p className="text-muted-foreground">
-                          {formatFileSize(doc.fileSize)}
-                        </p>
+                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <p className="font-medium">{doc.documentName}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">
-                        {new Date(doc.uploadedAt).toLocaleDateString('vi-VN')}
-                      </span>
+                      {DOC_TYPE_CONFIG[doc.documentType] ? (
+                        <Badge className={DOC_TYPE_CONFIG[doc.documentType].className}>
+                          {DOC_TYPE_CONFIG[doc.documentType].label}
+                        </Badge>
+                      ) : <span className="text-sm">{doc.documentType}</span>}
                     </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <span className="text-sm">{doc.uploadedBy}</span>
-                      </TableCell>
-                    )}
                     <TableCell>
-                      <div className="flex flex-col gap-1">
-                        {doc.isImportant && (
-                          <Badge variant="outline" className="text-red-600 text-xs">
-                            Quan trọng
-                          </Badge>
-                        )}
-                        {doc.isConfidential && (
-                          <Badge variant="outline" className="text-orange-600 text-xs">
-                            Bảo mật
-                          </Badge>
-                        )}
-                      </div>
+                      <p className="font-mono text-xs text-muted-foreground truncate max-w-[160px]">
+                        {doc.fileName}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                        {doc.description || '—'}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenDetailModal(doc.id)}
-                          title="Xem chi tiết"
-                        >
+                        <Button variant="ghost" size="sm"
+                          onClick={() => { setSelectedDocId(doc.id); setIsDetailModalOpen(true); }}
+                          title="Xem chi tiết">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDownload(doc)}
-                          title="Tải xuống"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                        {doc.downloadUrl && (
+                          <Button variant="ghost" size="sm"
+                            onClick={() => window.open(doc.downloadUrl, '_blank')}
+                            title="Tải xuống">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        )}
                         {isAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(doc)}
-                            title="Xóa"
+                          <Button variant="ghost" size="sm"
                             className="text-red-600 hover:text-red-700"
-                          >
+                            onClick={() => { setDocToDelete(doc); setIsDeleteDialogOpen(true); }}
+                            title="Xóa">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         )}
@@ -390,89 +274,71 @@ export default function EmployeeDocumentsPage() {
         </div>
 
         {/* Pagination */}
-        {!isLoading && documents.length > 0 && (
+        {!isLoading && paginated.length > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
-            <div className="text-sm text-muted-foreground">
-              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
-            </div>
-
+            <p className="text-sm text-muted-foreground">
+              Hiển thị {startIndex} – {endIndex} trong {totalItems}
+            </p>
             <div className="flex items-center gap-2">
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={pageSize.toString()} onValueChange={v => { setPageSize(Number(v)); setPage(0); }}>
+                <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
+                  {[10, 20, 50, 100].map(n => <SelectItem key={n} value={n.toString()}>{n}</SelectItem>)}
                 </SelectContent>
               </Select>
-
               <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                >
-                  Đầu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p - 1)}
-                  disabled={page === 0}
-                >
+                <Button variant="outline" size="sm" onClick={() => setPage(0)} disabled={page === 0}>Đầu</Button>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-
-                <span className="px-3 text-sm">
-                  Trang {page + 1} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
+                <span className="px-3 text-sm">Trang {page + 1} / {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages - 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Cuối
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1}>Cuối</Button>
               </div>
             </div>
           </div>
         )}
       </Card>
 
+      {/* Modals */}
       <DocumentDetailModal
         isOpen={isDetailModalOpen}
-        onClose={handleCloseDetailModal}
-        documentId={selectedDocumentId}
+        onClose={() => { setIsDetailModalOpen(false); setSelectedDocId(null); }}
+        documentId={selectedDocId}
         isAdmin={isAdmin}
-        onSuccess={handleSuccess}
+        onSuccess={() => setRefreshKey(p => p + 1)}
       />
 
       {isAdmin && (
-        <UploadDocumentModal
-          isOpen={isUploadModalOpen}
-          onClose={handleCloseUploadModal}
-          onSuccess={handleSuccess}
-        />
+        <>
+          <UploadDocumentModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            onSuccess={() => { setRefreshKey(p => p + 1); setIsUploadModalOpen(false); }}
+          />
+          <BulkAddDocumentModal
+            isOpen={isBulkModalOpen}
+            onClose={() => setIsBulkModalOpen(false)}
+            onSuccess={() => setRefreshKey(p => p + 1)}
+          />
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Bạn có chắc chắn muốn xóa tài liệu <b>"{docToDelete?.documentName}"</b>?
+                  Hành động này không thể hoàn tác.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Hủy</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Xóa</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </div>
   );

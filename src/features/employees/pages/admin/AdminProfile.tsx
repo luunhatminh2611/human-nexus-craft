@@ -334,31 +334,23 @@ function ProfileContent() {
         </TabsContent>
 
         <TabsContent value="1" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="2" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="3" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="4" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="5" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="6" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="7" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="8" className="space-y-4">
-          <ContractsTab />
         </TabsContent>
         <TabsContent value="contracts" className="space-y-4">
-          <ContractsTab  />
+          <ContractsTab  employeeId={employeeData.id}/>
         </TabsContent>
       </Tabs>
 
