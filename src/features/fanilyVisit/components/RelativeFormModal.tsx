@@ -9,7 +9,6 @@ import {
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
-import { Textarea } from '@/shared/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -18,33 +17,28 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { toast } from '@/shared/hooks/use-toast';
+import { familyApi, FamilyMember } from '../../employees/api/family';
+import { employeeApi } from '@/features/employees/api/employeeApi';
 
 interface RelativeFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  relative?: any | null;
+  relative?: FamilyMember | null;
   employeeId?: number;
   onSuccess: () => void;
 }
 
 const relationships = [
-  'Cha',
-  'Mẹ',
-  'Vợ',
-  'Chồng',
-  'Con',
-  'Anh',
-  'Chị',
-  'Em',
-  'Khác',
+  'Cha', 'Mẹ', 'Vợ', 'Chồng', 'Con',
+  'Anh', 'Chị', 'Em', 'Khác',
 ];
 
-// mock nhân viên
-const mockEmployees = [
-  { id: 1, code: 'EMP001', fullName: 'Nguyễn Văn A', department: 'Nhân sự' },
-  { id: 2, code: 'EMP002', fullName: 'Trần Thị B', department: 'Kế toán' },
-  { id: 3, code: 'EMP003', fullName: 'Lê Văn C', department: 'Kỹ thuật' },
-];
+interface EmployeeOption {
+  id: number;
+  fullName: string;
+  employeeCode: string;
+  departmentName?: string;
+}
 
 export default function RelativeFormModal({
   isOpen,
@@ -55,42 +49,46 @@ export default function RelativeFormModal({
 }: RelativeFormModalProps) {
   const [formData, setFormData] = useState({
     employeeId: '',
-    fullName: '',
+    name: '',
     relationship: '',
-    dateOfBirth: '',
-    occupation: '',
-    isDependent: 'false',
+    birthday: '',
     phone: '',
-    notes: '',
+    address: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
 
+  // Load danh sách nhân viên
+  useEffect(() => {
+    if (!isOpen) return;
+    employeeApi.getAll()
+      .then(d => setEmployees(d || []))
+      .catch(console.error);
+  }, [isOpen]);
+
+  // Khởi tạo form data
   useEffect(() => {
     if (!isOpen) return;
 
     if (relative) {
       setFormData({
-        employeeId: relative.employee.id.toString(),
-        fullName: relative.fullName,
+        employeeId: relative.employeeId.toString(),
+        name: relative.name,
         relationship: relative.relationship,
-        dateOfBirth: relative.dateOfBirth,
-        occupation: relative.occupation,
-        isDependent: relative.isDependent ? 'true' : 'false',
-        phone: relative.phone,
-        notes: relative.notes || '',
+        birthday: relative.birthday || '',
+        phone: relative.phone || '',
+        address: relative.address || '',
       });
     } else {
       setFormData({
         employeeId: employeeId?.toString() || '',
-        fullName: '',
+        name: '',
         relationship: '',
-        dateOfBirth: '',
-        occupation: '',
-        isDependent: 'false',
+        birthday: '',
         phone: '',
-        notes: '',
+        address: '',
       });
     }
     setErrors({});
@@ -98,36 +96,42 @@ export default function RelativeFormModal({
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.employeeId) newErrors.employeeId = 'Vui lòng chọn nhân viên';
-    if (!formData.fullName) newErrors.fullName = 'Vui lòng nhập họ tên';
+    if (!formData.name.trim()) newErrors.name = 'Vui lòng nhập họ tên';
     if (!formData.relationship) newErrors.relationship = 'Vui lòng chọn quan hệ';
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validate()) return;
-
     setIsSubmitting(true);
     try {
-      // 🔥 chỗ này sau bạn thay API
-      await new Promise(res => setTimeout(res, 800));
+      const payload = {
+        name: formData.name.trim(),
+        relationship: formData.relationship,
+        birthday: formData.birthday || undefined,
+        phone: formData.phone.trim() || undefined,
+        address: formData.address.trim() || undefined,
+        employeeId: Number(formData.employeeId),
+      };
+
+      if (relative) {
+        await familyApi.update({ ...payload, id: relative.id });
+      } else {
+        await familyApi.create(payload);
+      }
 
       toast({
         title: 'Thành công',
-        description: relative
-          ? 'Đã cập nhật thông tin thân nhân'
-          : 'Đã thêm mới thân nhân',
+        description: relative ? 'Đã cập nhật thông tin thân nhân' : 'Đã thêm mới thân nhân',
       });
-
       onSuccess();
       onClose();
-    } catch {
+    } catch (err: any) {
       toast({
         title: 'Lỗi',
-        description: 'Không thể lưu thông tin',
+        description: err?.response?.data?.message || 'Không thể lưu thông tin',
         variant: 'destructive',
       });
     } finally {
@@ -135,12 +139,14 @@ export default function RelativeFormModal({
     }
   };
 
+  const isEmployeeLocked = !!employeeId || !!relative;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {relative ? 'Chỉnh sửa thân nhân' : 'Thêm thân nhân nhân viên'}
+            {relative ? 'Chỉnh sửa quan hệ gia đình' : 'Thêm quan hệ gia đình'}
           </DialogTitle>
         </DialogHeader>
 
@@ -150,16 +156,16 @@ export default function RelativeFormModal({
             <Label>Nhân viên <span className="text-red-500">*</span></Label>
             <Select
               value={formData.employeeId}
-              onValueChange={(v) => setFormData(p => ({ ...p, employeeId: v }))}
-              disabled={!!employeeId || !!relative}
+              onValueChange={v => setFormData(p => ({ ...p, employeeId: v }))}
+              disabled={isEmployeeLocked}
             >
-              <SelectTrigger className={errors.employeeId && 'border-red-500'}>
+              <SelectTrigger className={errors.employeeId ? 'border-red-500' : ''}>
                 <SelectValue placeholder="Chọn nhân viên" />
               </SelectTrigger>
               <SelectContent>
-                {mockEmployees.map(emp => (
+                {employees.map(emp => (
                   <SelectItem key={emp.id} value={emp.id.toString()}>
-                    {emp.fullName} ({emp.code}) – {emp.department}
+                    {emp.fullName} ({emp.employeeCode}){emp.departmentName && ` – ${emp.departmentName}`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -168,23 +174,26 @@ export default function RelativeFormModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Họ tên */}
             <div className="space-y-2">
-              <Label>Họ tên thân nhân *</Label>
+              <Label>Họ tên thân nhân <span className="text-red-500">*</span></Label>
               <Input
-                value={formData.fullName}
-                onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))}
-                className={errors.fullName && 'border-red-500'}
+                value={formData.name}
+                onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
+                className={errors.name ? 'border-red-500' : ''}
+                placeholder="Nguyễn Thị A..."
               />
-              {errors.fullName && <p className="text-sm text-red-500">{errors.fullName}</p>}
+              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
             </div>
 
+            {/* Quan hệ */}
             <div className="space-y-2">
-              <Label>Quan hệ *</Label>
+              <Label>Quan hệ <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.relationship}
-                onValueChange={(v) => setFormData(p => ({ ...p, relationship: v }))}
+                onValueChange={v => setFormData(p => ({ ...p, relationship: v }))}
               >
-                <SelectTrigger className={errors.relationship && 'border-red-500'}>
+                <SelectTrigger className={errors.relationship ? 'border-red-500' : ''}>
                   <SelectValue placeholder="Chọn quan hệ" />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,64 +207,42 @@ export default function RelativeFormModal({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Ngày sinh */}
             <div className="space-y-2">
               <Label>Ngày sinh</Label>
               <Input
                 type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData(p => ({ ...p, dateOfBirth: e.target.value }))}
+                value={formData.birthday}
+                onChange={e => setFormData(p => ({ ...p, birthday: e.target.value }))}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Nghề nghiệp</Label>
-              <Input
-                value={formData.occupation}
-                onChange={(e) => setFormData(p => ({ ...p, occupation: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+            {/* Số điện thoại */}
             <div className="space-y-2">
               <Label>Số điện thoại</Label>
               <Input
                 value={formData.phone}
-                onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))}
+                onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
+                placeholder="0912345678"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Người phụ thuộc</Label>
-              <Select
-                value={formData.isDependent}
-                onValueChange={(v) => setFormData(p => ({ ...p, isDependent: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Có</SelectItem>
-                  <SelectItem value="false">Không</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
+          {/* Địa chỉ */}
           <div className="space-y-2">
-            <Label>Ghi chú</Label>
-            <Textarea
-              rows={3}
-              value={formData.notes}
-              onChange={(e) => setFormData(p => ({ ...p, notes: e.target.value }))}
+            <Label>Địa chỉ</Label>
+            <Input
+              value={formData.address}
+              onChange={e => setFormData(p => ({ ...p, address: e.target.value }))}
+              placeholder="Số nhà, đường, quận/huyện, tỉnh/thành..."
             />
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Hủy</Button>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Hủy</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? 'Đang lưu...' : relative ? 'Xác nhận' : 'Xác nhận'}
+            {isSubmitting ? 'Đang lưu...' : 'Xác nhận'}
           </Button>
         </DialogFooter>
       </DialogContent>

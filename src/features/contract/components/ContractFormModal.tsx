@@ -302,7 +302,7 @@ export default function ContractFormModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <h2 className="text-xl font-semibold">
-            {contract ? 'Chỉnh sửa hợp đồng' : 'Thêm hợp đồng mới'}
+            {contract ? 'Chỉnh sửa hợp đồng' : 'Thêm hợp đồng'}
           </h2>
           <button
             onClick={onClose}

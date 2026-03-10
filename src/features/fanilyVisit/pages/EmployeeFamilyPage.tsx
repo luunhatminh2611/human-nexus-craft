@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Card, CardContent } from '@/shared/components/ui/card';
+import { Card } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Button } from '@/shared/components/ui/button/Button2';
 import { Badge } from '@/shared/components/ui/badge';
@@ -28,14 +28,14 @@ import {
   TableRow,
 } from '@/shared/components/tables/table';
 import FamilyModal from '../../employees/components/modal/FamilyModal';
-import { familyApi } from '../../employees/api/family';
+import { familyApi, FamilyMember } from '../../employees/api/family';
 import { useAuthStore } from '@/features/employees/hooks/useAuth';
 
-const relationshipTypes = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Con'];
+const relationshipTypes = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Con', 'Anh', 'Chị', 'Em', 'Khác'];
 const MAX_FAMILY_MEMBERS = 2;
 
 export default function MyFamilyMembersPage() {
-  const [familyMembers, setFamilyMembers] = useState([]);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRelationship, setFilterRelationship] = useState('all');
@@ -43,15 +43,13 @@ export default function MyFamilyMembersPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
-  const [selectedFamily, setSelectedFamily] = useState(null);
-  const [mode, setMode] = useState('create');
+  const [selectedFamily, setSelectedFamily] = useState<FamilyMember | null>(null);
+  const [mode, setMode] = useState<'create' | 'edit'>('create');
 
   const { user } = useAuthStore();
 
   useEffect(() => {
-    if (user?.employeeId) {
-      fetchFamilyMembers();
-    }
+    if (user?.employeeId) fetchFamilyMembers();
   }, [user?.employeeId]);
 
   const fetchFamilyMembers = async () => {
@@ -72,11 +70,10 @@ export default function MyFamilyMembersPage() {
     return familyMembers.filter(f => {
       const matchesSearch =
         f.name?.toLowerCase().includes(text) ||
-        f.phone?.toLowerCase().includes(text);
-
+        f.phone?.toLowerCase().includes(text) ||
+        f.address?.toLowerCase().includes(text);
       const matchesRelationship =
         filterRelationship === 'all' || f.relationship === filterRelationship;
-
       return matchesSearch && matchesRelationship;
     });
   }, [familyMembers, searchTerm, filterRelationship]);
@@ -87,7 +84,6 @@ export default function MyFamilyMembersPage() {
   }, [filteredFamilies, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(filteredFamilies.length / itemsPerPage);
-
   const canAddMore = familyMembers.length < MAX_FAMILY_MEMBERS;
 
   const handleAdd = () => {
@@ -96,13 +92,13 @@ export default function MyFamilyMembersPage() {
     setIsFamilyModalOpen(true);
   };
 
-  const handleEdit = (member) => {
+  const handleEdit = (member: FamilyMember) => {
     setMode('edit');
     setSelectedFamily(member);
     setIsFamilyModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa thông tin thân nhân này?')) return;
     try {
       await familyApi.delete(id);
@@ -113,15 +109,15 @@ export default function MyFamilyMembersPage() {
     }
   };
 
-  const getRelationshipBadge = (relationship) => {
-    const map = {
+  const getRelationshipBadge = (relationship: string) => {
+    const map: Record<string, string> = {
       Cha: 'bg-blue-100 text-blue-800',
       Mẹ: 'bg-pink-100 text-pink-800',
       Vợ: 'bg-purple-100 text-purple-800',
       Chồng: 'bg-purple-100 text-purple-800',
       Con: 'bg-green-100 text-green-800',
     };
-    return <Badge className={map[relationship] || 'bg-gray-100'}>{relationship}</Badge>;
+    return <Badge className={map[relationship] || 'bg-gray-100 text-gray-800'}>{relationship}</Badge>;
   };
 
   return (
@@ -130,9 +126,7 @@ export default function MyFamilyMembersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Thông tin thân nhân của tôi</h1>
-          <p className="text-muted-foreground">
-            Quản lý thông tin thân nhân của bạn
-          </p>
+          <p className="text-muted-foreground">Quản lý thông tin thân nhân của bạn</p>
         </div>
       </div>
 
@@ -166,17 +160,13 @@ export default function MyFamilyMembersPage() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Tìm theo tên thân nhân hoặc SĐT..."
+              placeholder="Tìm theo tên, SĐT, địa chỉ..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
-
-          <Select
-            value={filterRelationship}
-            onValueChange={setFilterRelationship}
-          >
+          <Select value={filterRelationship} onValueChange={setFilterRelationship}>
             <SelectTrigger className="w-full md:w-48">
               <SelectValue placeholder="Quan hệ" />
             </SelectTrigger>
@@ -187,14 +177,13 @@ export default function MyFamilyMembersPage() {
               ))}
             </SelectContent>
           </Select>
-
-          <Button 
+          <Button
             onClick={handleAdd}
             disabled={!canAddMore}
             title={!canAddMore ? `Đã đạt giới hạn ${MAX_FAMILY_MEMBERS} thành viên` : ''}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Thêm quan hệ gia đình
+            Thêm thân nhân
           </Button>
         </div>
       </Card>
@@ -208,14 +197,16 @@ export default function MyFamilyMembersPage() {
                 <TableHead className="text-center w-16">STT</TableHead>
                 <TableHead>Tên thân nhân</TableHead>
                 <TableHead>Quan hệ</TableHead>
-                <TableHead>Số điện thoại</TableHead>
+                <TableHead>Ngày sinh</TableHead>
+                <TableHead>SĐT</TableHead>
+                <TableHead>Địa chỉ</TableHead>
                 <TableHead className="text-center w-32">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       <span className="text-sm">Đang tải...</span>
@@ -224,7 +215,7 @@ export default function MyFamilyMembersPage() {
                 </TableRow>
               ) : paginatedFamilies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Users className="h-8 w-8" />
                       <p>Chưa có thông tin thân nhân</p>
@@ -235,34 +226,21 @@ export default function MyFamilyMembersPage() {
               ) : (
                 paginatedFamilies.map((f, index) => {
                   const stt = (currentPage - 1) * itemsPerPage + index + 1;
-
                   return (
                     <TableRow key={f.id}>
-                      <TableCell className="text-center text-muted-foreground">
-                        {stt}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm font-medium">{f.name}</span>
-                      </TableCell>
-                      <TableCell>
-                        {getRelationshipBadge(f.relationship)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{f.phone || '-'}</span>
-                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">{stt}</TableCell>
+                      <TableCell className="font-medium text-sm">{f.name}</TableCell>
+                      <TableCell>{getRelationshipBadge(f.relationship)}</TableCell>
+                      <TableCell className="text-sm">{f.birthday || '-'}</TableCell>
+                      <TableCell className="text-sm">{f.phone || '-'}</TableCell>
+                      <TableCell className="text-sm max-w-[200px] truncate">{f.address || '-'}</TableCell>
                       <TableCell>
                         <div className="flex gap-1 justify-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(f)}
-                            title="Sửa"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(f)} title="Sửa">
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="ghost" size="sm"
                             className="text-destructive"
                             onClick={() => handleDelete(f.id)}
                             title="Xóa"
@@ -288,14 +266,9 @@ export default function MyFamilyMembersPage() {
               <span className="text-sm text-muted-foreground">Hiển thị</span>
               <Select
                 value={itemsPerPage.toString()}
-                onValueChange={(v) => {
-                  setItemsPerPage(Number(v));
-                  setCurrentPage(1);
-                }}
+                onValueChange={v => { setItemsPerPage(Number(v)); setCurrentPage(1); }}
               >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="10">10</SelectItem>
                   <SelectItem value="20">20</SelectItem>
@@ -304,45 +277,12 @@ export default function MyFamilyMembersPage() {
               </Select>
               <span className="text-sm text-muted-foreground">mục</span>
             </div>
-
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-              >
-                Đầu
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                Trước
-              </Button>
-
-              <span className="px-3 text-sm">
-                Trang {currentPage} / {totalPages}
-              </span>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Sau
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-              >
-                Cuối
-              </Button>
+              <Button size="sm" variant="outline" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>Đầu</Button>
+              <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Trước</Button>
+              <span className="px-3 text-sm">Trang {currentPage} / {totalPages}</span>
+              <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Sau</Button>
+              <Button size="sm" variant="outline" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>Cuối</Button>
             </div>
           </div>
         </Card>

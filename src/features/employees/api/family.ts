@@ -3,7 +3,7 @@ import axios from "axios";
 import type { AxiosRequestConfig } from "axios";
 
 const apiClient = axios.create({
-  baseURL: "https://103.112.211.148:1234",
+  baseURL: "https://118.70.151.69:1234",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -153,6 +153,16 @@ export default apiClient;
 
 
 export const familyApi = {
+      getAll: async () => {
+        try {
+            const response = await api.get("/family");
+            return response.data;
+        } catch (error) {
+            console.error("Lỗi khi lấy danh sách quan hệ gia đình:", error);
+            throw error;
+        }
+    },
+
     getByEmployeeId: async (employeeId) => {
         try {
             const response = await api.get(`/family/employee/${employeeId}`);
@@ -207,3 +217,22 @@ export const familyApi = {
         }
     },
 };
+
+export interface FamilyMember {
+    id: string;
+    name: string;
+    relationship: string;
+    birthday: string;
+    phone: string;
+    address: string;
+    employeeId: number;
+}
+
+export interface FamilyPayload {
+    name: string;
+    relationship: string;
+    birthday?: string;
+    phone?: string;
+    address?: string;
+    employeeId: number;
+}
