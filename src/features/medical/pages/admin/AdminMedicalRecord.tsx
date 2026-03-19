@@ -1,530 +1,494 @@
-// pages/hr/medical/MedicalHRPage.tsx
-
-import { useState, useEffect } from 'react';
-import { Card } from '@/shared/components/ui/card';
-import { Input } from '@/shared/components/ui/input';
+import { useState, useMemo } from "react";
+import { Layout } from "@/components/Layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/shared/components/ui/select';
-import { Search, Eye, ChevronLeft, ChevronRight, Activity, Plus, Edit, AlertCircle } from 'lucide-react';
-import { Badge } from '@/shared/components/ui/badge';
-import { Button } from '@/shared/components/ui/button/Button2';
+  Table, TableHeader, TableRow, TableHead, TableBody, TableCell,
+} from "@/components/ui/table";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/shared/components/tables/table';
-import { mockMedicalProfiles, type MedicalProfile } from '../../../../mock/medicalProfile';
-import MedicalDetailModal from '../../components/MedicalDetailModal';
-import MedicalFormModal from '../../components/MedicalFormModal';
-import { useAuthStore } from '@/features/employees/hooks/useAuth';
-import { ehrApi } from '@/features/employees/api/ehrApi';
-import { toast } from '@/shared/hooks/use-toast';
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus, Upload, Send, Check, X, Eye, Download, FileText, Search, Filter,
+  ClipboardList, ShieldCheck, User, Trash2, Edit,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  medicalFieldGroups, type MedicalFieldDef,
+} from "@/features/medical/data/medicalFields";
+import {
+  mockHealthRecords, type HealthCheckupRecord, type HealthCheckupStatus,
+} from "@/features/medical/data/mockHealthRecords";
 
-export default function MedicalHRPage() {
-  const { user } = useAuthStore();
-  const isAdmin = user?.roles === 'ADMIN';
+// ---- Helpers ----
+const statusConfig: Record<HealthCheckupStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  Draft: { label: "Bản nháp", variant: "secondary" },
+  Submitted: { label: "Chờ duyệt", variant: "default" },
+  Approved: { label: "Đã duyệt", variant: "outline" },
+  Rejected: { label: "Từ chối", variant: "destructive" },
+};
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [healthFilter, setHealthFilter] = useState<string>('ALL');
-  const [departmentFilter, setDepartmentFilter] = useState<string>('ALL');
-  const [allergyFilter, setAllergyFilter] = useState<string>('ALL');
-  const [profiles, setProfiles] = useState<MedicalProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
+function isExamined(value: any): boolean {
+  return value !== null && value !== undefined && value !== "";
+}
 
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
-  
-  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState<MedicalProfile | null>(null);
+function StatusBadge({ status }: { status: HealthCheckupStatus }) {
+  const cfg = statusConfig[status];
+  return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
+}
 
-  useEffect(() => {
-    fetchProfiles();
-  }, [page, pageSize, searchTerm, healthFilter, departmentFilter, allergyFilter, refreshKey]);
-
-  const fetchProfiles = async () => {
-    setIsLoading(true);
-    try {
-      let filtered: any[] = [];
-
-      // Nếu là admin, sử dụng mock data (vì API chưa có)
-      if (isAdmin) {
-        filtered = [...mockMedicalProfiles];
-      } else {
-        // Nếu không phải admin, gọi API để lấy hồ sơ của user hiện tại
-        if (user?.employeeId) {
-          try {
-            const response = await ehrApi.profile.getByEmployeeId(user.employeeId);
-            // Chuyển đổi API response thành format giống mock data
-            if (response.data) {
-              filtered = [response.data];
-            }
-          } catch (error) {
-            console.error('Lỗi khi lấy dữ liệu hồ sơ y tế:', error);
-            toast({
-              title: 'Lỗi',
-              description: 'Không thể tải hồ sơ y tế',
-            });
-            filtered = [];
-          }
-        }
-      }
-
-      // Áp dụng các filter
-      if (healthFilter !== 'ALL') {
-        filtered = filtered.filter(p => p.healthClassification === healthFilter);
-      }
-
-      if (departmentFilter !== 'ALL') {
-        filtered = filtered.filter(p => p.departmentName === departmentFilter);
-      }
-
-      if (allergyFilter !== 'ALL') {
-        if (allergyFilter === 'HAS_ALLERGY') {
-          filtered = filtered.filter(p => p.allergy && p.allergy !== 'Không');
-        } else if (allergyFilter === 'NO_ALLERGY') {
-          filtered = filtered.filter(p => !p.allergy || p.allergy === 'Không');
-        }
-      }
-
-      if (searchTerm) {
-        filtered = filtered.filter(p =>
-          p.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.bloodType?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-
-      // Sort by last check date (newest first)
-      filtered.sort((a, b) => {
-        if (!a.lastCheckDate) return 1;
-        if (!b.lastCheckDate) return -1;
-        return new Date(b.lastCheckDate).getTime() - new Date(a.lastCheckDate).getTime();
-      });
-
-      setTotalItems(filtered.length);
-
-      const start = page * pageSize;
-      const end = start + pageSize;
-      setProfiles(filtered.slice(start, end));
-    } catch (error) {
-      console.error('Lỗi khi tải dữ liệu y tế:', error);
-      toast({
-        title: 'Lỗi',
-        description: 'Không thể tải dữ liệu y tế',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOpenDetailModal = (id: string) => {
-    setSelectedProfileId(id);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setSelectedProfileId(null);
-  };
-
-  const handleOpenFormModal = (profile?: MedicalProfile) => {
-    setSelectedProfile(profile || null);
-    setIsFormModalOpen(true);
-  };
-
-  const handleCloseFormModal = () => {
-    setIsFormModalOpen(false);
-    setSelectedProfile(null);
-  };
-
-  const handleFormSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseFormModal();
-  };
-
-  const getHealthBadge = (classification: string) => {
-    const healthConfig = {
-      'I': { className: 'bg-green-100 text-green-800' },
-      'II': { className: 'bg-blue-100 text-blue-800' },
-      'III': { className: 'bg-yellow-100 text-yellow-800' },
-      'IV': { className: 'bg-orange-100 text-orange-800' },
-      'V': { className: 'bg-red-100 text-red-800' },
-    };
-
-    const config = healthConfig[classification];
-    if (!config) return null;
-
+// ---- Field Renderer ----
+function FieldInput({ field, value, onChange, readOnly }: {
+  field: MedicalFieldDef; value: any; onChange: (v: any) => void; readOnly?: boolean;
+}) {
+  if (field.type === "checkbox") {
     return (
-      <Badge className={config.className}>
-        {classification}
-      </Badge>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isExamined(value)}
+          onChange={(e) => onChange(e.target.checked ? "x" : null)}
+          disabled={readOnly}
+          className="h-4 w-4 rounded border-input"
+        />
+        <span className="text-sm">{field.key}</span>
+      </label>
     );
-  };
-
-  const calculateBMI = (height: number, weight: number) => {
-    if (!height || !weight) return null;
-    const heightInMeters = height / 100;
-    const bmi = weight / (heightInMeters * heightInMeters);
-    return bmi.toFixed(1);
-  };
-
-  const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5) return { label: 'Gầy', color: 'text-blue-600' };
-    if (bmi < 25) return { label: 'Bình thường', color: 'text-green-600' };
-    if (bmi < 30) return { label: 'Thừa cân', color: 'text-yellow-600' };
-    return { label: 'Béo phì', color: 'text-red-600' };
-  };
-
-  // Calculate statistics - chỉ dùng mock data cho admin
-  const stats = isAdmin ? {
-    total: mockMedicalProfiles.length,
-    healthyClass1: mockMedicalProfiles.filter(p => p.healthClassification === 'Loại I').length,
-    healthyClass2: mockMedicalProfiles.filter(p => p.healthClassification === 'Loại II').length,
-    withAllergies: mockMedicalProfiles.filter(p => p.allergy && p.allergy !== 'Không').length,
-    withChronicDisease: mockMedicalProfiles.filter(p => p.chronicDisease && p.chronicDisease !== 'Không').length,
-    withOccupationalDisease: mockMedicalProfiles.filter(p => p.occupationalDisease && p.occupationalDisease !== 'Không').length,
-  } : {
-    total: profiles.length,
-    healthyClass1: profiles.filter(p => p.healthClassification === 'Loại I').length,
-    healthyClass2: profiles.filter(p => p.healthClassification === 'Loại II').length,
-    withAllergies: profiles.filter(p => p.allergy && p.allergy !== 'Không').length,
-    withChronicDisease: profiles.filter(p => p.chronicDisease && p.chronicDisease !== 'Không').length,
-    withOccupationalDisease: profiles.filter(p => p.occupationalDisease && p.occupationalDisease !== 'Không').length,
-  };
-
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = page * pageSize + 1;
-  const endIndex = Math.min((page + 1) * pageSize, totalItems);
-
-  const departments = isAdmin 
-    ? Array.from(new Set(mockMedicalProfiles.map(p => p.departmentName)))
-    : Array.from(new Set(profiles.map(p => p.departmentName)));
-  
-  const healthClassifications = ['Loại I', 'Loại II', 'Loại III', 'Loại IV', 'Loại V'];
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">
-            {isAdmin ? 'Quản lý hồ sơ y tế' : 'Hồ sơ y tế của tôi'}
-          </h1>
-          <p className="text-muted-foreground">
-            {isAdmin 
-              ? 'Quản lý và theo dõi sức khỏe của tất cả nhân viên'
-              : 'Xem và cập nhật hồ sơ sức khỏe của bạn'
-            }
-          </p>
-        </div>
-        {isAdmin && (
-          <Button onClick={() => handleOpenFormModal()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm hồ sơ y tế
-          </Button>
-        )}
-      </div>
-
-      {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={isAdmin 
-                ? 'Tìm kiếm theo tên nhân viên, mã NV hoặc nhóm máu'
-                : 'Tìm kiếm theo tên'
-              }
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {isAdmin && (
-            <>
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Phòng ban" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả phòng ban</SelectItem>
-                  {departments.map(dept => (
-                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={healthFilter} onValueChange={setHealthFilter}>
-                <SelectTrigger className="w-full md:w-[150px]">
-                  <SelectValue placeholder="Phân loại" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả phân loại</SelectItem>
-                  {healthClassifications.map(hc => (
-                    <SelectItem key={hc} value={hc}>{hc}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={allergyFilter} onValueChange={setAllergyFilter}>
-                <SelectTrigger className="w-full md:w-[150px]">
-                  <SelectValue placeholder="Dị ứng" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ALL">Tất cả</SelectItem>
-                  <SelectItem value="HAS_ALLERGY">Có dị ứng</SelectItem>
-                  <SelectItem value="NO_ALLERGY">Không dị ứng</SelectItem>
-                </SelectContent>
-              </Select>
-            </>
-          )}
-        </div>
-      </Card>
-
-      {/* Table */}
-      <Card>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {isAdmin && <TableHead>Nhân viên</TableHead>}
-                <TableHead>Nhóm máu</TableHead>
-                <TableHead>Chỉ số</TableHead>
-                <TableHead>BMI</TableHead>
-                <TableHead>Phân loại</TableHead>
-                <TableHead>Dị ứng</TableHead>
-                <TableHead>Khám gần nhất</TableHead>
-                <TableHead className="text-center">Thao tác</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      <span className="text-sm">Đang tải...</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : profiles.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={isAdmin ? 8 : 7} className="text-center py-8">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <Activity className="h-8 w-8" />
-                      <p>Không tìm thấy hồ sơ y tế nào</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                profiles.map((profile) => {
-                  const bmi = calculateBMI(profile.height, profile.weight);
-                  const bmiCategory = bmi ? getBMICategory(parseFloat(bmi)) : null;
-
-                  return (
-                    <TableRow key={profile.id}>
-                      {isAdmin && (
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{profile.employeeName}</p>
-                            <p className="text-sm text-muted-foreground">{profile.employeeCode}</p>
-                            <p className="text-xs text-muted-foreground">{profile.departmentName}</p>
-                          </div>
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        <Badge variant="outline" className="font-semibold">
-                          {profile.bloodType || '--'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm space-y-1">
-                          <div>
-                            <span className="text-muted-foreground">Cao:</span>{' '}
-                            <span className="font-medium">{profile.height || '--'} cm</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Nặng:</span>{' '}
-                            <span className="font-medium">{profile.weight || '--'} kg</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {bmi ? (
-                          <div className="text-sm">
-                            <div className="font-bold text-lg">{bmi}</div>
-                            <div className={`text-xs ${bmiCategory?.color}`}>
-                              {bmiCategory?.label}
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">--</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {profile.healthClassification ? (
-                          getHealthBadge(profile.healthClassification)
-                        ) : (
-                          <span className="text-muted-foreground">Chưa xác định</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {profile.allergy && profile.allergy !== 'Không' ? (
-                          <div className="flex flex-wrap gap-1 max-w-[200px]">
-                            {profile.allergy.split(',').slice(0, 2).map((item, idx) => (
-                              <Badge key={idx} variant="destructive" className="text-xs">
-                                {item.trim()}
-                              </Badge>
-                            ))}
-                            {profile.allergy.split(',').length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{profile.allergy.split(',').length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Không</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          {profile.lastCheckDate ? (
-                            <span className="font-medium">
-                              {new Date(profile.lastCheckDate).toLocaleDateString('vi-VN')}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">Chưa khám</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1 justify-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenDetailModal(profile.id)}
-                            title="Xem chi tiết"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleOpenFormModal(profile)}
-                              title="Chỉnh sửa"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Pagination */}
-        {!isLoading && profiles.length > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t">
-            <div className="text-sm text-muted-foreground">
-              Hiển thị {startIndex} - {endIndex} trong tổng số {totalItems}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => {
-                  setPageSize(Number(value));
-                  setPage(0);
-                }}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(0)}
-                  disabled={page === 0}
-                >
-                  Đầu
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p - 1)}
-                  disabled={page === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-
-                <span className="px-3 text-sm">
-                  Trang {page + 1} / {totalPages}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => p + 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(totalPages - 1)}
-                  disabled={page >= totalPages - 1}
-                >
-                  Cuối
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Detail Modal */}
-      <MedicalDetailModal
-        isOpen={isDetailModalOpen}
-        onClose={handleCloseDetailModal}
-        profileId={selectedProfileId}
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-muted-foreground">{field.key}</label>
+      <Input
+        type={field.type === "number" ? "number" : field.type === "date" ? "date" : "text"}
+        value={value ?? ""}
+        onChange={(e) => onChange(field.type === "number" ? (e.target.value ? Number(e.target.value) : null) : (e.target.value || null))}
+        readOnly={readOnly}
+        className="h-8 text-sm"
       />
+    </div>
+  );
+}
 
-      {/* Form Modal */}
-      {isAdmin && (
-        <MedicalFormModal
-          isOpen={isFormModalOpen}
-          onClose={handleCloseFormModal}
-          profile={selectedProfile}
-          onSuccess={handleFormSuccess}
-        />
+// ---- Group Renderer ----
+function FieldGroupSection({ group, data, onChange, readOnly }: {
+  group: typeof medicalFieldGroups[0]; data: Record<string, any>; onChange?: (key: string, val: any) => void; readOnly?: boolean;
+}) {
+  const checkboxFields = group.fields.filter(f => f.type === "checkbox");
+  const otherFields = group.fields.filter(f => f.type !== "checkbox");
+
+  return (
+    <div className={`rounded-lg border p-4 ${group.color}`}>
+      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <span>{group.icon}</span> {group.name}
+        <Badge variant="outline" className="ml-auto text-xs">
+          {group.fields.filter(f => isExamined(data[f.key])).length}/{group.fields.length} đã nhập
+        </Badge>
+      </h3>
+
+      {otherFields.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-3">
+          {otherFields.map((f) => (
+            <FieldInput key={f.key} field={f} value={data[f.key]} onChange={(v) => onChange?.(f.key, v)} readOnly={readOnly} />
+          ))}
+        </div>
+      )}
+
+      {checkboxFields.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 pt-2 border-t border-dashed">
+          {checkboxFields.map((f) => (
+            <FieldInput key={f.key} field={f} value={data[f.key]} onChange={(v) => onChange?.(f.key, v)} readOnly={readOnly} />
+          ))}
+        </div>
       )}
     </div>
+  );
+}
+
+// ---- Detail Modal ----
+function RecordDetailModal({ record, open, onClose }: {
+  record: HealthCheckupRecord | null; open: boolean; onClose: () => void;
+}) {
+  if (!record) return null;
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" /> Chi tiết khám sức khỏe - {record["Họ và tên"]}
+          </DialogTitle>
+          <DialogDescription>
+            Ngày khám: {record["Ngày khám"]} | Trạng thái: {statusConfig[record.status].label}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          {medicalFieldGroups.map((group) => (
+            <FieldGroupSection key={group.name} group={group} data={record} readOnly />
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---- Create/Edit Modal ----
+function RecordFormModal({ record, open, onClose, onSave }: {
+  record: HealthCheckupRecord | null; open: boolean; onClose: () => void;
+  onSave: (data: HealthCheckupRecord) => void;
+}) {
+  const [formData, setFormData] = useState<Record<string, any>>(record ? { ...record } : { id: Date.now(), status: "Draft", createdBy: "Phạm Văn D (Trưởng phòng SX)", createdAt: new Date().toISOString().slice(0, 10) });
+  const [activeGroup, setActiveGroup] = useState(0);
+
+  const handleChange = (key: string, val: any) => {
+    setFormData((prev) => ({ ...prev, [key]: val }));
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{record ? "Chỉnh sửa" : "Tạo mới"} hồ sơ khám sức khỏe</DialogTitle>
+          <DialogDescription>Điền thông tin khám sức khỏe định kỳ cho nhân viên</DialogDescription>
+        </DialogHeader>
+
+        {/* Group tabs */}
+        <div className="flex flex-wrap gap-1 mb-4">
+          {medicalFieldGroups.map((g, i) => (
+            <Button
+              key={g.name}
+              variant={activeGroup === i ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveGroup(i)}
+              className="text-xs"
+            >
+              {g.icon} {g.name}
+            </Button>
+          ))}
+        </div>
+
+        <FieldGroupSection
+          group={medicalFieldGroups[activeGroup]}
+          data={formData}
+          onChange={handleChange}
+        />
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>Hủy</Button>
+          <Button onClick={() => onSave(formData as HealthCheckupRecord)}>
+            {record ? "Cập nhật" : "Lưu bản nháp"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---- Export Word Mock ----
+function handleExportWord(record: HealthCheckupRecord) {
+  const lines = [
+    "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM",
+    "Độc lập - Tự do - Hạnh phúc",
+    "---",
+    "",
+    "PHIẾU KẾT QUẢ KHÁM SỨC KHỎE ĐỊNH KỲ",
+    "",
+    `Họ và tên: ${record["Họ và tên"] || ""}`,
+    `Năm sinh: ${record["Năm sinh"] || ""}`,
+    `Chức danh: ${record["Chức danh"] || ""}`,
+    `Đơn vị: ${record["Đơn vị"] || ""}`,
+    `Ngày khám: ${record["Ngày khám"] || ""}`,
+    "",
+    "--- THÔNG TIN SỨC KHỎE ---",
+    `Chiều cao: ${record["Chiều cao"] || ""} cm`,
+    `Cân nặng: ${record["Cân nặng"] || ""} kg`,
+    `Huyết áp: ${record["Huyết áp"] || ""}`,
+    `Nhóm máu: ${record["Nhóm máu"] || ""}`,
+    "",
+    "--- KẾT LUẬN ---",
+    `Kết quả: ${record["Kết quả CLS"] || ""}`,
+    `Kết luận: ${record["Mô tả Kết luận"] || ""}`,
+    `Hướng giải quyết: ${record["Hướng giải quyết"] || ""}`,
+    `Người kết luận: ${record["Người kết luận"] || ""}`,
+  ];
+
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `KhamSucKhoe_${record["Họ và tên"]?.replace(/\s/g, "_")}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ======================== MAIN PAGE ========================
+export default function HealthManagement() {
+  const { toast } = useToast();
+  const [records, setRecords] = useState<HealthCheckupRecord[]>(mockHealthRecords);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMonth, setFilterMonth] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  // Modals
+  const [detailRecord, setDetailRecord] = useState<HealthCheckupRecord | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [editRecord, setEditRecord] = useState<HealthCheckupRecord | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  // Filtered records
+  const filtered = useMemo(() => {
+    return records.filter((r) => {
+      const matchSearch = !searchTerm || r["Họ và tên"]?.toLowerCase().includes(searchTerm.toLowerCase()) || r["Mã BHXH"]?.includes(searchTerm);
+      const matchMonth = filterMonth === "all" || r["Ngày khám"]?.startsWith(filterMonth);
+      const matchStatus = filterStatus === "all" || r.status === filterStatus;
+      return matchSearch && matchMonth && matchStatus;
+    });
+  }, [records, searchTerm, filterMonth, filterStatus]);
+
+  // Stats
+  const stats = useMemo(() => ({
+    total: records.length,
+    draft: records.filter(r => r.status === "Draft").length,
+    submitted: records.filter(r => r.status === "Submitted").length,
+    approved: records.filter(r => r.status === "Approved").length,
+    rejected: records.filter(r => r.status === "Rejected").length,
+  }), [records]);
+
+  const handleSave = (data: HealthCheckupRecord) => {
+    setRecords((prev) => {
+      const idx = prev.findIndex(r => r.id === data.id);
+      if (idx >= 0) return prev.map((r, i) => i === idx ? data : r);
+      return [...prev, data];
+    });
+    setShowForm(false);
+    setEditRecord(null);
+    toast({ title: "Đã lưu hồ sơ khám sức khỏe" });
+  };
+
+  const handleSubmit = (id: number) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, status: "Submitted" as HealthCheckupStatus } : r));
+    toast({ title: "Đã gửi hồ sơ cho Admin duyệt" });
+  };
+
+  const handleApprove = (id: number) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, status: "Approved" as HealthCheckupStatus } : r));
+    toast({ title: "Đã duyệt hồ sơ" });
+  };
+
+  const handleReject = (id: number) => {
+    setRecords(prev => prev.map(r => r.id === id ? { ...r, status: "Rejected" as HealthCheckupStatus } : r));
+    toast({ title: "Đã từ chối hồ sơ" });
+  };
+
+  const handleDelete = (id: number) => {
+    setRecords(prev => prev.filter(r => r.id !== id));
+    toast({ title: "Đã xóa hồ sơ" });
+  };
+
+  const handleImportExcel = () => {
+    toast({ title: "Import Excel", description: "Chức năng import sẽ đọc file Excel 230 cột và tạo record tương ứng (mock)" });
+    // Mock: add a new record
+    const newRec: HealthCheckupRecord = {
+      id: Date.now(),
+      status: "Draft",
+      createdBy: "Import Excel",
+      createdAt: new Date().toISOString().slice(0, 10),
+      "Mã BHXH": "9999999999",
+      "Họ và tên": "Nguyễn Import",
+      "Năm sinh": 1993,
+      "Chức danh": "Công nhân",
+      "Đơn vị": "Công ty CP ABC",
+      "Ngày khám": "2026-03-15",
+      "Chiều cao": 165,
+      "Cân nặng": 60,
+    };
+    setRecords(prev => [...prev, newRec]);
+  };
+
+  // ---- Render records table ----
+  const renderTable = (items: HealthCheckupRecord[], showActions: 'manager' | 'admin' | 'employee') => (
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10">#</TableHead>
+            <TableHead>Họ và tên</TableHead>
+            <TableHead>Mã BHXH</TableHead>
+            <TableHead>Ngày khám</TableHead>
+            <TableHead>Đơn vị</TableHead>
+            <TableHead>PL Sức khỏe</TableHead>
+            <TableHead>Trạng thái</TableHead>
+            <TableHead className="text-right">Hành động</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                Không có hồ sơ nào
+              </TableCell>
+            </TableRow>
+          )}
+          {items.map((r, i) => (
+            <TableRow key={r.id}>
+              <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+              <TableCell className="font-medium">{r["Họ và tên"]}</TableCell>
+              <TableCell>{r["Mã BHXH"]}</TableCell>
+              <TableCell>{r["Ngày khám"]}</TableCell>
+              <TableCell className="text-sm">{r["Công trường/ Phân xưởng/ Phòng ban"]}</TableCell>
+              <TableCell>
+                {r["PL Sức khỏe"] && <Badge variant="outline">{r["PL Sức khỏe"]}</Badge>}
+              </TableCell>
+              <TableCell><StatusBadge status={r.status} /></TableCell>
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                  <Button variant="ghost" size="sm" onClick={() => { setDetailRecord(r); setShowDetail(true); }}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => handleExportWord(r)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+
+                  {showActions === 'manager' && (
+                    <>
+                      {r.status === "Draft" && (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => { setEditRecord(r); setShowForm(true); }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleSubmit(r.id)}>
+                            <Send className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(r.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {showActions === 'admin' && r.status === "Submitted" && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => handleApprove(r.id)}>
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleReject(r.id)}>
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+
+  return (
+    <>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Quản lý khám sức khỏe định kỳ</h1>
+          <p className="text-muted-foreground mt-1">
+            Quản lý quy trình khám sức khỏe định kỳ nhân viên với {medicalFieldGroups.reduce((s, g) => s + g.fields.length, 0)} trường dữ liệu
+          </p>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm theo tên, mã BHXH..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Tháng khám" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả tháng</SelectItem>
+              <SelectItem value="2026-01">01/2026</SelectItem>
+              <SelectItem value="2026-02">02/2026</SelectItem>
+              <SelectItem value="2026-03">03/2026</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              <SelectItem value="Draft">Bản nháp</SelectItem>
+              <SelectItem value="Submitted">Chờ duyệt</SelectItem>
+              <SelectItem value="Approved">Đã duyệt</SelectItem>
+              <SelectItem value="Rejected">Từ chối</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="manager">
+          <TabsList className="w-full justify-start">
+            <TabsTrigger value="manager" className="gap-1">
+              <ClipboardList className="h-4 w-4" /> Trưởng phòng
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="gap-1">
+              <ShieldCheck className="h-4 w-4" /> Admin duyệt
+            </TabsTrigger>
+            <TabsTrigger value="employee" className="gap-1">
+              <User className="h-4 w-4" /> Nhân viên xem
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Manager Tab */}
+          <TabsContent value="manager" className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Button onClick={() => { setEditRecord(null); setShowForm(true); }}>
+                <Plus className="h-4 w-4 mr-1" /> Tạo hồ sơ mới
+              </Button>
+              <Button variant="outline" onClick={handleImportExcel}>
+                <Upload className="h-4 w-4 mr-1" /> Import Excel
+              </Button>
+            </div>
+            {renderTable(filtered, 'manager')}
+          </TabsContent>
+
+          {/* Admin Tab */}
+          <TabsContent value="admin" className="space-y-4">
+            <Card className="p-4">
+              <p className="text-sm text-muted-foreground">
+                Có <span className="font-semibold text-blue-600">{stats.submitted}</span> hồ sơ đang chờ duyệt
+              </p>
+            </Card>
+            {renderTable(filtered, 'admin')}
+          </TabsContent>
+
+          {/* Employee Tab */}
+          <TabsContent value="employee" className="space-y-4">
+            <Card className="p-4">
+              <p className="text-sm text-muted-foreground">
+                Nhân viên chỉ xem được hồ sơ đã duyệt của mình
+              </p>
+            </Card>
+            {renderTable(filtered.filter(r => r.status === "Approved"), 'employee')}
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Modals */}
+      <RecordDetailModal record={detailRecord} open={showDetail} onClose={() => setShowDetail(false)} />
+      <RecordFormModal record={editRecord} open={showForm} onClose={() => { setShowForm(false); setEditRecord(null); }} onSave={handleSave} />
+    </>
   );
 }
