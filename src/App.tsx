@@ -231,6 +231,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/employees/health"
+            element={
+              <ProtectedRoute>
+                <HealthManagement />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/work-schedule"
