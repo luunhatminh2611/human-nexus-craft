@@ -32,6 +32,7 @@ import DepartmentList from "./pages/admin/DepartmentList";
 import AdminCatalog from "./pages/admin/Catalog";
 import EmployeeCareerPath from "./pages/employee/CareerPath";
 import AdminMedicalRecords from "./pages/admin/AdminMedicalRecord";
+import HealthManagement from "./pages/admin/HealthManagement";
 import AdminTransferManagement from "./pages/admin/TransferManagement";
 import WorkScheduleManagement from "./pages/admin/WorkSchedule";
 import LeaveRequestPage from "./pages/admin/LeaveRequest";
