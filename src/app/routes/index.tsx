@@ -35,6 +35,7 @@ import TerminationDecisionPage from '@/features/contracDecision/pages/Terminatio
 import FamilyManagementPage from '@/features/fanilyVisit/pages/FamilyManagementPage';
 import MedicalHRPage from '@/features/medical/pages/admin/AdminMedicalRecord';
 import RecruitmentPage from '@/features/recruitment/pages/RecruitmentPage';
+import PPEDistributionPage from '@/features/ppe-distribution/pages/PPEDistributionPage';
 import PermissionManagementUI from '@/features/permission/pages/Permission';
 import MyFamilyMembersPage from '@/features/fanilyVisit/pages/EmployeeFamilyPage';
 
