@@ -179,6 +179,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
       ]
     },
     { label: 'Bảo hộ lao động', path: '/admin/safety-dashboard' },
+    { label: 'Cấp phát BHLĐ', path: '/admin/ppe-distribution' },
     { label: 'Báo cáo', path: '/admin/reports' },
     {
       label: 'Hệ thống',

@@ -175,6 +175,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.MEDICAL_PROFILE.slice(1), element: <MedicalHRPage /> },
       { path: ROUTES.RECRUITMENT_MANAGEMENT.slice(1), element: <RecruitmentPage /> },
       { path: ROUTES.PERMISSION_MANAGEMEN.slice(1), element: <PermissionManagementUI /> },
+      { path: ROUTES.PPE_DISTRIBUTION.slice(1), element: <PPEDistributionPage /> },
       // Catch-all
       { path: ROUTES.NOT_FOUND, element: <NotFound /> },
     ]
