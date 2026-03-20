@@ -73,6 +73,7 @@ export const ROUTES = {
   TERMINATE_DECISION_MANAGEMENT: '/contract-unsign',
   MEDICAL_PROFILE:'/admin/employees/health',
   RECRUITMENT_MANAGEMENT: '/admin/recruitment',
+  PPE_DISTRIBUTION: '/admin/ppe-distribution',
   PERMISSION_MANAGEMEN: '/admin/permission',
   ROOT: '/',
   NOT_FOUND: '*',
