@@ -19,33 +19,30 @@ import { Input } from '@/shared/components/ui/input';
 import { Label } from '@/shared/components/ui/label';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Checkbox } from '@/shared/components/ui/checkbox';
-import { Plus, Pencil, Trash2, Briefcase, Search, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react';
-import { jobTitleApi } from '../api/categoriesApi';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, Download, Upload, Edit } from 'lucide-react';
+import { positionApi } from '../api/categoriesApi';
 import { toast } from 'sonner';
-import BulkAddPositionModal from './modal/BulkAddJobTittleModal';
-import BulkEditPositionModal from './modal/BulkEditJobTitleModal';
+import BulkAddChucVuModal from './modal/BulkAddPositionModal';
+import BulkEditChucVuModal from './modal/BulkEditPositionModal';
 
-interface Position {
+
+interface ChucVu {
   id: number;
   name: string;
   code?: string;
   description?: string;
 }
 
-export default function PositionsTab() {
-  const [positions, setPositions] = useState<Position[]>([]);
+export default function ChucVuTab() {
+  const [items, setItems] = useState<ChucVu[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Position | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ChucVu | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    description: '',
-  });
+  const [formData, setFormData] = useState({ name: '', code: '', description: '' });
 
   // Bulk operations
   const [isBulkAddOpen, setIsBulkAddOpen] = useState(false);
@@ -53,26 +50,23 @@ export default function PositionsTab() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
-  useEffect(() => {
-    fetchPositions();
-  }, []);
+  useEffect(() => { fetchItems(); }, []);
 
-  const fetchPositions = async () => {
+  const fetchItems = async () => {
     try {
       setLoading(true);
-      const data = await jobTitleApi.getAll();
-      setPositions(data || []);
+      const data = await positionApi.getAll();
+      setItems(data || []);
     } catch (error) {
-      toast.error('Không thể tải danh sách chức danh');
+      toast.error('Không thể tải danh sách chức vụ');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Lọc và phân trang
-  const filteredPositions = useMemo(() => {
-    return positions.filter(item => {
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
       const search = searchTerm.toLowerCase();
       return (
         item.name.toLowerCase().includes(search) ||
@@ -80,28 +74,21 @@ export default function PositionsTab() {
         (item.description && item.description.toLowerCase().includes(search))
       );
     });
-  }, [positions, searchTerm]);
+  }, [items, searchTerm]);
 
-  const totalPages = Math.ceil(filteredPositions.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
 
-  const paginatedPositions = useMemo(() => {
+  const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredPositions.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredPositions, currentPage, itemsPerPage]);
+    return filteredItems.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredItems, currentPage, itemsPerPage]);
 
-  // Reset về trang 1 khi search
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
 
   // Checkbox handlers
   const handleSelectAll = (checked: boolean) => {
     setSelectAll(checked);
-    if (checked) {
-      setSelectedIds(paginatedPositions.map(item => item.id));
-    } else {
-      setSelectedIds([]);
-    }
+    setSelectedIds(checked ? paginatedItems.map(item => item.id) : []);
   };
 
   const handleSelectOne = (id: number, checked: boolean) => {
@@ -113,36 +100,22 @@ export default function PositionsTab() {
     }
   };
 
-  // Sync selectAll state with selectedIds
   useEffect(() => {
-    if (selectedIds.length === paginatedPositions.length && paginatedPositions.length > 0) {
-      setSelectAll(true);
-    } else {
-      setSelectAll(false);
-    }
-  }, [selectedIds, paginatedPositions]);
+    setSelectAll(selectedIds.length === paginatedItems.length && paginatedItems.length > 0);
+  }, [selectedIds, paginatedItems]);
 
-  // Clear selection when changing page or search
   useEffect(() => {
     setSelectedIds([]);
     setSelectAll(false);
   }, [currentPage, searchTerm]);
 
-  const handleOpenDialog = (item?: Position) => {
+  const handleOpenDialog = (item?: ChucVu) => {
     if (item) {
       setSelectedItem(item);
-      setFormData({
-        name: item.name,
-        code: item.code || '',
-        description: item.description || '',
-      });
+      setFormData({ name: item.name, code: item.code || '', description: item.description || '' });
     } else {
       setSelectedItem(null);
-      setFormData({
-        name: '',
-        code: '',
-        description: '',
-      });
+      setFormData({ name: '', code: '', description: '' });
     }
     setIsDialogOpen(true);
   };
@@ -150,30 +123,25 @@ export default function PositionsTab() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setSelectedItem(null);
-    setFormData({
-      name: '',
-      code: '',
-      description: '',
-    });
+    setFormData({ name: '', code: '', description: '' });
   };
 
   const handleSubmit = async () => {
     if (!formData.name) {
-      toast.error('Vui lòng nhập tên chức danh');
+      toast.error('Vui lòng nhập tên chức vụ');
       return;
     }
-
     try {
       setLoading(true);
       if (selectedItem) {
-        await jobTitleApi.update(selectedItem.id, formData);
-        toast.success('Cập nhật chức danh thành công');
+        await positionApi.update(selectedItem.id, formData);
+        toast.success('Cập nhật chức vụ thành công');
       } else {
-        await jobTitleApi.create(formData);
-        toast.success('Thêm chức danh thành công');
+        await positionApi.create(formData);
+        toast.success('Thêm chức vụ thành công');
       }
       handleCloseDialog();
-      fetchPositions();
+      fetchItems();
     } catch (error) {
       toast.error(selectedItem ? 'Cập nhật thất bại' : 'Thêm mới thất bại');
       console.error(error);
@@ -184,29 +152,24 @@ export default function PositionsTab() {
 
   const handleDelete = async () => {
     if (!selectedItem) return;
-
     try {
       setLoading(true);
-      await jobTitleApi.delete(selectedItem.id);
-      toast.success('Xóa chức danh thành công');
+      await positionApi.delete(selectedItem.id);
+      toast.success('Xóa chức vụ thành công');
       setIsDeleteDialogOpen(false);
       setSelectedItem(null);
-      fetchPositions();
+      fetchItems();
     } catch (error) {
-      toast.error('Xóa chức danh thất bại');
+      toast.error('Xóa chức vụ thất bại');
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
   const handleBulkEdit = () => {
     if (selectedIds.length === 0) {
-      toast.error('Vui lòng chọn ít nhất một chức danh');
+      toast.error('Vui lòng chọn ít nhất một chức vụ');
       return;
     }
     setIsBulkEditOpen(true);
@@ -216,67 +179,50 @@ export default function PositionsTab() {
     setIsBulkEditOpen(false);
     setSelectedIds([]);
     setSelectAll(false);
-    fetchPositions();
+    fetchItems();
   };
 
   return (
     <div className="space-y-4 p-4">
-      <div className="grid grid-cols-6 items-center gap-4">
-        <div className="flex col-span-6 items-center gap-2">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Tìm kiếm theo mã, tên chức danh..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full"
-            />
-          </div>
-
-          <Button
-            className="shrink-0"
-            variant='outline'
-          >
-            <Upload className="mr-1 h-4 w-4" />
-            Tải lên
-          </Button>
-
-          <Button className="shrink-0" variant='outline'>
-            <Download className="mr-1 h-4 w-4" />
-            Tải xuống
-          </Button>
-
-            <Button
-              className="shrink-0"
-              variant='default'
-              onClick={handleBulkEdit}
-              disabled={selectedIds.length === 0}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Chỉnh sửa ({selectedIds.length})
-            </Button>
-
-          <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
-            <Plus className="mr-2 h-4 w-4" />
-            Thêm chức danh
-          </Button>
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Tìm kiếm theo mã, tên chức vụ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 w-full"
+          />
         </div>
+        <Button className="shrink-0" variant="outline">
+          <Upload className="mr-1 h-4 w-4" /> Tải lên
+        </Button>
+        <Button className="shrink-0" variant="outline">
+          <Download className="mr-1 h-4 w-4" /> Tải xuống
+        </Button>
+        <Button
+          className="shrink-0"
+          variant="default"
+          onClick={handleBulkEdit}
+          disabled={selectedIds.length === 0}
+        >
+          <Edit className="mr-2 h-4 w-4" /> Chỉnh sửa ({selectedIds.length})
+        </Button>
+        <Button onClick={() => setIsBulkAddOpen(true)} className="shrink-0">
+          <Plus className="mr-2 h-4 w-4" /> Thêm chức vụ
+        </Button>
       </div>
 
       <div className="border rounded-lg overflow-hidden">
         <Table>
-          <TableHeader className='bg-muted'>
+          <TableHeader className="bg-muted">
             <TableRow>
               <TableHead className="w-[50px] border">
-                <Checkbox
-                  checked={selectAll}
-                  onCheckedChange={handleSelectAll}
-                />
+                <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
               </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
-              <TableHead className="border">Mã chức danh</TableHead>
-              <TableHead className="border">Tên chức danh</TableHead>
+              <TableHead className="border">Mã chức vụ</TableHead>
+              <TableHead className="border">Tên chức vụ</TableHead>
               <TableHead className="border">Mô tả</TableHead>
               <TableHead className="text-center w-[150px] border">Thao tác</TableHead>
             </TableRow>
@@ -284,18 +230,16 @@ export default function PositionsTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
-                  Đang tải...
-                </TableCell>
+                <TableCell colSpan={6} className="text-center">Đang tải...</TableCell>
               </TableRow>
-            ) : paginatedPositions.length === 0 ? (
+            ) : paginatedItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dữ liệu'}
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedPositions.map((item, index) => (
+              paginatedItems.map((item, index) => (
                 <TableRow key={item.id}>
                   <TableCell className="border">
                     <Checkbox
@@ -311,12 +255,10 @@ export default function PositionsTab() {
                       <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
                         {item.code}
                       </span>
-                    ) : (
-                      '-'
-                    )}
+                    ) : '-'}
                   </TableCell>
                   <TableCell className="font-medium border">{item.name}</TableCell>
-                  <TableCell className='border'>{item.description || '-'}</TableCell>
+                  <TableCell className="border">{item.description || '-'}</TableCell>
                   <TableCell className="text-center border">
                     <div className="flex justify-center gap-2">
                       <Button
@@ -330,10 +272,7 @@ export default function PositionsTab() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setSelectedItem(item);
-                          setIsDeleteDialogOpen(true);
-                        }}
+                        onClick={() => { setSelectedItem(item); setIsDeleteDialogOpen(true); }}
                         className="hover:bg-red-50 hover:text-red-600"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -348,12 +287,12 @@ export default function PositionsTab() {
       </div>
 
       {/* Pagination */}
-      {filteredPositions.length > 0 && (
+      {filteredItems.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            Hiển thị {(currentPage - 1) * itemsPerPage + 1} -{' '}
-            {Math.min(currentPage * itemsPerPage, filteredPositions.length)} trong tổng số{' '}
-            {filteredPositions.length} chức danh
+            Hiển thị {(currentPage - 1) * itemsPerPage + 1} –{' '}
+            {Math.min(currentPage * itemsPerPage, filteredItems.length)} trong tổng số{' '}
+            {filteredItems.length} chức vụ
             {selectedIds.length > 0 && (
               <span className="ml-2 font-semibold text-blue-600">
                 ({selectedIds.length} được chọn)
@@ -364,36 +303,27 @@ export default function PositionsTab() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handlePageChange(currentPage - 1)}
+              onClick={() => setCurrentPage(p => p - 1)}
               disabled={currentPage === 1}
             >
-              <ChevronLeft className="h-4 w-4" />
-              Trước
+              <ChevronLeft className="h-4 w-4" /> Trước
             </Button>
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                if (
-                  page === 1 ||
-                  page === totalPages ||
-                  (page >= currentPage - 1 && page <= currentPage + 1)
-                ) {
+                if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
                   return (
                     <Button
                       key={page}
                       variant={currentPage === page ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => handlePageChange(page)}
+                      onClick={() => setCurrentPage(page)}
                       className="w-10"
                     >
                       {page}
                     </Button>
                   );
                 } else if (page === currentPage - 2 || page === currentPage + 2) {
-                  return (
-                    <span key={page} className="px-2">
-                      ...
-                    </span>
-                  );
+                  return <span key={page} className="px-2">...</span>;
                 }
                 return null;
               })}
@@ -401,11 +331,10 @@ export default function PositionsTab() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handlePageChange(currentPage + 1)}
+              onClick={() => setCurrentPage(p => p + 1)}
               disabled={currentPage === totalPages}
             >
-              Sau
-              <ChevronRight className="h-4 w-4" />
+              Sau <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -415,32 +344,24 @@ export default function PositionsTab() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
-              {selectedItem ? 'Cập nhật chức danh' : 'Thêm chức danh mới'}
-            </DialogTitle>
+            <DialogTitle>{selectedItem ? 'Cập nhật chức vụ' : 'Thêm chức vụ mới'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="code">Mã chức danh</Label>
+              <Label htmlFor="code">Mã chức vụ</Label>
               <Input
                 id="code"
                 value={formData.code}
-                onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                 placeholder="Ví dụ: GD, PGD, TP..."
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">
-                Tên chức danh <span className="text-red-500">*</span>
-              </Label>
+              <Label htmlFor="name">Tên chức vụ <span className="text-red-500">*</span></Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Ví dụ: Giám đốc, Phó giám đốc, Trưởng phòng..."
               />
             </div>
@@ -449,18 +370,14 @@ export default function PositionsTab() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Nhập mô tả chi tiết về chức danh..."
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Nhập mô tả chi tiết về chức vụ..."
                 rows={4}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>
-              Hủy
-            </Button>
+            <Button variant="outline" onClick={handleCloseDialog}>Hủy</Button>
             <Button onClick={handleSubmit} disabled={loading}>
               {loading ? 'Đang xử lý...' : selectedItem ? 'Cập nhật' : 'Thêm mới'}
             </Button>
@@ -474,17 +391,9 @@ export default function PositionsTab() {
           <DialogHeader>
             <DialogTitle>Xác nhận xóa</DialogTitle>
           </DialogHeader>
-          <p>
-            Bạn có chắc chắn muốn xóa chức danh <strong>"{selectedItem?.name}"</strong> không?
-          </p>
+          <p>Bạn có chắc chắn muốn xóa chức vụ <strong>"{selectedItem?.name}"</strong> không?</p>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsDeleteDialogOpen(false);
-                setSelectedItem(null);
-              }}
-            >
+            <Button variant="outline" onClick={() => { setIsDeleteDialogOpen(false); setSelectedItem(null); }}>
               Hủy
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={loading}>
@@ -494,20 +403,15 @@ export default function PositionsTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Add Modal */}
-      <BulkAddPositionModal
+      <BulkAddChucVuModal
         isOpen={isBulkAddOpen}
-        onClose={() => {
-          setIsBulkAddOpen(false);
-          fetchPositions();
-        }}
+        onClose={() => { setIsBulkAddOpen(false); fetchItems(); }}
       />
 
-      {/* Bulk Edit Modal */}
-      <BulkEditPositionModal
+      <BulkEditChucVuModal
         isOpen={isBulkEditOpen}
         onClose={handleCloseBulkEdit}
-        preSelectedPositionIds={selectedIds}
+        preSelectedIds={selectedIds}
       />
     </div>
   );

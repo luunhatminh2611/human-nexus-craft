@@ -220,7 +220,7 @@ const DepartmentForm = ({ form, onChange, departments = [], departmentTypes = []
   );
 };
 
-import { jobTitleApi } from "@/features/categories/api/categoriesApi";
+import { jobPositionApi, jobTitleApi, positionApi } from "@/features/categories/api/categoriesApi";
 import { degreeApi } from "@/features/categories/api/categoriesApi";
 import { specialtyApi } from "@/features/categories/api/categoriesApi";
 import { languageLevelApi } from "@/features/categories/api/categoriesApi";
@@ -240,6 +240,7 @@ import { trainingTypeApi } from "@/features/categories/api/categoriesApi";
 import { militaryRankApi } from "@/features/categories/api/categoriesApi";
 import { policyFamilyApi } from "@/features/categories/api/categoriesApi";
 import { socialInsuranceJobApi } from "@/features/categories/api/categoriesApi";
+import { partyCommitteeApi } from "@/features/categories/api/categoriesApi";
 
 export const categoryConfigs = {
   // Loại hợp đồng lao động
@@ -254,8 +255,8 @@ export const categoryConfigs = {
   // Chức vụ
   jobTitle: {
     api: jobTitleApi,
-    placeholder: "Chọn chức vụ",
-    modalTitle: "Tạo chức vụ mới",
+    placeholder: "Chọn chức danh",
+    modalTitle: "Tạo chức danh mới",
     FormComponent: CodeNameDescForm,
     defaultForm: { name: "", code: "", description: "" }
   },
@@ -267,6 +268,23 @@ export const categoryConfigs = {
     modalTitle: "Tạo loại phòng ban",
     FormComponent: CodeNameDescForm,
     defaultForm: { name: "", code: "", description: "" }
+  },
+
+  // Trong categoryConfigs, thêm:
+  position: {
+    api: positionApi,
+    placeholder: "Chọn chức vụ",
+    modalTitle: "Tạo chức vụ mới",
+    FormComponent: CodeNameDescForm,
+    defaultForm: { name: "", code: "", description: "" },
+  },
+
+  jobPosition: {
+    api: jobPositionApi,
+    placeholder: "Chọn vị trí công việc",
+    modalTitle: "Tạo vị trí công việc mới",
+    FormComponent: CodeNameForm,
+    defaultForm: { name: "", code: "" },
   },
 
   // Bậc học
@@ -299,7 +317,7 @@ export const categoryConfigs = {
   // Tỉnh/Thành phố
   provinceCity: {
     api: provinceCityApi,
-    placeholder: "Chọn tỉnh/thành",
+    placeholder: "Chọn tỉnh/thành phố",
     modalTitle: "Tạo tỉnh/thành",
     FormComponent: CodeNameForm,
     defaultForm: { name: "", code: "" }
@@ -375,7 +393,7 @@ export const categoryConfigs = {
     modalTitle: "Tạo trường đào tạo",
     FormComponent: TrainingInstitutionForm,
     defaultForm: { name: "", address: "", phone: "", email: "" },
-    
+
     // Validation đặc biệt
     validate: (form) => {
       if (!form.name?.trim()) {
@@ -432,6 +450,21 @@ export const categoryConfigs = {
     modalTitle: "Tạo công việc BHXH",
     FormComponent: CodeNameDescForm,
     defaultForm: { name: "", code: "", description: "" }
+  },
+
+  partyCommittee: {
+    api: {
+      ...partyCommitteeApi,
+      getAll: async () => {
+        const res = await partyCommitteeApi.getAll();
+        // Trả array thẳng, KHÔNG wrap { data: [...] }
+        return Array.isArray(res) ? res : res?.data ?? [];
+      }
+    },
+    placeholder: "Chọn cấp ủy",
+    modalTitle: "Tạo cấp ủy",
+    FormComponent: CodeNameForm,
+    defaultForm: { name: "", code: "" },
   },
 
   // Phòng ban (Department)

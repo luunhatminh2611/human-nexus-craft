@@ -28,6 +28,14 @@ import PolicyFamilyTab from '../../components/PolicyFamilyTab';
 import SocialInsuranceJobTab from '../../components/SocialJobTab';
 import { Button } from '@/shared/components/ui/button/Button2';
 import DepartmentTabs from '../../components/DepartmentsTab';
+import PositionTab from '../../components/PositionTab';
+import JobPositionTab from '../../components/JobPositionTab';
+import OrganizationTab from '../../components/OrganizationTab';
+import ReligionTab from '../../components/ReligionTab';
+import PartyCommitteeTab from '../../components/PartyCommitteeTab';
+import SalaryPayrollTab from '../../components/SalaryPayrollTab';
+import SalaryScaleTab from '../../components/SalaryScaleTab';
+
 
 interface Category {
   id: string;
@@ -38,38 +46,52 @@ interface Category {
 
 const categories: Category[] = [
   // Nhóm Nhân sự
-  { id: 'jobTitles', label: 'Chức vụ', component: JobTitlesTab, group: 'Nhân sự' },
+  { id: 'jobTitles', label: 'Chức danh', component: JobTitlesTab, group: 'Nhân sự' },
   { id: 'contractType', label: 'Loại hợp đồng', component: LaborContractTypeTab, group: 'Nhân sự' },
   { id: 'department', label: 'Phòng Ban', component: DepartmentTabs, group: 'Nhân sự' },
   { id: 'departmentTypes', label: 'Loại Phòng Ban', component: DepartmentTypesTab, group: 'Nhân sự' },
   { id: 'ppe', label: 'Đồ bảo hộ lao động', component: PPEItemsTab, group: 'Nhân sự' },
-  
+
   // Nhóm Thông tin cá nhân
   { id: 'nationality', label: 'Quốc tịch', component: Nationality, group: 'Thông tin cá nhân' },
   { id: 'ethnicities', label: 'Dân tộc', component: EthnicitiesTab, group: 'Thông tin cá nhân' },
   { id: 'policyFamily', label: 'Gia đình chính sách', component: PolicyFamilyTab, group: 'Thông tin cá nhân' },
   { id: 'militaryRank', label: 'Quân hàm', component: MilitaryRankTab, group: 'Thông tin cá nhân' },
-  
+
   // Nhóm Địa chỉ
   { id: 'provinces', label: 'Tỉnh/Thành Phố', component: ProvincesTab, group: 'Địa chỉ' },
   { id: 'wards', label: 'Phường/Xã', component: WardsTab, group: 'Địa chỉ' },
-  
+
   // Nhóm Đào tạo
   { id: 'degrees', label: 'Bậc học', component: DegreesTab, group: 'Đào tạo' },
   { id: 'trainingInstitution', label: 'Trường đào tạo', component: TrainingInstitutionTab, group: 'Đào tạo' },
   { id: 'trainingMajor', label: 'Ngành đào tạo', component: TrainingMajorTab, group: 'Đào tạo' },
   { id: 'trainingType', label: 'Hình thức đào tạo', component: TrainingTypeTab, group: 'Đào tạo' },
-  
+
   // Nhóm Trình độ
   { id: 'culturalLevel', label: 'Trình độ văn hóa', component: CulturalLevelTab, group: 'Trình độ' },
   { id: 'professionalLevel', label: 'Trình độ chuyên môn', component: ProfessionalLevelTab, group: 'Trình độ' },
   { id: 'itLevel', label: 'Trình độ tin học', component: ITLevelTab, group: 'Trình độ' },
   { id: 'languageLevels', label: 'Trình độ ngoại ngữ', component: LanguageLevelsTab, group: 'Trình độ' },
   { id: 'politicalTheories', label: 'Lý luận chính trị', component: PoliticalTheoriesTab, group: 'Trình độ' },
-  
+
   // Nhóm Nghề nghiệp
   { id: 'specialties', label: 'Nghề nghiệp', component: SpecialtiesTab, group: 'Nghề nghiệp' },
   { id: 'socialJob', label: 'Nghề BHXH', component: SocialInsuranceJobTab, group: 'Nghề nghiệp' },
+
+  // { id: 'position', label: 'Chức vụ', component: PositionTab, group: 'Nhân sự' },
+  { id: 'position', label: 'Chức vụ', component: PositionTab, group: 'Nhân sự' },
+  { id: 'jobPosition', label: 'Vị trí công việc', component: JobPositionTab, group: 'Nhân sự' },
+  { id: 'organization', label: 'Cơ cấu tổ chức', component: OrganizationTab, group: 'Nhân sự' },
+  // { id: 'employeeStatus', label: 'Trạng thái hồ sơ', component: EmployeeStatusTab, group: 'Nhân sự' },
+
+  // Nhóm Thông tin cá nhân — bổ sung
+  { id: 'religion', label: 'Tôn giáo', component: ReligionTab, group: 'Thông tin cá nhân' },
+  { id: 'partyCommittee', label: 'Cấp ủy', component: PartyCommitteeTab, group: 'Thông tin cá nhân' },
+
+  // Nhóm Lương — tạo mới
+  { id: 'salaryPayroll', label: 'Bảng lương', component: SalaryPayrollTab, group: 'Lương' },
+  { id: 'salaryScale', label: 'Thang bảng lương', component: SalaryScaleTab, group: 'Lương' },
 ];
 
 export default function Catalog() {
@@ -117,11 +139,10 @@ export default function Catalog() {
                       <Button
                         key={category.id}
                         onClick={() => setActiveTab(category.id)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                          activeTab === category.id
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${activeTab === category.id
                             ? 'bg-primary text-primary-foreground'
                             : 'hover:bg-muted'
-                        }`}
+                          }`}
                       >
                         {category.label}
                       </Button>
@@ -139,11 +160,10 @@ export default function Catalog() {
                           <button
                             key={category.id}
                             onClick={() => setActiveTab(category.id)}
-                            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                              activeTab === category.id
+                            className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${activeTab === category.id
                                 ? 'bg-green-500 text-primary-foreground'
                                 : 'hover:bg-muted'
-                            }`}
+                              }`}
                           >
                             {category.label}
                           </button>

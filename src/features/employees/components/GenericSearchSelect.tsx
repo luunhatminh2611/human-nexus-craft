@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem
 } from "@/shared/components/ui/select";
 import { Input } from "@/shared/components/ui/input";
 import GenericCreateModal from "./modal/GenericCreateModal";
 import { Button } from "@/shared/components/ui/button/Button2";
 import { Search, Plus } from "lucide-react";
 
-const GenericSearchSelect = ({ api, config, value, onChange }) => {
+const GenericSearchSelect = ({ api, config, value, onChange, displayValue = "" }) => {
   const [list, setList] = useState([]);
   const [filteredList, setFilteredList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +21,7 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
   const fetchData = async () => {
     try {
       const data = await api.getAll();
+      console.log("RAW API response:", data);
       setList(data || []);
       setFilteredList(data || []);
     } catch (err) {
@@ -32,12 +33,11 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
     fetchData();
   }, []);
 
-  // Filter danh sách khi search
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredList(list);
     } else {
-      const filtered = list.filter(item => 
+      const filtered = list.filter(item =>
         item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.code?.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -45,7 +45,6 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
     }
   }, [searchTerm, list]);
 
-  // Reset search khi đóng dropdown
   useEffect(() => {
     if (!isOpen) {
       setSearchTerm("");
@@ -57,32 +56,33 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
     setSearchTerm("");
   };
 
+  // Ưu tiên tìm theo ID, nếu không có thì dùng displayValue (trường hợp lưu tên)
   const selectedItem = list.find(item => item.id.toString() === value);
+  const displayLabel = selectedItem?.name || displayValue || config.placeholder;
+
+  const handleValueChange = (id: string) => {
+    const item = list.find(i => i.id.toString() === id);
+    onChange(id, item);  // truyền cả item ra ngoài
+  };
 
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <Select 
-          value={value} 
-          onValueChange={onChange}
+        <Select
+          value={value}
+          onValueChange={handleValueChange}
           open={isOpen}
           onOpenChange={setIsOpen}
         >
           <SelectTrigger>
             <SelectValue placeholder={config.placeholder}>
-              {selectedItem?.name || config.placeholder}
+              {displayLabel}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent 
-            onCloseAutoFocus={(e) => e.preventDefault()}
-          >
-            {/* Search input trong dropdown - ngăn chặn hành vi typeahead */}
-            <div 
+          <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
+            <div
               className="px-2 pb-2 sticky top-0 bg-background z-10 border-b"
-              onKeyDown={(e) => {
-                // Ngăn Select component xử lý phím
-                e.stopPropagation();
-              }}
+              onKeyDown={(e) => { e.stopPropagation(); }}
             >
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -93,11 +93,8 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
                   className="pl-8"
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => {
-                    // Ngăn Select xử lý các phím như ArrowDown, Enter
                     e.stopPropagation();
-                    
-                    // Cho phép Enter để tạo mới nếu không có kết quả
-                    if (e.key === 'Enter' && filteredList.length === 0 && searchTerm && config.enableCreate !== false) {
+                    if (e.key === "Enter" && filteredList.length === 0 && searchTerm && config.enableCreate !== false) {
                       e.preventDefault();
                       setOpenCreate(true);
                       setIsOpen(false);
@@ -105,14 +102,12 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
                   }}
                   autoFocus
                   onFocus={(e) => {
-                    // Đặt con trỏ ở cuối text
                     e.target.setSelectionRange(e.target.value.length, e.target.value.length);
                   }}
                 />
               </div>
             </div>
 
-            {/* Nút tạo mới nếu không tìm thấy */}
             {filteredList.length === 0 && searchTerm && config.enableCreate !== false && (
               <div className="px-2 py-3 text-center">
                 <p className="text-sm text-muted-foreground mb-2">
@@ -134,14 +129,12 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
               </div>
             )}
 
-            {/* Thông báo nếu không có kết quả và không cho phép tạo mới */}
             {filteredList.length === 0 && searchTerm && config.enableCreate === false && (
               <div className="px-2 py-3 text-center text-sm text-muted-foreground">
                 Không tìm thấy kết quả
               </div>
             )}
 
-            {/* Danh sách items */}
             {filteredList.length > 0 && (
               <div className="max-h-[300px] overflow-y-auto">
                 {filteredList.map(item => (
@@ -159,7 +152,6 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
               </div>
             )}
 
-            {/* Hiển thị tất cả nếu chưa search */}
             {!searchTerm && list.length === 0 && (
               <div className="px-2 py-3 text-center text-sm text-muted-foreground">
                 Chưa có dữ liệu
@@ -168,10 +160,9 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
           </SelectContent>
         </Select>
 
-        {/* Nút thêm nhanh bên ngoài */}
         {config.enableCreate !== false && (
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             onClick={() => setOpenCreate(true)}
             size="icon"
             variant="outline"
@@ -181,7 +172,6 @@ const GenericSearchSelect = ({ api, config, value, onChange }) => {
         )}
       </div>
 
-      {/* Modal thêm mới */}
       <GenericCreateModal
         open={openCreate}
         onOpenChange={setOpenCreate}
