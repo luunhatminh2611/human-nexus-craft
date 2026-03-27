@@ -1,389 +1,228 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardHeader, CardTitle,
 } from "@/shared/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/shared/components/tables/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/shared/components/ui/dialog";
 import { Button } from "@/shared/components/ui/button/Button2";
 import { Badge } from "@/shared/components/ui/badge";
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
-import { FileText, Download, Plus, Upload, X, Edit } from "lucide-react";
-import { leaveRequestApi } from "../../api/leaveRequestApi";
+import { Label } from "@/shared/components/ui/label";
+import { FileText, Check, X, Eye, Send } from "lucide-react";
 import { toast } from "sonner";
-import { useAuthStore } from "@/features/employees/hooks/useAuth";
-import LeaveRequestModal from "../../components/modal/LeaveModal";
+import {
+  MOCK_LEAVE_REQUESTS, MOCK_EMPLOYEES, DEPARTMENTS,
+  getEmployeeName, getCategoryName, getOrgManagers,
+  type LeaveRequest, type LeaveStatus,
+} from "../../data/mockData";
+
+// Giả lập manager hiện tại
+const CURRENT_MANAGER_ID = 'mgr1';
+
+const STATUS_CONFIG: Record<LeaveStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  DRAFT: { label: 'Nháp', variant: 'secondary' },
+  PENDING_MANAGER: { label: 'Chờ duyệt', variant: 'outline' },
+  MANAGER_APPROVED: { label: 'Đã duyệt (chờ TC)', variant: 'default' },
+  PENDING_ORG: { label: 'Chờ TC duyệt', variant: 'outline' },
+  APPROVED: { label: 'Đã duyệt', variant: 'default' },
+  REJECTED_MANAGER: { label: 'Đã từ chối', variant: 'destructive' },
+  REJECTED_ORG: { label: 'TC từ chối', variant: 'destructive' },
+};
 
 export default function ManagerLeaveRequest() {
-  const [leaveRequests, setLeaveRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [editingLeave, setEditingLeave] = useState(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(
+    MOCK_LEAVE_REQUESTS.filter(r => r.managerId === CURRENT_MANAGER_ID)
+  );
+  const [detailLeave, setDetailLeave] = useState<LeaveRequest | null>(null);
+  const [actionLeave, setActionLeave] = useState<LeaveRequest | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
+  const [comment, setComment] = useState('');
 
-  const { user } = useAuthStore();
-  const [formData, setFormData] = useState({
-    title: "",
-    startDate: "",
-    endDate: "",
-    reason: "",
-  });
+  const currentMgr = MOCK_EMPLOYEES.find(e => e.id === CURRENT_MANAGER_ID)!;
+  const orgManagers = getOrgManagers();
+  const pendingCount = leaveRequests.filter(r => r.status === 'PENDING_MANAGER').length;
 
-  // Lấy danh sách đơn nghỉ phép
-  const fetchLeaveRequests = async () => {
-    try {
-      setLoading(true);
-      const data = await leaveRequestApi.getAll();
-      setLeaveRequests(data || []);
-    } catch (error) {
-      toast.error("Không thể tải danh sách đơn nghỉ phép");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleAction = () => {
+    if (!actionLeave) return;
 
-  const handleEdit = (leave) => {
-    setEditingLeave(leave);
-    setFormData({
-      title: leave.title,
-      startDate: leave.startDate,
-      endDate: leave.endDate,
-      reason: leave.reason,
-    });
-    setSelectedFile(null);
-    setIsEditModalOpen(true);
-  };
-
-  const handleEditSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.title || !formData.startDate || !formData.endDate || !formData.reason) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
-      return;
-    }
-
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      toast.error("Ngày bắt đầu phải trước ngày kết thúc");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await leaveRequestApi.update(editingLeave.id, formData, selectedFile);
-      toast.success("Cập nhật đơn nghỉ phép thành công");
-      setIsEditModalOpen(false);
-      setEditingLeave(null);
-      resetForm();
-      fetchLeaveRequests();
-    } catch (error) {
-      toast.error("Không thể cập nhật đơn nghỉ phép");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLeaveRequests();
-  }, []);
-
-  // Xử lý thay đổi form
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Xử lý chọn file
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  // Xóa file đã chọn
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-  };
-
-  // Xử lý submit form
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.title || !formData.startDate || !formData.endDate || !formData.reason) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
-      return;
-    }
-
-    if (new Date(formData.startDate) > new Date(formData.endDate)) {
-      toast.error("Ngày bắt đầu phải trước ngày kết thúc");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Pass file như tham số thứ 2
-      await leaveRequestApi.create(formData, selectedFile);
-      toast.success("Tạo đơn nghỉ phép thành công");
-      setIsModalOpen(false);
-      resetForm();
-      fetchLeaveRequests();
-    } catch (error) {
-      toast.error(error);
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Reset form
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      startDate: "",
-      endDate: "",
-      reason: "",
-    });
-    setSelectedFile(null);
-  };
-
-  // Render badge status
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      APPROVED: { variant: "default", label: "Đã duyệt" },
-      PENDING: { variant: "secondary", label: "Chờ duyệt" },
-      REJECTED: { variant: "destructive", label: "Từ chối" },
-    };
-
-    const statusInfo = statusMap[status] || { variant: "secondary", label: status };
-
-    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
-  };
-
-  const downloadBinaryFile = (binaryString, fileName, fileType) => {
-    try {
-      // Convert binary string thành Uint8Array
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // Tạo blob
-      const blob = new Blob([bytes], { type: fileType || 'application/octet-stream' });
-
-      // Download
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download error:', error);
-      throw error;
-    }
-  };
-
-  const handleDownload = (leave) => {
-    if (!leave.fileName) {
-      toast.error("Không có file đính kèm");
-      return;
-    }
-
-    if (leave.attachmentBase64) {
-      try {
-        // Backend trả raw binary string, KHÔNG phải base64
-        downloadBinaryFile(leave.attachmentBase64, leave.fileName, leave.fileType);
-        toast.success("Đang tải xuống file...");
-      } catch (error) {
-        toast.error("Không thể tải file");
-        console.error(error);
-      }
+    if (actionType === 'approve') {
+      const orgMgr = orgManagers[0];
+      setLeaveRequests(prev => prev.map(r =>
+        r.id === actionLeave.id
+          ? {
+              ...r,
+              status: 'MANAGER_APPROVED' as LeaveStatus,
+              managerComment: comment || undefined,
+              orgManagerId: orgMgr?.id,
+            }
+          : r
+      ));
+      toast.success(`Đã duyệt đơn và chuyển sang Phòng Tổ chức (${orgMgr?.name})`);
     } else {
-      handleDownloadFromAPI(leave.id);
+      if (!comment.trim()) {
+        toast.error("Vui lòng nhập lý do từ chối"); return;
+      }
+      setLeaveRequests(prev => prev.map(r =>
+        r.id === actionLeave.id
+          ? { ...r, status: 'REJECTED_MANAGER' as LeaveStatus, managerComment: comment }
+          : r
+      ));
+      toast.success("Đã từ chối đơn nghỉ phép");
     }
+
+    setActionLeave(null);
+    setComment('');
   };
 
-  const handleDownloadFromAPI = async (leaveId) => {
-    try {
-      const response = await leaveRequestApi.getByUser(user?.userId);
-      const leaveDetail = response.find(item => item.id === leaveId);
-
-      if (!leaveDetail) {
-        toast.error("Không tìm thấy đơn nghỉ phép");
-        return;
-      }
-
-      const binaryData = leaveDetail.attachmentBase64;
-
-      if (!binaryData) {
-        toast.error("File không tồn tại");
-        return;
-      }
-
-      downloadBinaryFile(binaryData, leaveDetail.fileName, leaveDetail.fileType);
-      toast.success("Đang tải xuống file...");
-    } catch (error) {
-      toast.error("Không thể tải file");
-      console.error(error);
-    }
+  const openAction = (leave: LeaveRequest, type: 'approve' | 'reject') => {
+    setActionLeave(leave);
+    setActionType(type);
+    setComment('');
   };
 
   return (
     <div className="mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Đơn xin nghỉ phép</h1>
-          <p className="text-muted-foreground mt-2">
-            Quản lý các đơn xin nghỉ phép của bạn
-          </p>
-        </div>
-
-        <Button onClick={() => setIsModalOpen(true)} className="bg-green-500 text-white hover:bg-green-600">
-          <Plus className="mr-2 h-4 w-4" /> Tạo đơn mới
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold">Duyệt đơn nghỉ phép</h1>
+        <p className="text-muted-foreground mt-1">
+          {currentMgr.name} — {DEPARTMENTS.find(d => d.id === currentMgr.departmentId)?.name}
+          {pendingCount > 0 && <Badge variant="destructive" className="ml-2">{pendingCount} chờ duyệt</Badge>}
+        </p>
       </div>
 
-      <LeaveRequestModal
-        isOpen={isModalOpen}
-        setIsOpen={setIsModalOpen}
-        formData={formData}
-        selectedFile={selectedFile}
-        loading={loading}
-        handleInputChange={handleInputChange}
-        handleFileChange={handleFileChange}
-        handleRemoveFile={handleRemoveFile}
-        handleSubmit={handleSubmit}
-        resetForm={resetForm}
-        isEdit={false}
-        currentFileName={null}
-      />
+      {/* Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Chờ duyệt', count: leaveRequests.filter(r => r.status === 'PENDING_MANAGER').length, color: 'text-amber-600' },
+          { label: 'Đã duyệt', count: leaveRequests.filter(r => ['MANAGER_APPROVED', 'PENDING_ORG', 'APPROVED'].includes(r.status)).length, color: 'text-emerald-600' },
+          { label: 'Từ chối', count: leaveRequests.filter(r => r.status === 'REJECTED_MANAGER').length, color: 'text-destructive' },
+          { label: 'Tổng', count: leaveRequests.length, color: 'text-primary' },
+        ].map(s => (
+          <Card key={s.label}>
+            <CardContent className="pt-4 pb-3 text-center">
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+              <p className={`text-2xl font-bold ${s.color}`}>{s.count}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
+      {/* Table */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-amber-600" />
-            Danh sách đơn nghỉ phép
+            <FileText className="h-5 w-5 text-amber-600" /> Danh sách đơn nghỉ phép
           </CardTitle>
         </CardHeader>
-
         <CardContent>
-          {loading ? (
-            <p className="text-center text-muted-foreground py-8">Đang tải...</p>
-          ) : leaveRequests.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tiêu đề</TableHead>
-                  <TableHead>Người nộp</TableHead>
-                  <TableHead>Thời gian nghỉ</TableHead>
-                  <TableHead>Lý do</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Thao tác</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nhân viên</TableHead>
+                <TableHead>Loại</TableHead>
+                <TableHead>Tiêu đề</TableHead>
+                <TableHead>Thời gian</TableHead>
+                <TableHead>Số ngày</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead className="text-center">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leaveRequests.map(leave => (
+                <TableRow key={leave.id}>
+                  <TableCell className="font-medium">{getEmployeeName(leave.employeeId)}</TableCell>
+                  <TableCell>
+                    <Badge variant={leave.leaveType === 'REGULAR' ? 'secondary' : 'outline'}>
+                      {leave.leaveType === 'REGULAR' ? 'Thường' : 'Chế độ'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{leave.title}</TableCell>
+                  <TableCell className="text-sm">
+                    {new Date(leave.startDate).toLocaleDateString('vi-VN')} → {new Date(leave.endDate).toLocaleDateString('vi-VN')}
+                  </TableCell>
+                  <TableCell>{leave.totalDays}</TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_CONFIG[leave.status]?.variant}>{STATUS_CONFIG[leave.status]?.label}</Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setDetailLeave(leave)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {leave.status === 'PENDING_MANAGER' && (
+                        <>
+                          <Button size="sm" variant="ghost" className="text-emerald-600" onClick={() => openAction(leave, 'approve')}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => openAction(leave, 'reject')}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {leaveRequests.map((leave) => (
-                  <TableRow key={leave.id}>
-                    <TableCell className="font-medium">
-                      {leave.title || "Đơn nghỉ phép"}
-                    </TableCell>
-                    <TableCell>{leave.createBy || "N/A"}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{new Date(leave.startDate).toLocaleDateString("vi-VN")}</div>
-                        <div className="text-muted-foreground">
-                          đến {new Date(leave.endDate).toLocaleDateString("vi-VN")}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[250px] truncate">
-                      {leave.reason || "Không ghi rõ"}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(leave.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {['PENDING', 'REJECTED'].includes(leave.status) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(leave)}
-                            title="Chỉnh sửa"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
-
-                        {/* Nút download */}
-                        {leave.fileName ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDownload(leave)}
-                            title="Tải xuống file"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            Không có file
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              Bạn chưa có đơn nghỉ phép nào.
-            </p>
-          )}
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
-      <LeaveRequestModal
-        isOpen={isEditModalOpen}
-        setIsOpen={setIsEditModalOpen}
-        formData={formData}
-        selectedFile={selectedFile}
-        loading={loading}
-        handleInputChange={handleInputChange}
-        handleFileChange={handleFileChange}
-        handleRemoveFile={handleRemoveFile}
-        handleSubmit={handleEditSubmit}
-        resetForm={resetForm}
-        isEdit={true}
-        currentFileName={editingLeave?.fileName}
-      />
+      {/* Approve/Reject Dialog */}
+      <Dialog open={!!actionLeave} onOpenChange={() => { setActionLeave(null); setComment(''); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{actionType === 'approve' ? 'Duyệt đơn nghỉ phép' : 'Từ chối đơn nghỉ phép'}</DialogTitle>
+            <DialogDescription>
+              {actionLeave && `${getEmployeeName(actionLeave.employeeId)} — ${actionLeave.title} (${actionLeave.totalDays} ngày)`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>{actionType === 'approve' ? 'Nhận xét (tùy chọn)' : 'Lý do từ chối *'}</Label>
+              <Textarea value={comment} onChange={e => setComment(e.target.value)} placeholder={actionType === 'approve' ? 'Nhận xét...' : 'Nhập lý do từ chối...'} rows={3} />
+            </div>
+            {actionType === 'approve' && orgManagers.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                <Send className="h-3 w-3 inline mr-1" />
+                Sau khi duyệt, đơn sẽ được chuyển đến <span className="font-medium">{orgManagers[0].name}</span> (Phòng Tổ chức) duyệt lần cuối.
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setActionLeave(null); setComment(''); }}>Hủy</Button>
+            <Button variant={actionType === 'approve' ? 'default' : 'destructive'} onClick={handleAction}>
+              {actionType === 'approve' ? 'Duyệt & Chuyển TC' : 'Từ chối'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!detailLeave} onOpenChange={() => setDetailLeave(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader><DialogTitle>Chi tiết đơn nghỉ phép</DialogTitle></DialogHeader>
+          {detailLeave && (
+            <div className="space-y-3 text-sm">
+              <div><span className="text-muted-foreground">Nhân viên:</span> <span className="font-medium">{getEmployeeName(detailLeave.employeeId)}</span></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Loại:</span> <Badge variant={detailLeave.leaveType === 'REGULAR' ? 'secondary' : 'outline'}>{detailLeave.leaveType === 'REGULAR' ? 'Thường' : 'Chế độ'}</Badge></div>
+                {detailLeave.categoryId && <div><span className="text-muted-foreground">Danh mục:</span> {getCategoryName(detailLeave.categoryId)}</div>}
+              </div>
+              <div><span className="text-muted-foreground">Tiêu đề:</span> {detailLeave.title}</div>
+              <div><span className="text-muted-foreground">Thời gian:</span> {new Date(detailLeave.startDate).toLocaleDateString('vi-VN')} → {new Date(detailLeave.endDate).toLocaleDateString('vi-VN')} ({detailLeave.totalDays} ngày)</div>
+              <div><span className="text-muted-foreground">Lý do:</span> {detailLeave.reason}</div>
+              <div><span className="text-muted-foreground">Trạng thái:</span> <Badge variant={STATUS_CONFIG[detailLeave.status]?.variant}>{STATUS_CONFIG[detailLeave.status]?.label}</Badge></div>
+              {detailLeave.managerComment && <div className="p-2 bg-muted rounded"><span className="text-muted-foreground">Nhận xét TP:</span> {detailLeave.managerComment}</div>}
+              {detailLeave.orgComment && <div className="p-2 bg-muted rounded"><span className="text-muted-foreground">Nhận xét TC:</span> {detailLeave.orgComment}</div>}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
