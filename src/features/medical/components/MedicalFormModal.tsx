@@ -1102,7 +1102,7 @@ export default function MedicalFormModal({ isOpen, onClose, record, onSuccess }:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />
-            {record ? 'Cập nhật kết quả khám sức khỏe' : 'Tạo mới kết quả khám sức khỏe'}
+            {record ? 'Cập nhật kết quả khám sức khỏe' : 'Thêm mới kết quả khám sức khỏe'}
           </DialogTitle>
         </DialogHeader>
 
