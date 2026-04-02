@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { CalendarDays, ShieldCheck, AlertTriangle, BanknoteIcon, Clock, FileText } from 'lucide-react';
+import { CalendarDays, ShieldCheck, AlertTriangle, BanknoteIcon, Clock, FileText, ArrowRight } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -26,64 +26,111 @@ export default function FlowGuideModal({ open, onClose }: Props) {
         </DialogHeader>
 
         <div className="space-y-5">
-          <Section icon={CalendarDays} title="1. Nghỉ phép năm (ANNUAL)" color="text-violet-600">
-            <p>• Yêu cầu: Đủ <strong>12 tháng</strong> làm việc trở lên</p>
-            <p>• Định mức: <strong>12–16 ngày/năm</strong> tùy điều kiện lao động</p>
-            <p>• Cứ mỗi <strong>5 năm</strong> công tác → +1 ngày phép</p>
-            <p className="font-medium text-foreground mt-1">Thời gian tính vào tháng làm việc:</p>
+          {/* Working time calculation */}
+          <Section icon={Clock} title="Tính thời gian làm việc hiệu lực" color="text-foreground">
+            <p className="font-medium text-foreground">Thời gian được tính vào 12 tháng:</p>
             <ul className="list-disc pl-4 space-y-0.5">
-              <li>Thời gian tập sự, thử việc</li>
-              <li>Nghỉ phép có lương</li>
-              <li>Nghỉ ốm (giới hạn theo quy định)</li>
-              <li>Nghỉ tai nạn lao động</li>
+              <li>✅ Thời gian thực tế làm việc</li>
+              <li>✅ Thử việc, tập sự</li>
+              <li>✅ Nghỉ ốm (≤ 2 tháng)</li>
+              <li>✅ Thai sản (toàn bộ)</li>
+              <li>✅ Nghỉ không lương (≤ 1 tháng)</li>
+              <li>✅ Tai nạn lao động (toàn bộ)</li>
             </ul>
+            <div className="mt-2 p-2 bg-muted rounded text-xs">
+              <strong>VD Mock #2 — Trần Thị B:</strong> 5th thực tế + 2th thử việc + 1th không lương = 8 tháng → Chưa đủ 12 tháng
+            </div>
+          </Section>
+
+          <Separator />
+
+          <Section icon={CalendarDays} title="1. Nghỉ phép năm (ANNUAL)" color="text-violet-600">
+            <p>• Yêu cầu: Đủ <strong>12 tháng hiệu lực</strong> trở lên</p>
+            <p>• Định mức theo loại công việc:</p>
+            <table className="w-full mt-1 text-xs border">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="p-1.5 text-left border">Loại công việc</th>
+                  <th className="p-1.5 text-center border">Ngày phép/năm</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td className="p-1.5 border">Bình thường</td><td className="p-1.5 text-center border">12</td></tr>
+                <tr><td className="p-1.5 border">Nặng nhọc, độc hại</td><td className="p-1.5 text-center border">14</td></tr>
+                <tr><td className="p-1.5 border">Đặc biệt nặng nhọc (hầm lò)</td><td className="p-1.5 text-center border">16</td></tr>
+              </tbody>
+            </table>
+            <p className="mt-1">• Cứ mỗi <strong>5 năm</strong> công tác → +1 ngày</p>
+            <p>• <strong>Luồng:</strong> Nhân viên → Quản lý duyệt → Hoàn tất</p>
+            <div className="mt-2 p-2 bg-muted rounded text-xs">
+              <strong>VD Mock #1 — Nguyễn Văn A:</strong> Hầm lò = 16 ngày cơ sở + 0 thâm niên = 16 ngày. Đã dùng 3 → Còn 13.
+            </div>
           </Section>
 
           <Separator />
 
           <Section icon={ShieldCheck} title="2. Nghỉ chế độ BHXH (SOCIAL)" color="text-blue-600">
             <p>• <strong>Không trừ</strong> phép năm</p>
-            <p>• Bắt buộc nộp giấy tờ chứng minh (giấy bác sĩ, giấy khai sinh...)</p>
-            <p>• Bao gồm: Ốm đau, Thai sản, Tai nạn lao động</p>
-            <p>• Thời gian hưởng theo quy định BHXH</p>
+            <p>• Bắt buộc nộp giấy tờ (giấy bác sĩ, giấy khai sinh...)</p>
+            <p>• Bao gồm: Ốm đau, Thai sản</p>
+            <p>• <strong>Luồng:</strong> Nhân viên → HR duyệt trực tiếp</p>
           </Section>
 
           <Separator />
 
-          <Section icon={AlertTriangle} title="3. Nghỉ khẩn cấp (Emergency)" color="text-red-600">
-            <p>• Được phép nghỉ trước, làm đơn sau</p>
-            <p>• Phải <strong>thông báo trong vòng 2 giờ</strong></p>
-            <p>• Nộp giấy tờ bổ sung trong 3 ngày làm việc</p>
-          </Section>
-
-          <Separator />
-
-          <Section icon={FileText} title="4. Nghỉ việc riêng hưởng lương (PERSONAL_PAID)" color="text-emerald-600">
+          <Section icon={FileText} title="3. Nghỉ việc riêng hưởng lương (PERSONAL_PAID)" color="text-emerald-600">
             <p>• Tang lễ (ông bà, cha mẹ): <strong>3 ngày</strong></p>
             <p>• Kết hôn: <strong>3 ngày</strong></p>
             <p>• Con kết hôn: <strong>1 ngày</strong></p>
             <p>• Không trừ vào phép năm</p>
+            <p>• <strong>Luồng:</strong> Nhân viên → Quản lý duyệt → Hoàn tất</p>
           </Section>
 
           <Separator />
 
-          <Section icon={BanknoteIcon} title="5. Nghỉ không lương (UNPAID)" color="text-orange-600">
-            <p>• Cần được <strong>HR phê duyệt</strong></p>
-            <p>• <strong>Ảnh hưởng trực tiếp</strong> đến lương tháng</p>
-            <p>• Không tính vào thời gian đóng BHXH</p>
+          <Section icon={BanknoteIcon} title="4. Nghỉ không lương (UNPAID)" color="text-orange-600">
+            <p>• <strong>Ảnh hưởng trực tiếp</strong> đến lương</p>
+            <p>• <strong>Luồng:</strong> Nhân viên → Quản lý → HR → Hoàn tất</p>
           </Section>
 
           <Separator />
 
-          <Section icon={Clock} title="6. Quy trình duyệt" color="text-foreground">
-            <div className="flex items-center gap-2 flex-wrap text-xs font-medium">
-              <span className="px-2 py-1 bg-muted rounded">Nhân viên tạo đơn</span>
-              <span>→</span>
-              <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">Quản lý duyệt</span>
-              <span>→</span>
-              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">HR duyệt</span>
-              <span>→</span>
-              <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Hoàn tất</span>
+          <Section icon={AlertTriangle} title="5. Nghỉ khẩn cấp (Emergency)" color="text-red-600">
+            <p>• Được phép <strong>nghỉ trước, làm đơn sau</strong></p>
+            <p>• Phải <strong>thông báo trong vòng 2 giờ</strong></p>
+            <p>• <strong>Bổ sung giấy tờ</strong> trong 3 ngày làm việc</p>
+            <p>• Hệ thống theo dõi: thời điểm thông báo, deadline giấy tờ, trạng thái hợp lệ</p>
+          </Section>
+
+          <Separator />
+
+          <Section icon={Clock} title="6. Tổng hợp luồng duyệt" color="text-foreground">
+            <table className="w-full text-xs border mt-1">
+              <thead>
+                <tr className="bg-muted">
+                  <th className="p-1.5 text-left border">Loại nghỉ</th>
+                  <th className="p-1.5 text-left border">Luồng duyệt</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td className="p-1.5 border">Phép năm</td><td className="p-1.5 border">Quản lý duyệt</td></tr>
+                <tr><td className="p-1.5 border">Việc riêng hưởng lương</td><td className="p-1.5 border">Quản lý duyệt</td></tr>
+                <tr><td className="p-1.5 border">Không lương</td><td className="p-1.5 border">Quản lý → HR</td></tr>
+                <tr><td className="p-1.5 border">Chế độ BHXH</td><td className="p-1.5 border">HR trực tiếp</td></tr>
+              </tbody>
+            </table>
+
+            <div className="mt-3 space-y-2">
+              <p className="font-medium text-foreground">Trạng thái đơn:</p>
+              <div className="flex flex-wrap gap-1 text-xs">
+                <span className="px-2 py-1 bg-muted rounded">Nháp</span>
+                <ArrowRight className="h-3 w-3 self-center" />
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">Chờ Quản lý</span>
+                <ArrowRight className="h-3 w-3 self-center" />
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Chờ HR</span>
+                <ArrowRight className="h-3 w-3 self-center" />
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Đã duyệt</span>
+              </div>
             </div>
           </Section>
         </div>

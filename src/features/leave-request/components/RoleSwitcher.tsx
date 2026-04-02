@@ -20,7 +20,7 @@ export default function RoleSwitcher({ role, onRoleChange, currentEmployee, onEm
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-muted-foreground">Vai trò:</span>
         <Select value={role} onValueChange={(v) => onRoleChange(v as Role)}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[200px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

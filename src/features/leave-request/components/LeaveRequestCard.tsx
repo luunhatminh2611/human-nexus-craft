@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Check, X, AlertCircle, FileText } from 'lucide-react';
+import { Check, X, AlertCircle, FileText, ArrowRight } from 'lucide-react';
 import {
   LeaveRequest,
   Role,
@@ -9,6 +9,7 @@ import {
   LEAVE_TYPE_LABELS,
   LEAVE_SUBTYPE_LABELS,
   getLeaveTypeTags,
+  getApprovalFlowLabel,
 } from '../data/leaveData';
 import StatusBadge from './StatusBadge';
 
@@ -22,9 +23,10 @@ interface Props {
 
 export default function LeaveRequestCard({ request, role, onApprove, onReject, onViewDetail }: Props) {
   const tags = getLeaveTypeTags(request.type);
+
   const canApprove =
-    (role === 'MANAGER' && request.status === 'PENDING') ||
-    (role === 'HR' && request.status === 'WAITING_HR');
+    (role === 'MANAGER' && request.status === 'PENDING_MANAGER') ||
+    (role === 'HR' && request.status === 'PENDING_HR');
 
   return (
     <Card
@@ -59,23 +61,38 @@ export default function LeaveRequestCard({ request, role, onApprove, onReject, o
                   {t.label}
                 </span>
               ))}
+              <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                {getApprovalFlowLabel(request.approvalFlow)}
+              </span>
               {request.documents && request.documents.length > 0 && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground flex items-center gap-1">
                   <FileText className="h-3 w-3" />
-                  {request.documents.length} tệp đính kèm
+                  {request.documents.length} tệp
                 </span>
               )}
             </div>
 
-            {request.reason && (
+            {request.rejectionReason && (
               <p className="text-xs text-destructive flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
-                {request.reason}
+                {request.rejectionReason}
               </p>
             )}
 
             {request.flowNote && (
               <p className="text-xs text-muted-foreground italic">📝 {request.flowNote}</p>
+            )}
+
+            {/* Mini timeline */}
+            {request.timeline && request.timeline.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground">
+                {request.timeline.map((t, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    {i > 0 && <ArrowRight className="h-3 w-3" />}
+                    <span className="px-1.5 py-0.5 bg-muted rounded">{t.action}</span>
+                  </span>
+                ))}
+              </div>
             )}
           </div>
 
