@@ -38,6 +38,14 @@ const STATUS_MAP: Record<string, string> = {
   'TU_TRAN': 'Từ trần',
 };
 
+const STATUS_REVERSE_MAP: Record<string, string> = {
+  'Đang công tác': 'DANG_CONG_TAC',
+  'Nghỉ chế độ': 'NGHI_CHE_DO',
+  'Nghỉ hưu trí': 'NGHI_HUU_TRI',
+  'Nghỉ việc': 'NGHI_VIEC',
+  'Từ trần': 'TU_TRAN',
+};
+
 const Field = ({ label, required = false, children, className = '' }: any) => (
   <div className={`space-y-1 ${className}`}>
     <Label className="text-xs font-medium">
@@ -439,27 +447,48 @@ const mapResponseToForm = (d: any) => ({
 const mapFormToPayload = (f: any, mode: string) => ({
   ...(mode === 'edit' && { id: Number(f.id) }),
 
-  code: f.code,
+  // ── Định danh ──────────────────────────────────────────────────────────────
+  code: f.code,                          // spec dùng "employeeCode" nhưng thử "code" trước
   fullName: f.fullName,
   otherName: f.otherName || null,
   gender: f.gender,
-  birthDate: f.birthDate,
-  status: f.status,
-  startDate: f.startDate,
-
+  dateOfBirth: f.birthDate || null,      // ✅ spec dùng "dateOfBirth" không phải "birthDate"
+  birthDate: f.birthDate || null,        // gửi cả hai
+  status: STATUS_REVERSE_MAP[f.status] ?? f.status,
+  startDate: f.startDate || null,
   taxCode: f.taxCode || null,
-  positionAllowance: f.positionAllowance ? Number(f.positionAllowance) : null,
 
+  // ── Cấp ủy – flat ID string ────────────────────────────────────────────────
+  partyCommitteeId: f.partyCommitteeId || null,      // ✅ flat string, KHÔNG wrap object
+  subPartyCommitteeId: f.subPartyCommitteeId || null,
+
+  // ── Chức vụ – flat ID string ───────────────────────────────────────────────
+  positionId: f.positionId || null,
+  subPositionId: f.subPositionId || null,
+  jobTitleId: f.jobTitleId || null,
+  jobPositionId: f.jobPositionId || null,
+  departmentId: f.departmentId || null,
+
+  // ── Địa chỉ ───────────────────────────────────────────────────────────────
+  contactAddress: f.contactAddress || null,
+  permanentAddress: f.permanentAddress || null,
+  nativePlace: f.nativePlace || null,
+  homeTown: f.homeTown || null,
+  birthPlace: f.birthPlace || null,
+
+  // ── Thông tin khác ────────────────────────────────────────────────────────
   ethnicity: f.ethnicity || null,
   religion: f.religion || null,
+  nationalityId: f.nationalityId || null,          // ❓ không có trong spec, hỏi BE
+  policyFamilyId: f.policyFamilyId ? Number(f.policyFamilyId) : null,
 
-  previousJob: f.previousJob || null,
-  recruitmentDate: f.recruitmentDate || null,
-  organizationAddress: f.organizationAddress || null,
-
+  youthUnionJoinDate: f.youthUnionJoinDate || null,
+  partyJoinDate: f.partyJoinDate || null,
+  partyOfficialDate: f.partyOfficialDate || null,
   militaryJoinDate: f.militaryJoinDate || null,
   militaryEndDate: f.militaryEndDate || null,
   title: f.title || null,
+  militaryRankId: f.militaryRankId ? Number(f.militaryRankId) : null,
   injuryRank: f.injuryRank ? Number(f.injuryRank) : null,
   isWoundedSoldier: f.isWoundedSoldier,
 
@@ -472,6 +501,7 @@ const mapFormToPayload = (f: any, mode: string) => ({
   cccdDate: f.cccdDate || null,
   cccdPlace: f.cccdPlace || null,
 
+  // ── Nguồn thu nhập ────────────────────────────────────────────────────────
   familyIncome: f.familyIncome ? Number(f.familyIncome) : null,
   otherIncome: f.otherIncome || null,
   housingType: f.housingType || null,
@@ -487,69 +517,44 @@ const mapFormToPayload = (f: any, mode: string) => ({
   bankAccountHolder: f.bankAccountHolder || null,
   bankBranch: f.bankBranch || null,
 
+  // ── Trình độ ──────────────────────────────────────────────────────────────
+  previousJob: f.previousJob || null,
+  recruitmentDate: f.recruitmentDate || null,
+  organizationId: f.organizationId || null,
+  organizationAddress: f.organizationAddress || null,
   educationDetail: f.educationDetail || null,
+  educationLevelId: f.educationLevelId ? Number(f.educationLevelId) : null,  // ❓ hỏi BE
+  politicalTheoryId: f.politicalTheoryId ? Number(f.politicalTheoryId) : null, // ❓ hỏi BE
+  culturalLevelId: f.culturalLevelId ? Number(f.culturalLevelId) : null,
+  professionalLevelId: f.professionalLevelId ? Number(f.professionalLevelId) : null,
+  itLevelId: f.itLevelId ? Number(f.itLevelId) : null,
+  trainingMajorId: f.trainingMajorId ? Number(f.trainingMajorId) : null,
+  laborContractTypeId: f.laborContractTypeId ? Number(f.laborContractTypeId) : null,
+  socialInsuranceJobId: f.socialInsuranceJobId ? Number(f.socialInsuranceJobId) : null,
+  occupationId: f.occupationId ? Number(f.occupationId) : null,
 
   currentJobDetail: f.currentJobDetail || null,
   workStrength: f.workStrength || null,
   longestJob: f.longestJob || null,
 
-  youthUnionJoinDate: f.youthUnionJoinDate || null,
-  partyJoinDate: f.partyJoinDate || null,
-  partyOfficialDate: f.partyOfficialDate || null,
-
+  // ── Lương & BHXH ──────────────────────────────────────────────────────────
+  payrollId: f.salaryPayrollId ? Number(f.salaryPayrollId) : null,   // ✅ spec dùng "payrollId"
+  salaryScaleId: f.salaryScaleId ? Number(f.salaryScaleId) : null,
+  salaryCoefficient: f.salaryCoefficient ? Number(f.salaryCoefficient) : null,
+  salaryAmount: f.salaryAmount ? Number(f.salaryAmount) : null,
+  effectiveDate: f.salaryEffectiveDate || null,                       // ✅ spec dùng "effectiveDate"
   socialInsuranceNumber: f.socialInsuranceNumber || null,
-  socialInsurancePlace: f.socialInsurancePlace || null,
-  unionSalary: f.unionSalary ? Number(f.unionSalary) : null,
-  socialInsuranceSalaryCoefficient: f.socialInsuranceSalaryCoefficient ? Number(f.socialInsuranceSalaryCoefficient) : null,
-  socialInsuranceSalaryAmount: f.socialInsuranceSalaryAmount ? Number(f.socialInsuranceSalaryAmount) : null,
 
+  // ── Lịch sử bản thân ──────────────────────────────────────────────────────
   legalHistory: f.legalHistory || null,
   workedInOldRegime: f.workedInOldRegime || null,
   foreignOrganizationRelation: f.foreignOrganizationRelation || null,
   relativesAbroad: f.relativesAbroad || null,
 
   note: f.note || null,
+  cardNumber: f.cardNumber || null,
 
-  // Object references
-  department: f.departmentId ? { id: Number(f.departmentId) } : null,
-  position: f.positionId ? { id: Number(f.positionId) } : null,
-  subPosition: f.subPositionId ? { id: Number(f.subPositionId) } : null,
-  jobTitle: f.jobTitleId ? { id: Number(f.jobTitleId) } : null,
-  jobPosition: f.jobPositionId ? { id: Number(f.jobPositionId) } : null,
-  contactAddress: f.contactAddress || null,
-  provinceCity: f.provinceCityId ? { id: Number(f.provinceCityId) } : null,
-  ward: f.wardId ? { id: Number(f.wardId) } : null,
-  permanentAddress: f.permanentAddress || null,
-  nativePlace: f.nativePlace || null,
-  homeTown: f.homeTown || null,
-  birthPlace: f.birthPlace || null,
-  educationLevel: f.educationLevelId ? { id: Number(f.educationLevelId) } : null,
-  politicalTheory: f.politicalTheoryId ? { id: Number(f.politicalTheoryId) } : null,
-  languageLevel: f.languageLevelId ? { id: Number(f.languageLevelId) } : null,
-  nationality: f.nationalityId ? { id: Number(f.nationalityId) } : null,
-  culturalLevel: f.culturalLevelId ? { id: Number(f.culturalLevelId) } : null,
-  professionalLevel: f.professionalLevelId ? { id: Number(f.professionalLevelId) } : null,
-  militaryRank: f.militaryRankId ? { id: Number(f.militaryRankId) } : null,
-  policyFamily: f.policyFamilyId ? { id: Number(f.policyFamilyId) } : null,
-  socialInsuranceJobTitle: f.socialInsuranceJobTitleId ? { id: Number(f.socialInsuranceJobTitleId) } : null,
-  organization: f.organizationId ? { id: Number(f.organizationId) } : null,
-
-  partyCommittees: f.partyCommitteeId
-    ? [{ partyCommittee: { id: Number(f.partyCommitteeId) } }]
-    : [],
-  subPartyCommittees: f.subPartyCommitteeId
-    ? [{ partyCommittee: { id: Number(f.subPartyCommitteeId) } }]
-    : [],
-
-  salaries: (f.salaryScaleId || f.salaryCoefficient || f.salaryAmount) ? [{
-    payroll: f.salaryPayrollId ? { id: Number(f.salaryPayrollId) } : null,
-    salaryScale: f.salaryScaleId ? { id: Number(f.salaryScaleId) } : null,
-    salaryCoefficient: f.salaryCoefficient ? Number(f.salaryCoefficient) : null,
-    salaryAmount: f.salaryAmount ? Number(f.salaryAmount) : null,
-    effectiveDate: f.salaryEffectiveDate || null,
-  }] : [],
-
-  ...(mode === 'edit' && f.user && { user: { id: f.user.id } }),
+  ...(mode === 'edit' && f.user && { userId: f.user.id }),
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
