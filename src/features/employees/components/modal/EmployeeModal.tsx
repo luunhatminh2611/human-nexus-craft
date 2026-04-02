@@ -30,6 +30,14 @@ import NameSelectField from '../NameSelectedField';
 import CategorySelectField from '../CategorySelectField';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+const STATUS_MAP: Record<string, string> = {
+  'DANG_CONG_TAC': 'Đang công tác',
+  'NGHI_CHE_DO': 'Nghỉ chế độ',
+  'NGHI_HUU_TRI': 'Nghỉ hưu trí',
+  'NGHI_VIEC': 'Nghỉ việc',
+  'TU_TRAN': 'Từ trần',
+};
+
 const Field = ({ label, required = false, children, className = '' }: any) => (
   <div className={`space-y-1 ${className}`}>
     <Label className="text-xs font-medium">
@@ -88,7 +96,7 @@ const createEmptyForm = () => ({
   // [4]  Giới tính *         (Nam/Nữ)
   gender: 'NAM',
   // [5]  Các tên gọi khác
-  otherNames: '',
+  otherName: '',
   // [6]  Ngày sinh *         (dd/MM/yyyy)
   birthDate: '',
   // [7]  Nơi sinh *          → danh mục TinhThanhPho
@@ -290,15 +298,22 @@ const mapResponseToForm = (d: any) => ({
   // ── Định danh ──────────────────────────────────────────────────────────────
   code: d.code ?? '',
   fullName: d.fullName ?? d.name ?? '',
-  otherNames: d.otherNames ?? '',
+  otherName: d.otherName ?? d.otherName ?? '',
   gender: d.gender ?? 'NAM',
   birthDate: d.birthDate ?? d.birthday ?? '',
   birthPlace: d.birthPlace ?? '',
-  status: d.status ?? 'Đang công tác',
+  status: STATUS_MAP[d.status] ?? d.status ?? 'Đang công tác',
 
-  // ── Cấp ủy ────────────────────────────────────────────────────────────────
-  partyCommitteeId: d.partyCommittees?.[0]?.partyCommittee?.id?.toString() ?? '',
-  subPartyCommitteeId: d.subPartyCommittees?.[0]?.partyCommittee?.id?.toString() ?? '',
+  // ── Cấp ủy ─────────────────────────────────────────────────────────────────
+  // Response có thể trả về flat (partyCommitteeId) HOẶC nested array
+  partyCommitteeId:
+    d.partyCommitteeId?.toString()
+    ?? d.partyCommittees?.[0]?.partyCommittee?.id?.toString()
+    ?? '',
+  subPartyCommitteeId:
+    d.subPartyCommitteeId?.toString()
+    ?? d.subPartyCommittees?.[0]?.partyCommittee?.id?.toString()
+    ?? '',
 
   // ── Chức vụ / Chức danh ───────────────────────────────────────────────────
   positionId: d.positionId?.toString() ?? '',
@@ -319,8 +334,8 @@ const mapResponseToForm = (d: any) => ({
   wardId: d.wardId?.toString() ?? '',
   wardName: d.wardName ?? '',
   permanentAddress: d.permanentAddress ?? '',
-  nativePlace: d.nativePlace ?? '',   // tên string
-  homeTown: d.homeTown ?? '',   // tên string
+  nativePlace: d.nativePlace ?? '',
+  homeTown: d.homeTown ?? '',
 
   // ── Thông tin khác ────────────────────────────────────────────────────────
   ethnicity: d.ethnicity ?? '',
@@ -426,7 +441,7 @@ const mapFormToPayload = (f: any, mode: string) => ({
 
   code: f.code,
   fullName: f.fullName,
-  otherNames: f.otherNames || null,
+  otherName: f.otherName || null,
   gender: f.gender,
   birthDate: f.birthDate,
   status: f.status,
@@ -545,10 +560,13 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
   const { data: employee } = useQuery({
     queryKey: ['employee', employeeId],
     queryFn: () => employeeApi.getById(employeeId!),
-    enabled: mode === 'edit' && !!employeeId,
+    enabled: mode === 'edit' && !!employeeId && isOpen,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   useEffect(() => {
+    if (!isOpen) return;
     if (mode === 'edit' && employee) {
       setFormData(mapResponseToForm(employee.data ?? employee));
     } else if (mode === 'create') {
@@ -575,7 +593,6 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
       queryClient.invalidateQueries({ queryKey: ['employee', employeeId] });
       onClose();
-      setTimeout(() => window.location.reload(), 300);
     },
     onError: (error: any) => {
       toast({ title: 'Lỗi', description: error.message || 'Không thể cập nhật nhân viên', variant: 'destructive' });
@@ -587,6 +604,8 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
     if (!formData.gender) return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn giới tính', variant: 'destructive' });
     if (!formData.departmentId) return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn phòng ban', variant: 'destructive' });
     const payload = mapFormToPayload(formData, mode);
+    console.log('=== PAYLOAD GỬI LÊN API ===', JSON.stringify(payload, null, 2));
+    console.log('=== FORM DATA ===', formData);
     mode === 'create' ? createMutation.mutate(payload) : updateMutation.mutate(payload);
   };
 
@@ -661,7 +680,7 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                     {/* [5] Các tên gọi khác */}
                     <Field label="Các tên gọi khác">
-                      <Input className="h-8 text-sm" value={formData.otherNames} onChange={e => set('otherNames', e.target.value)} placeholder="Tên khác (nếu có)" />
+                      <Input className="h-8 text-sm" value={formData.otherName} onChange={e => set('otherName', e.target.value)} placeholder="Tên khác (nếu có)" />
                     </Field>
                     {/* [6] Ngày sinh */}
                     <Field label="Ngày sinh" required>

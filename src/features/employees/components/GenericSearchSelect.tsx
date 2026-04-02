@@ -75,9 +75,9 @@ const GenericSearchSelect = ({ api, config, value, onChange, displayValue = "" }
           onOpenChange={setIsOpen}
         >
           <SelectTrigger>
-            <SelectValue placeholder={config.placeholder}>
+            <span className={!value && !displayValue ? 'text-muted-foreground text-sm' : 'text-sm'}>
               {displayLabel}
-            </SelectValue>
+            </span>
           </SelectTrigger>
           <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
             <div

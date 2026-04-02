@@ -627,6 +627,7 @@ export default function Employees() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditingEmployeeId(null);
   };
 
   const handleDeleteEmployee = async (id, e) => {
