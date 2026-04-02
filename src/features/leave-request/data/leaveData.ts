@@ -2,7 +2,15 @@
 export type Role = 'EMPLOYEE' | 'MANAGER' | 'HR';
 
 export type LeaveType = 'ANNUAL' | 'SOCIAL' | 'PERSONAL_PAID' | 'UNPAID';
-export type LeaveSubType = 'SICK' | 'MATERNITY' | 'FUNERAL' | 'WEDDING' | 'CHILD_WEDDING';
+
+// WORK_ACCIDENT thêm vào để SOCIAL subtype hoạt động đúng
+export type LeaveSubType =
+  | 'SICK'
+  | 'MATERNITY'
+  | 'WORK_ACCIDENT'
+  | 'FUNERAL'
+  | 'WEDDING'
+  | 'CHILD_WEDDING';
 
 export type LeaveStatus =
   | 'DRAFT'
@@ -58,6 +66,11 @@ export interface LeaveRequest {
   managerApprovedAt?: string;
   hrApprovedAt?: string;
   timeline?: { action: string; by: string; at: string; note?: string }[];
+  // ← NEW: hệ thống tự tính paid/unpaid split, không để user chọn
+  autoCalculated?: {
+    paidDays: number;
+    unpaidDays: number;
+  };
 }
 
 // ============ CONSTANTS ============
@@ -83,6 +96,7 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
 export const LEAVE_SUBTYPE_LABELS: Record<LeaveSubType, string> = {
   SICK: 'Ốm đau',
   MATERNITY: 'Thai sản',
+  WORK_ACCIDENT: 'Tai nạn lao động',
   FUNERAL: 'Tang lễ',
   WEDDING: 'Kết hôn',
   CHILD_WEDDING: 'Con kết hôn',
@@ -163,7 +177,6 @@ export function calculateLeaveBalance(
   const totalEntitled = baseDays + seniorityBonus;
   const eligible = effectiveMonths >= 12;
 
-  // Count used annual leave (only APPROVED ANNUAL requests)
   const usedAnnual = requests
     .filter((r) => r.employeeId === employee.id && r.type === 'ANNUAL' && r.status === 'APPROVED')
     .reduce((sum, r) => sum + r.days, 0);
@@ -184,7 +197,17 @@ export function calculateLeaveBalance(
     eligibilityExplanation = lines.join('\n');
   }
 
-  return { effectiveMonths, yearsWorked, baseDays, seniorityBonus, totalEntitled, usedAnnual, remaining, eligible, eligibilityExplanation };
+  return {
+    effectiveMonths,
+    yearsWorked,
+    baseDays,
+    seniorityBonus,
+    totalEntitled,
+    usedAnnual,
+    remaining,
+    eligible,
+    eligibilityExplanation,
+  };
 }
 
 // ============ MOCK DATA ============
@@ -229,14 +252,28 @@ export const initialLeaveRequests: LeaveRequest[] = [
     status: 'PENDING_HR',
     approvalFlow: 'HR_ONLY',
     isEmergency: true,
-    emergencyFlow: { notifiedAt: '2026-03-15T08:30:00', documentsDeadline: '2026-03-18', isValid: true },
+    emergencyFlow: {
+      notifiedAt: '2026-03-15T08:30:00',
+      documentsDeadline: '2026-03-18',
+      isValid: true,
+    },
     documents: ['giay_bac_si.pdf'],
     flowNote: 'Nghỉ ốm → HR duyệt trực tiếp',
     createdAt: '2026-03-15',
     startDate: '2026-03-15',
     timeline: [
-      { action: 'Tạo đơn', by: 'Nguyễn Văn A', at: '2026-03-15 08:30', note: 'Nghỉ khẩn cấp — thông báo trong 2h' },
-      { action: 'Gửi HR', by: 'Hệ thống', at: '2026-03-15 08:31', note: 'Auto-route: SOCIAL → HR_ONLY' },
+      {
+        action: 'Tạo đơn',
+        by: 'Nguyễn Văn A',
+        at: '2026-03-15 08:30',
+        note: 'Nghỉ khẩn cấp — thông báo trong 2h',
+      },
+      {
+        action: 'Gửi HR',
+        by: 'Hệ thống',
+        at: '2026-03-15 08:31',
+        note: 'Auto-route: SOCIAL → HR_ONLY',
+      },
     ],
   },
   {
@@ -246,14 +283,20 @@ export const initialLeaveRequests: LeaveRequest[] = [
     days: 3,
     status: 'REJECTED_MANAGER',
     approvalFlow: 'MANAGER_ONLY',
-    rejectionReason: 'Nhân viên mới làm 8 tháng (chỉ tính 8 tháng hiệu lực). Cần ≥ 12 tháng để nghỉ phép năm.',
+    rejectionReason:
+      'Nhân viên mới làm 8 tháng (chỉ tính 8 tháng hiệu lực). Cần ≥ 12 tháng để nghỉ phép năm.',
     flowNote: 'Từ chối: chưa đủ 12 tháng',
     createdAt: '2026-03-10',
     startDate: '2026-03-20',
     timeline: [
       { action: 'Tạo đơn', by: 'Trần Thị B', at: '2026-03-10 09:00' },
       { action: 'Gửi Quản lý', by: 'Trần Thị B', at: '2026-03-10 09:01' },
-      { action: 'Từ chối', by: 'Quản lý', at: '2026-03-10 14:00', note: 'Chưa đủ 12 tháng hiệu lực' },
+      {
+        action: 'Từ chối',
+        by: 'Quản lý',
+        at: '2026-03-10 14:00',
+        note: 'Chưa đủ 12 tháng hiệu lực',
+      },
     ],
   },
   {
@@ -335,8 +378,11 @@ export function getLeaveTypeTags(type: LeaveType): { label: string; color: strin
 
 export function getApprovalFlowLabel(flow: ApprovalFlow): string {
   switch (flow) {
-    case 'MANAGER_ONLY': return 'Quản lý duyệt';
-    case 'MANAGER_HR': return 'Quản lý → HR';
-    case 'HR_ONLY': return 'HR duyệt trực tiếp';
+    case 'MANAGER_ONLY':
+      return 'Quản lý duyệt';
+    case 'MANAGER_HR':
+      return 'Quản lý → HR';
+    case 'HR_ONLY':
+      return 'HR duyệt trực tiếp';
   }
 }
