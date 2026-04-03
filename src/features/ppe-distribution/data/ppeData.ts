@@ -14,12 +14,19 @@ export interface PPEEmployee {
   department: string;
 }
 
+// Item definition (generic, no quantity/cycle here)
 export interface PPEItemDef {
   id: number;
   name: string;
-  jobTypes: JobType[];
-  issueCycleMonths: number;
-  quantityPerCycle: number;
+}
+
+// ===== FIX #1: PPENorm — separate norm table =====
+export interface PPENorm {
+  id: number;
+  jobType: JobType;
+  itemId: number;
+  quantity: number;
+  cycleMonths: number;
 }
 
 export interface PPEHistory {
@@ -46,6 +53,16 @@ export interface PPEBatchItem {
   requiredQuantity: number;
   receivedQuantity: number;
   status: BatchItemStatus;
+  isRecorded: boolean; // FIX #4: track if history was created
+  source: 'BATCH' | 'REPLACEMENT'; // FIX #5: replacement also goes through batch
+}
+
+// ===== FIX #7: Receive Log =====
+export interface PPEReceiveLog {
+  id: number;
+  batchItemId: number;
+  quantity: number;
+  date: string;
 }
 
 export interface PPERequest {
@@ -56,6 +73,7 @@ export interface PPERequest {
   status: ReplacementStatus;
   createdAt: string;
   note?: string;
+  linkedBatchItemId?: number; // FIX #5: link to batch item
 }
 
 // ===== MOCK DATA =====
@@ -67,12 +85,24 @@ export const ppeEmployees: PPEEmployee[] = [
   { id: 5, name: 'Hoàng Văn E', jobType: 'UNDERGROUND', department: 'Phân xưởng lò 2' },
 ];
 
+// Items are now generic — no jobTypes/cycle here
 export const ppeItemDefs: PPEItemDef[] = [
-  { id: 1, name: 'Mũ bảo hộ', jobTypes: ['UNDERGROUND', 'HAZARDOUS'], issueCycleMonths: 12, quantityPerCycle: 1 },
-  { id: 2, name: 'Giày bảo hộ', jobTypes: ['UNDERGROUND'], issueCycleMonths: 6, quantityPerCycle: 1 },
-  { id: 3, name: 'Quần áo bảo hộ', jobTypes: ['UNDERGROUND'], issueCycleMonths: 6, quantityPerCycle: 2 },
-  { id: 4, name: 'Kính bảo hộ', jobTypes: ['UNDERGROUND', 'HAZARDOUS'], issueCycleMonths: 12, quantityPerCycle: 1 },
-  { id: 5, name: 'Găng tay chịu nhiệt', jobTypes: ['HAZARDOUS'], issueCycleMonths: 6, quantityPerCycle: 2 },
+  { id: 1, name: 'Mũ bảo hộ' },
+  { id: 2, name: 'Giày bảo hộ' },
+  { id: 3, name: 'Quần áo bảo hộ' },
+  { id: 4, name: 'Kính bảo hộ' },
+  { id: 5, name: 'Găng tay chịu nhiệt' },
+];
+
+// FIX #1: Norm table — defines quantity & cycle per jobType + item
+export const ppeNorms: PPENorm[] = [
+  { id: 1, jobType: 'UNDERGROUND', itemId: 1, quantity: 1, cycleMonths: 12 },
+  { id: 2, jobType: 'UNDERGROUND', itemId: 2, quantity: 1, cycleMonths: 6 },
+  { id: 3, jobType: 'UNDERGROUND', itemId: 3, quantity: 2, cycleMonths: 6 },
+  { id: 4, jobType: 'UNDERGROUND', itemId: 4, quantity: 1, cycleMonths: 12 },
+  { id: 5, jobType: 'HAZARDOUS', itemId: 1, quantity: 1, cycleMonths: 12 },
+  { id: 6, jobType: 'HAZARDOUS', itemId: 4, quantity: 1, cycleMonths: 12 },
+  { id: 7, jobType: 'HAZARDOUS', itemId: 5, quantity: 2, cycleMonths: 6 },
 ];
 
 export const initialHistories: PPEHistory[] = [
@@ -86,9 +116,14 @@ export const initialBatches: PPEBatch[] = [
 ];
 
 export const initialBatchItems: PPEBatchItem[] = [
-  { id: 1, batchId: 1, employeeId: 1, itemId: 3, requiredQuantity: 2, receivedQuantity: 1, status: 'PARTIAL' },
-  { id: 2, batchId: 1, employeeId: 3, itemId: 3, requiredQuantity: 2, receivedQuantity: 0, status: 'NOT_RECEIVED' },
-  { id: 3, batchId: 1, employeeId: 3, itemId: 2, requiredQuantity: 1, receivedQuantity: 1, status: 'FULL' },
+  { id: 1, batchId: 1, employeeId: 1, itemId: 3, requiredQuantity: 2, receivedQuantity: 1, status: 'PARTIAL', isRecorded: false, source: 'BATCH' },
+  { id: 2, batchId: 1, employeeId: 3, itemId: 3, requiredQuantity: 2, receivedQuantity: 0, status: 'NOT_RECEIVED', isRecorded: false, source: 'BATCH' },
+  { id: 3, batchId: 1, employeeId: 3, itemId: 2, requiredQuantity: 1, receivedQuantity: 1, status: 'FULL', isRecorded: false, source: 'BATCH' },
+];
+
+export const initialReceiveLogs: PPEReceiveLog[] = [
+  { id: 1, batchItemId: 1, quantity: 1, date: '2026-04-02' },
+  { id: 2, batchItemId: 3, quantity: 1, date: '2026-04-02' },
 ];
 
 export const initialRequests: PPERequest[] = [
@@ -96,16 +131,24 @@ export const initialRequests: PPERequest[] = [
 ];
 
 // ===== RULE ENGINE =====
+
+// FIX #6: threshold days before expiry (allow issuance 15 days early)
+export const ISSUE_THRESHOLD_DAYS = 15;
+
 export function getLastHistory(histories: PPEHistory[], employeeId: number, itemId: number): PPEHistory | undefined {
   return histories
     .filter(h => h.employeeId === employeeId && h.itemId === itemId)
     .sort((a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())[0];
 }
 
+// FIX #6: canIssue with threshold
 export function canIssue(histories: PPEHistory[], employeeId: number, itemId: number): boolean {
   const last = getLastHistory(histories, employeeId, itemId);
   if (!last) return true;
-  return new Date() >= new Date(last.expireDate);
+  const expireDate = new Date(last.expireDate);
+  const threshold = new Date(expireDate);
+  threshold.setDate(threshold.getDate() - ISSUE_THRESHOLD_DAYS);
+  return new Date() >= threshold;
 }
 
 export function canRequestReplacement(histories: PPEHistory[], employeeId: number, itemId: number): { allowed: boolean; reason?: string } {
@@ -127,8 +170,26 @@ export function addMonths(date: string, months: number): string {
   return d.toISOString().split('T')[0];
 }
 
-export function getEligibleItems(employee: PPEEmployee, items: PPEItemDef[]): PPEItemDef[] {
-  return items.filter(i => i.jobTypes.includes(employee.jobType));
+// FIX #1: Get norms for an employee's jobType
+export function getEmployeeNorms(employee: PPEEmployee, norms: PPENorm[]): PPENorm[] {
+  return norms.filter(n => n.jobType === employee.jobType);
+}
+
+// FIX #2: Check if employee+item already exists in active batches
+export function isAlreadyInBatch(batchItems: PPEBatchItem[], batches: PPEBatch[], employeeId: number, itemId: number): boolean {
+  const activeBatchIds = batches.filter(b => b.status !== 'COMPLETED').map(b => b.id);
+  return batchItems.some(bi =>
+    activeBatchIds.includes(bi.batchId) &&
+    bi.employeeId === employeeId &&
+    bi.itemId === itemId &&
+    bi.status !== 'FULL'
+  );
+}
+
+// FIX #3: Check if all batch items are FULL
+export function isBatchComplete(batchItems: PPEBatchItem[], batchId: number): boolean {
+  const items = batchItems.filter(bi => bi.batchId === batchId);
+  return items.length > 0 && items.every(bi => bi.status === 'FULL');
 }
 
 export const jobTypeLabels: Record<JobType, string> = {

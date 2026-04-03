@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { HardHat, BookOpen, Plus, Check, X, AlertTriangle, Package, User, ShieldCheck } from 'lucide-react';
+import { HardHat, BookOpen, Plus, Check, X, AlertTriangle, Package, User, ShieldCheck, Clock, History } from 'lucide-react';
 import {
   type PPERole, type PPEBatch, type PPEBatchItem, type PPEHistory, type PPERequest,
-  type ReplacementReason, type BatchItemStatus,
-  ppeEmployees, ppeItemDefs, departments,
-  initialHistories, initialBatches, initialBatchItems, initialRequests,
-  canIssue, canRequestReplacement, getBatchItemStatus, addMonths, getEligibleItems,
+  type PPEReceiveLog, type ReplacementReason,
+  ppeEmployees, ppeItemDefs, ppeNorms, departments,
+  initialHistories, initialBatches, initialBatchItems, initialRequests, initialReceiveLogs,
+  canIssue, canRequestReplacement, getBatchItemStatus, addMonths, getEmployeeNorms,
+  isAlreadyInBatch, isBatchComplete, ISSUE_THRESHOLD_DAYS,
   jobTypeLabels, batchStatusLabels, batchItemStatusColors, batchItemStatusLabels,
   replacementStatusColors, replacementStatusLabels,
 } from '../data/ppeData';
@@ -26,23 +27,26 @@ export default function PPEDistributionPage() {
   const [batches, setBatches] = useState<PPEBatch[]>(initialBatches);
   const [batchItems, setBatchItems] = useState<PPEBatchItem[]>(initialBatchItems);
   const [requests, setRequests] = useState<PPERequest[]>(initialRequests);
+  const [receiveLogs, setReceiveLogs] = useState<PPEReceiveLog[]>(initialReceiveLogs);
   const [nextHistoryId, setNextHistoryId] = useState(4);
   const [nextBatchId, setNextBatchId] = useState(2);
   const [nextBatchItemId, setNextBatchItemId] = useState(4);
   const [nextRequestId, setNextRequestId] = useState(2);
+  const [nextReceiveLogId, setNextReceiveLogId] = useState(3);
 
   // Modals
   const [showFlowGuide, setShowFlowGuide] = useState(false);
   const [showCreateBatch, setShowCreateBatch] = useState(false);
   const [showBatchDetail, setShowBatchDetail] = useState<number | null>(null);
   const [showCreateRequest, setShowCreateRequest] = useState(false);
+  const [showReceiveLog, setShowReceiveLog] = useState<number | null>(null);
   const [requestItemId, setRequestItemId] = useState<number | null>(null);
   const [requestReason, setRequestReason] = useState<ReplacementReason>('BROKEN');
 
   const selectedEmployee = ppeEmployees.find(e => e.id === selectedEmployeeId)!;
   const [batchDept, setBatchDept] = useState(departments[0]);
 
-  // ===== HR: Generate Batch =====
+  // ===== HR: Generate Batch (FIX #1 norm-based, FIX #2 duplicate check) =====
   const generateBatch = useCallback(() => {
     const deptEmployees = ppeEmployees.filter(e => e.department === batchDept);
     if (deptEmployees.length === 0) {
@@ -51,29 +55,33 @@ export default function PPEDistributionPage() {
     }
 
     const batchId = nextBatchId;
-    const newBatch: PPEBatch = { id: batchId, department: batchDept, createdDate: new Date().toISOString().split('T')[0], status: 'ISSUING' };
+    const newBatch: PPEBatch = { id: batchId, department: batchDept, createdDate: new Date().toISOString().split('T')[0], status: 'DRAFT' };
     const newItems: PPEBatchItem[] = [];
     let itemId = nextBatchItemId;
 
     deptEmployees.forEach(emp => {
-      const eligible = getEligibleItems(emp, ppeItemDefs);
-      eligible.forEach(item => {
-        if (canIssue(histories, emp.id, item.id)) {
+      const norms = getEmployeeNorms(emp, ppeNorms);
+      norms.forEach(norm => {
+        // FIX #2: check duplicate
+        if (isAlreadyInBatch(batchItems, batches, emp.id, norm.itemId)) return;
+        if (canIssue(histories, emp.id, norm.itemId)) {
           newItems.push({
             id: itemId++,
             batchId,
             employeeId: emp.id,
-            itemId: item.id,
-            requiredQuantity: item.quantityPerCycle,
+            itemId: norm.itemId,
+            requiredQuantity: norm.quantity,
             receivedQuantity: 0,
             status: 'NOT_RECEIVED',
+            isRecorded: false,
+            source: 'BATCH',
           });
         }
       });
     });
 
     if (newItems.length === 0) {
-      toast({ title: 'Không có vật tư cần cấp', description: 'Tất cả đều chưa đến hạn', variant: 'destructive' });
+      toast({ title: 'Không có vật tư cần cấp', description: 'Tất cả đều chưa đến hạn hoặc đã có trong đợt khác', variant: 'destructive' });
       return;
     }
 
@@ -83,51 +91,80 @@ export default function PPEDistributionPage() {
     setNextBatchItemId(itemId);
     setShowCreateBatch(false);
     toast({ title: 'Tạo đợt cấp phát thành công', description: `${newItems.length} mục cho ${batchDept}` });
-  }, [batchDept, histories, nextBatchId, nextBatchItemId]);
+  }, [batchDept, histories, nextBatchId, nextBatchItemId, batchItems, batches]);
 
-  // ===== HR: Receive =====
-  const receiveItem = useCallback((batchItemId: number, qty: number) => {
-    setBatchItems(prev => prev.map(bi => {
-      if (bi.id !== batchItemId) return bi;
-      const newReceived = Math.min(bi.receivedQuantity + qty, bi.requiredQuantity);
-      const newStatus = getBatchItemStatus(newReceived, bi.requiredQuantity);
-      return { ...bi, receivedQuantity: newReceived, status: newStatus };
-    }));
-    toast({ title: 'Cập nhật nhận hàng' });
+  // ===== HR: Start issuing a batch =====
+  const startBatch = useCallback((batchId: number) => {
+    setBatches(prev => prev.map(b => b.id === batchId ? { ...b, status: 'ISSUING' } : b));
+    toast({ title: 'Bắt đầu cấp phát' });
   }, []);
 
-  // Auto-create history when FULL
-  const finalizeFullItems = useCallback(() => {
-    const fullItems = batchItems.filter(bi => bi.status === 'FULL');
+  // ===== HR: Receive (FIX #7: log each receive) =====
+  const receiveItem = useCallback((batchItemId: number, qty: number) => {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Add receive log
+    setReceiveLogs(prev => [...prev, { id: nextReceiveLogId, batchItemId, quantity: qty, date: today }]);
+    setNextReceiveLogId(prev => prev + 1);
+
+    setBatchItems(prev => {
+      const updated = prev.map(bi => {
+        if (bi.id !== batchItemId) return bi;
+        const newReceived = Math.min(bi.receivedQuantity + qty, bi.requiredQuantity);
+        const newStatus = getBatchItemStatus(newReceived, bi.requiredQuantity);
+        return { ...bi, receivedQuantity: newReceived, status: newStatus };
+      });
+
+      // FIX #3: auto-complete batch if all FULL
+      const changedItem = updated.find(bi => bi.id === batchItemId);
+      if (changedItem) {
+        const batchId = changedItem.batchId;
+        if (isBatchComplete(updated, batchId)) {
+          setBatches(prev2 => prev2.map(b => b.id === batchId ? { ...b, status: 'COMPLETED' } : b));
+          toast({ title: 'Đợt cấp phát hoàn thành', description: 'Tất cả vật tư đã được nhận đủ' });
+        }
+      }
+
+      return updated;
+    });
+
+    toast({ title: 'Cập nhật nhận hàng' });
+  }, [nextReceiveLogId]);
+
+  // FIX #4: Finalize only for specific batch, using isRecorded flag
+  const finalizeFullItems = useCallback((batchId: number) => {
+    const fullItems = batchItems.filter(bi => bi.batchId === batchId && bi.status === 'FULL' && !bi.isRecorded);
     const newHistories: PPEHistory[] = [];
     let hId = nextHistoryId;
 
     fullItems.forEach(bi => {
-      const alreadyRecorded = histories.some(h =>
-        h.employeeId === bi.employeeId && h.itemId === bi.itemId &&
-        h.issueDate === new Date().toISOString().split('T')[0]
-      );
-      if (!alreadyRecorded) {
-        const itemDef = ppeItemDefs.find(i => i.id === bi.itemId);
-        if (itemDef) {
-          newHistories.push({
-            id: hId++,
-            employeeId: bi.employeeId,
-            itemId: bi.itemId,
-            issueDate: new Date().toISOString().split('T')[0],
-            expireDate: addMonths(new Date().toISOString().split('T')[0], itemDef.issueCycleMonths),
-            type: 'ISSUE',
-          });
-        }
-      }
+      const norm = ppeNorms.find(n => n.itemId === bi.itemId);
+      const cycleMonths = norm?.cycleMonths ?? 12;
+      const today = new Date().toISOString().split('T')[0];
+      newHistories.push({
+        id: hId++,
+        employeeId: bi.employeeId,
+        itemId: bi.itemId,
+        issueDate: today,
+        expireDate: addMonths(today, cycleMonths),
+        type: bi.source === 'REPLACEMENT' ? 'REPLACEMENT' : 'ISSUE',
+      });
     });
 
     if (newHistories.length > 0) {
       setHistories(prev => [...prev, ...newHistories]);
       setNextHistoryId(hId);
+      // Mark as recorded
+      setBatchItems(prev => prev.map(bi =>
+        bi.batchId === batchId && bi.status === 'FULL' && !bi.isRecorded
+          ? { ...bi, isRecorded: true }
+          : bi
+      ));
       toast({ title: 'Ghi nhận lịch sử', description: `${newHistories.length} mục đã nhận đủ` });
+    } else {
+      toast({ title: 'Không có mục mới cần ghi nhận', variant: 'destructive' });
     }
-  }, [batchItems, histories, nextHistoryId]);
+  }, [batchItems, nextHistoryId]);
 
   // ===== Employee: Create Replacement Request =====
   const createRequest = useCallback(() => {
@@ -152,30 +189,61 @@ export default function PPEDistributionPage() {
     toast({ title: 'Đã gửi yêu cầu cấp đổi' });
   }, [requestItemId, requestReason, selectedEmployeeId, histories, nextRequestId]);
 
-  // ===== Manager: Approve/Reject =====
+  // FIX #5: Manager approve → create mini batch item instead of direct history
   const handleRequestAction = useCallback((id: number, action: 'APPROVED' | 'REJECTED') => {
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: action } : r));
 
     if (action === 'APPROVED') {
       const req = requests.find(r => r.id === id);
       if (req) {
-        const itemDef = ppeItemDefs.find(i => i.id === req.itemId);
-        if (itemDef) {
-          const hId = nextHistoryId;
-          setHistories(prev => [...prev, {
-            id: hId,
-            employeeId: req.employeeId,
-            itemId: req.itemId,
-            issueDate: new Date().toISOString().split('T')[0],
-            expireDate: addMonths(new Date().toISOString().split('T')[0], itemDef.issueCycleMonths),
-            type: 'REPLACEMENT',
-          }]);
-          setNextHistoryId(prev => prev + 1);
+        const norm = ppeNorms.find(n => n.itemId === req.itemId);
+        const quantity = norm?.quantity ?? 1;
+
+        // Find or create a DRAFT/ISSUING batch for the employee's department
+        const emp = ppeEmployees.find(e => e.id === req.employeeId);
+        if (!emp) return;
+
+        let targetBatch = batches.find(b => b.department === emp.department && b.status !== 'COMPLETED');
+        let targetBatchId: number;
+
+        if (!targetBatch) {
+          targetBatchId = nextBatchId;
+          const newBatch: PPEBatch = {
+            id: targetBatchId,
+            department: emp.department,
+            createdDate: new Date().toISOString().split('T')[0],
+            status: 'ISSUING',
+          };
+          setBatches(prev => [...prev, newBatch]);
+          setNextBatchId(prev => prev + 1);
+        } else {
+          targetBatchId = targetBatch.id;
         }
+
+        const newBatchItemId = nextBatchItemId;
+        const newBatchItem: PPEBatchItem = {
+          id: newBatchItemId,
+          batchId: targetBatchId,
+          employeeId: req.employeeId,
+          itemId: req.itemId,
+          requiredQuantity: quantity,
+          receivedQuantity: 0,
+          status: 'NOT_RECEIVED',
+          isRecorded: false,
+          source: 'REPLACEMENT',
+        };
+        setBatchItems(prev => [...prev, newBatchItem]);
+        setNextBatchItemId(prev => prev + 1);
+
+        // Link request to batch item
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, linkedBatchItemId: newBatchItemId } : r));
+
+        toast({ title: 'Đã duyệt và tạo phiếu cấp đổi trong kho' });
+        return;
       }
     }
     toast({ title: action === 'APPROVED' ? 'Đã duyệt' : 'Đã từ chối' });
-  }, [requests, nextHistoryId]);
+  }, [requests, nextHistoryId, nextBatchId, nextBatchItemId, batches]);
 
   // ===== Derived data =====
   const myHistories = useMemo(() =>
@@ -184,8 +252,8 @@ export default function PPEDistributionPage() {
     [histories, selectedEmployeeId]
   );
 
-  const myEligibleItems = useMemo(() =>
-    getEligibleItems(selectedEmployee, ppeItemDefs),
+  const myNorms = useMemo(() =>
+    getEmployeeNorms(selectedEmployee, ppeNorms),
     [selectedEmployee]
   );
 
@@ -203,7 +271,6 @@ export default function PPEDistributionPage() {
           <h1 className="text-2xl font-bold text-foreground">PPE Management (Bảo hộ lao động)</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Role Switcher */}
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-muted-foreground">Vai trò:</span>
             <Select value={role} onValueChange={v => setRole(v as PPERole)}>
@@ -244,7 +311,6 @@ export default function PPEDistributionPage() {
       {/* ===== EMPLOYEE VIEW ===== */}
       {role === 'EMPLOYEE' && (
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* My PPE */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -256,6 +322,25 @@ export default function PPEDistributionPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Show norms for this employee */}
+              <div className="mb-4 p-3 rounded-lg bg-muted/50">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Định mức theo nghề ({jobTypeLabels[selectedEmployee.jobType]}):</p>
+                {myNorms.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Không có định mức bảo hộ cho loại công việc này.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {myNorms.map(n => {
+                      const item = ppeItemDefs.find(i => i.id === n.itemId);
+                      return (
+                        <p key={n.id} className="text-xs">
+                          {item?.name}: <strong>{n.quantity}</strong> / {n.cycleMonths} tháng
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               {myHistories.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Chưa có vật tư nào được cấp.</p>
               ) : (
@@ -310,6 +395,9 @@ export default function PPEDistributionPage() {
                         <p className="text-xs text-muted-foreground">
                           Lý do: {r.reason === 'BROKEN' ? 'Hỏng' : 'Mất'} — {r.createdAt}
                         </p>
+                        {r.linkedBatchItemId && (
+                          <p className="text-xs text-primary mt-1">→ Đã tạo phiếu cấp kho #{r.linkedBatchItemId}</p>
+                        )}
                       </div>
                       <Badge className={replacementStatusColors[r.status]}>
                         {replacementStatusLabels[r.status]}
@@ -364,7 +452,6 @@ export default function PPEDistributionPage() {
               })
             )}
 
-            {/* All requests */}
             {requests.filter(r => r.status !== 'PENDING').length > 0 && (
               <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">Đã xử lý</h3>
@@ -376,6 +463,9 @@ export default function PPEDistributionPage() {
                       <div>
                         <p className="font-medium text-sm">{emp?.name} — {item?.name}</p>
                         <p className="text-xs text-muted-foreground">{r.reason === 'BROKEN' ? 'Hỏng' : 'Mất'}</p>
+                        {r.linkedBatchItemId && (
+                          <p className="text-xs text-primary">→ Phiếu kho #{r.linkedBatchItemId}</p>
+                        )}
                       </div>
                       <Badge className={replacementStatusColors[r.status]}>
                         {replacementStatusLabels[r.status]}
@@ -392,15 +482,48 @@ export default function PPEDistributionPage() {
       {/* ===== HR VIEW ===== */}
       {role === 'HR' && (
         <div className="space-y-6">
+          {/* Norm Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Bảng định mức PPE theo nghề
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Nghề</th>
+                      <th className="text-left p-2">Vật tư</th>
+                      <th className="text-left p-2">Số lượng</th>
+                      <th className="text-left p-2">Chu kỳ (tháng)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ppeNorms.map(n => {
+                      const item = ppeItemDefs.find(i => i.id === n.itemId);
+                      return (
+                        <tr key={n.id} className="border-b hover:bg-muted/30">
+                          <td className="p-2">{jobTypeLabels[n.jobType]}</td>
+                          <td className="p-2">{item?.name}</td>
+                          <td className="p-2 font-medium">{n.quantity}</td>
+                          <td className="p-2">{n.cycleMonths}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Create Batch */}
           <div className="flex gap-3">
             <Button onClick={() => setShowCreateBatch(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Tạo đợt cấp phát
-            </Button>
-            <Button variant="outline" onClick={finalizeFullItems}>
-              <Package className="h-4 w-4 mr-2" />
-              Ghi nhận lịch sử (items đã nhận đủ)
             </Button>
           </div>
 
@@ -409,6 +532,7 @@ export default function PPEDistributionPage() {
             {batches.map(batch => {
               const items = batchItems.filter(bi => bi.batchId === batch.id);
               const employeeIds = [...new Set(items.map(bi => bi.employeeId))];
+              const unrecoredFull = items.filter(bi => bi.status === 'FULL' && !bi.isRecorded).length;
 
               return (
                 <Card key={batch.id}>
@@ -417,21 +541,39 @@ export default function PPEDistributionPage() {
                       <div>
                         <CardTitle className="text-lg">Đợt #{batch.id} — {batch.department}</CardTitle>
                         <CardDescription>
-                          Ngày tạo: {batch.createdDate} — {batchStatusLabels[batch.status]}
+                          Ngày tạo: {batch.createdDate} —{' '}
+                          <Badge variant="outline">{batchStatusLabels[batch.status]}</Badge>
                         </CardDescription>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => setShowBatchDetail(batch.id)}>
-                        Chi tiết
-                      </Button>
+                      <div className="flex gap-2">
+                        {batch.status === 'DRAFT' && (
+                          <Button size="sm" onClick={() => startBatch(batch.id)}>
+                            <Clock className="h-4 w-4 mr-1" />
+                            Bắt đầu cấp
+                          </Button>
+                        )}
+                        {unrecoredFull > 0 && (
+                          <Button size="sm" variant="outline" onClick={() => finalizeFullItems(batch.id)}>
+                            <History className="h-4 w-4 mr-1" />
+                            Ghi lịch sử ({unrecoredFull})
+                          </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={() => setShowBatchDetail(batch.id)}>
+                          Chi tiết
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-4 text-sm">
+                    <div className="flex gap-4 text-sm flex-wrap">
                       <span>{employeeIds.length} nhân viên</span>
                       <span>{items.length} mục</span>
                       <span className="text-green-600">{items.filter(i => i.status === 'FULL').length} đã nhận đủ</span>
                       <span className="text-yellow-600">{items.filter(i => i.status === 'PARTIAL').length} nhận một phần</span>
                       <span className="text-red-600">{items.filter(i => i.status === 'NOT_RECEIVED').length} chưa nhận</span>
+                      {items.some(i => i.source === 'REPLACEMENT') && (
+                        <span className="text-primary">📋 Có phiếu cấp đổi</span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -503,16 +645,25 @@ export default function PPEDistributionPage() {
             <DialogDescription>Quy trình cấp phát và cấp đổi bảo hộ lao động</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 text-sm">
+            <div className="bg-primary/5 p-4 rounded-lg">
+              <h3 className="font-semibold text-base mb-2">📋 Định mức theo nghề (PPENorm)</h3>
+              <p className="text-muted-foreground">
+                Mỗi loại công việc (Hầm lò, Nặng nhọc, Văn phòng) có bảng định mức riêng.
+                Hệ thống tự động xác định vật tư cần cấp dựa trên nghề của nhân viên.
+              </p>
+            </div>
             <div>
               <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
                 <Package className="h-4 w-4 text-primary" />
                 1. Cấp phát theo đợt (Batch)
               </h3>
               <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                <li>HR tạo đợt cấp phát theo phòng ban</li>
-                <li>Hệ thống <strong>tự động</strong> tạo danh sách dựa trên loại công việc và chu kỳ cấp</li>
-                <li>Kho cấp phát nhiều lần nếu thiếu hàng</li>
-                <li>Nhận đủ → tự động ghi nhận lịch sử + tính hạn mới</li>
+                <li>HR tạo đợt cấp phát theo phòng ban → trạng thái <strong>DRAFT</strong></li>
+                <li>Hệ thống <strong>tự động</strong> tạo danh sách dựa trên định mức nghề và chu kỳ cấp</li>
+                <li><strong>Chống trùng</strong>: Không tạo mục nếu đã có trong đợt đang xử lý</li>
+                <li>Chuyển sang <strong>ISSUING</strong> khi bắt đầu cấp phát</li>
+                <li>Tất cả nhận đủ → tự động <strong>COMPLETED</strong></li>
+                <li>Cho phép cấp trước <strong>{ISSUE_THRESHOLD_DAYS} ngày</strong> trước hạn</li>
               </ul>
             </div>
             <div>
@@ -521,9 +672,10 @@ export default function PPEDistributionPage() {
                 2. Nhận nhiều lần (Partial Receiving)
               </h3>
               <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                <li>Có thể nhận thiếu (ví dụ: cần 2, nhận 1 trước)</li>
-                <li>Quay lại nhận tiếp khi kho có hàng</li>
-                <li>Trạng thái: <Badge className={batchItemStatusColors.NOT_RECEIVED}>{batchItemStatusLabels.NOT_RECEIVED}</Badge>{' '}
+                <li>Có thể nhận thiếu → quay lại nhận tiếp</li>
+                <li>Mỗi lần nhận được <strong>ghi log</strong> (ngày, số lượng)</li>
+                <li>Trạng thái: {' '}
+                  <Badge className={batchItemStatusColors.NOT_RECEIVED}>{batchItemStatusLabels.NOT_RECEIVED}</Badge>{' '}
                   <Badge className={batchItemStatusColors.PARTIAL}>{batchItemStatusLabels.PARTIAL}</Badge>{' '}
                   <Badge className={batchItemStatusColors.FULL}>{batchItemStatusLabels.FULL}</Badge>
                 </li>
@@ -537,15 +689,17 @@ export default function PPEDistributionPage() {
               <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                 <li>Chỉ khi vật tư <strong>còn hạn</strong></li>
                 <li>Cần quản lý duyệt</li>
-                <li>Sau khi duyệt → cập nhật lịch sử mới</li>
+                <li>Sau khi duyệt → tạo <strong>phiếu cấp trong kho</strong> (mini batch)</li>
+                <li>Kho cấp phát → ghi nhận lịch sử</li>
               </ul>
             </div>
             <div className="bg-destructive/10 p-4 rounded-lg">
               <h3 className="font-semibold text-base mb-2 text-destructive">⚠️ Quy tắc quan trọng</h3>
               <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                <li><strong>Không cấp</strong> nếu chưa đến hạn (hệ thống tự kiểm tra)</li>
+                <li><strong>Không cấp</strong> nếu chưa đến hạn (trừ {ISSUE_THRESHOLD_DAYS} ngày trước)</li>
                 <li><strong>Không xin cấp đổi</strong> nếu đã hết hạn → chờ đợt cấp phát</li>
                 <li><strong>Số lượng</strong> do hệ thống quyết định theo định mức</li>
+                <li><strong>Không duplicate</strong>: Không tạo mục trùng trong đợt đang xử lý</li>
               </ul>
             </div>
           </div>
@@ -574,7 +728,8 @@ export default function PPEDistributionPage() {
               </Select>
             </div>
             <p className="text-sm text-muted-foreground">
-              Hệ thống sẽ tự động tạo danh sách vật tư cần cấp dựa trên loại công việc và chu kỳ cấp.
+              Hệ thống tự động tạo danh sách dựa trên <strong>định mức nghề</strong> và chu kỳ cấp.
+              Batch tạo ở trạng thái <strong>Nháp</strong>, cần bấm "Bắt đầu cấp" để chuyển sang cấp phát.
             </p>
           </div>
           <DialogFooter>
@@ -589,9 +744,33 @@ export default function PPEDistributionPage() {
         batchId={showBatchDetail}
         batches={batches}
         batchItems={batchItems}
+        receiveLogs={receiveLogs}
         onClose={() => setShowBatchDetail(null)}
         onReceive={receiveItem}
+        onShowReceiveLog={setShowReceiveLog}
       />
+
+      {/* Receive Log Modal (FIX #7) */}
+      <Dialog open={showReceiveLog !== null} onOpenChange={() => setShowReceiveLog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lịch sử nhận hàng</DialogTitle>
+            <DialogDescription>Chi tiết từng lần nhận</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {showReceiveLog !== null && receiveLogs.filter(l => l.batchItemId === showReceiveLog).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Chưa có lần nhận nào.</p>
+            ) : (
+              receiveLogs.filter(l => l.batchItemId === showReceiveLog).map(log => (
+                <div key={log.id} className="flex justify-between p-3 rounded-lg border">
+                  <span className="text-sm">{log.date}</span>
+                  <span className="text-sm font-medium">+{log.quantity}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Replacement Request Modal */}
       <Dialog open={showCreateRequest} onOpenChange={setShowCreateRequest}>
@@ -602,17 +781,18 @@ export default function PPEDistributionPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Vật tư</label>
+              <label className="text-sm font-medium">Vật tư (theo định mức nghề)</label>
               <Select value={requestItemId ? String(requestItemId) : ''} onValueChange={v => setRequestItemId(Number(v))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn vật tư" />
                 </SelectTrigger>
                 <SelectContent>
-                  {myEligibleItems.map(item => {
-                    const check = canRequestReplacement(histories, selectedEmployeeId, item.id);
+                  {myNorms.map(norm => {
+                    const item = ppeItemDefs.find(i => i.id === norm.itemId);
+                    const check = canRequestReplacement(histories, selectedEmployeeId, norm.itemId);
                     return (
-                      <SelectItem key={item.id} value={String(item.id)} disabled={!check.allowed}>
-                        {item.name} {!check.allowed ? `(${check.reason})` : ''}
+                      <SelectItem key={norm.id} value={String(norm.itemId)} disabled={!check.allowed}>
+                        {item?.name} {!check.allowed ? `(${check.reason})` : ''}
                       </SelectItem>
                     );
                   })}
@@ -647,14 +827,18 @@ function BatchDetailModal({
   batchId,
   batches,
   batchItems,
+  receiveLogs,
   onClose,
   onReceive,
+  onShowReceiveLog,
 }: {
   batchId: number | null;
   batches: PPEBatch[];
   batchItems: PPEBatchItem[];
+  receiveLogs: PPEReceiveLog[];
   onClose: () => void;
   onReceive: (id: number, qty: number) => void;
+  onShowReceiveLog: (batchItemId: number) => void;
 }) {
   const [receiveQty, setReceiveQty] = useState<Record<number, number>>({});
 
@@ -670,7 +854,9 @@ function BatchDetailModal({
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Chi tiết đợt #{batch.id} — {batch.department}</DialogTitle>
-          <DialogDescription>Quản lý nhận hàng cho từng nhân viên</DialogDescription>
+          <DialogDescription>
+            Trạng thái: <Badge variant="outline">{batchStatusLabels[batch.status]}</Badge>
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
           {employeeIds.map(empId => {
@@ -683,14 +869,21 @@ function BatchDetailModal({
                   {empItems.map(bi => {
                     const item = ppeItemDefs.find(i => i.id === bi.itemId);
                     const statusIcon = bi.status === 'FULL' ? '✔' : bi.status === 'PARTIAL' ? '⚠️' : '❌';
+                    const logCount = receiveLogs.filter(l => l.batchItemId === bi.id).length;
                     return (
                       <div key={bi.id} className="flex items-center justify-between gap-4 p-3 bg-muted/30 rounded-lg">
                         <div className="flex items-center gap-3">
                           <span>{statusIcon}</span>
                           <div>
-                            <p className="font-medium text-sm">{item?.name}</p>
+                            <p className="font-medium text-sm">
+                              {item?.name}
+                              {bi.source === 'REPLACEMENT' && (
+                                <Badge variant="outline" className="ml-2 text-xs">Cấp đổi</Badge>
+                              )}
+                            </p>
                             <p className="text-xs text-muted-foreground">
                               [{bi.receivedQuantity} / {bi.requiredQuantity}]
+                              {bi.isRecorded && <span className="ml-2 text-green-600">✓ Đã ghi lịch sử</span>}
                             </p>
                           </div>
                         </div>
@@ -698,7 +891,13 @@ function BatchDetailModal({
                           <Badge className={batchItemStatusColors[bi.status]}>
                             {batchItemStatusLabels[bi.status]}
                           </Badge>
-                          {bi.status !== 'FULL' && (
+                          {logCount > 0 && (
+                            <Button size="sm" variant="ghost" onClick={() => onShowReceiveLog(bi.id)} title="Xem lịch sử nhận">
+                              <History className="h-3 w-3" />
+                              <span className="text-xs ml-1">{logCount}</span>
+                            </Button>
+                          )}
+                          {bi.status !== 'FULL' && batch.status === 'ISSUING' && (
                             <>
                               <Input
                                 type="number"
