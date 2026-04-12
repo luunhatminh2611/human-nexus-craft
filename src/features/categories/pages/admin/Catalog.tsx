@@ -35,7 +35,7 @@ import ReligionTab from '../../components/ReligionTab';
 import PartyCommitteeTab from '../../components/PartyCommitteeTab';
 import SalaryPayrollTab from '../../components/SalaryPayrollTab';
 import SalaryScaleTab from '../../components/SalaryScaleTab';
-
+import CompanyTab from '@/features/categories/components/CompanyTab';
 
 interface Category {
   id: string;
@@ -46,6 +46,7 @@ interface Category {
 
 const categories: Category[] = [
   // Nhóm Nhân sự
+  { id: 'company', label: 'Công ty', component: CompanyTab, group: 'Nhân sự' },
   { id: 'jobTitles', label: 'Chức danh', component: JobTitlesTab, group: 'Nhân sự' },
   { id: 'contractType', label: 'Loại hợp đồng', component: LaborContractTypeTab, group: 'Nhân sự' },
   { id: 'department', label: 'Phòng Ban', component: DepartmentTabs, group: 'Nhân sự' },

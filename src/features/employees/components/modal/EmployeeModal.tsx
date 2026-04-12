@@ -93,7 +93,8 @@ const PendingSelect = ({ value, onChange, placeholder = 'Chọn...' }: any) => (
 // ─── Empty form (88 trường theo đúng spec) ───────────────────────────────────
 const createEmptyForm = () => ({
   id: '',
-
+  companyId: '',
+  companyName: '',
   // ════ TAB 1: THÔNG TIN CƠ BẢN ════════════════════════════════════════════
   // [1]  Phòng ban *         → danh mục PhongBan
   departmentId: '',
@@ -302,7 +303,8 @@ const createEmptyForm = () => ({
 // ─── Map API response → formData ─────────────────────────────────────────────
 const mapResponseToForm = (d: any) => ({
   id: d.id ?? '',
-
+  companyId: d.companyId?.toString() ?? '',
+  companyName: d.companyName ?? '',
   // ── Định danh ──────────────────────────────────────────────────────────────
   code: d.code ?? '',
   fullName: d.fullName ?? d.name ?? '',
@@ -445,119 +447,111 @@ const mapResponseToForm = (d: any) => ({
 
 // ─── Map formData → API payload ───────────────────────────────────────────────
 const mapFormToPayload = (f: any, mode: string) => ({
-  ...(mode === 'edit' && { id: Number(f.id) }),
+  ...(mode === 'edit' && { id: Number(f.id) }),  // id vẫn là number
 
-  // ── Định danh ──────────────────────────────────────────────────────────────
-  code: f.code,                          // spec dùng "employeeCode" nhưng thử "code" trước
+  code: f.code,
   fullName: f.fullName,
   otherName: f.otherName || null,
   gender: f.gender,
-  dateOfBirth: f.birthDate || null,      // ✅ spec dùng "dateOfBirth" không phải "birthDate"
-  birthDate: f.birthDate || null,        // gửi cả hai
+  dateOfBirth: f.birthDate || null,
   status: STATUS_REVERSE_MAP[f.status] ?? f.status,
   startDate: f.startDate || null,
   taxCode: f.taxCode || null,
 
-  // ── Cấp ủy – flat ID string ────────────────────────────────────────────────
-  partyCommitteeId: f.partyCommitteeId || null,      // ✅ flat string, KHÔNG wrap object
-  subPartyCommitteeId: f.subPartyCommitteeId || null,
-
-  // ── Chức vụ – flat ID string ───────────────────────────────────────────────
+  // ── Spec = "string" → giữ nguyên string ──────────────────
+  companyId: f.companyId || null,
+  departmentId: f.departmentId || null,
   positionId: f.positionId || null,
   subPositionId: f.subPositionId || null,
   jobTitleId: f.jobTitleId || null,
   jobPositionId: f.jobPositionId || null,
-  departmentId: f.departmentId || null,
+  partyCommitteeId: f.partyCommitteeId || null,
+  subPartyCommitteeId: f.subPartyCommitteeId || null,
+  organizationId: f.organizationId || null,
 
-  // ── Địa chỉ ───────────────────────────────────────────────────────────────
+  // ── provinceCityId, wardId không có trong swagger PUT ────
+  // → hỏi BE, tạm thời vẫn gửi lên
+  provinceCityId: f.provinceCityId || null,
+  wardId: f.wardId || null,
+
+  // ── Spec = number → convert Number() ─────────────────────
+  foreignLanguageId: f.languageId ? Number(f.languageId) : null,
+  languageLevelId: f.languageLevelId ? Number(f.languageLevelId) : null,
+  payrollId: f.salaryPayrollId ? Number(f.salaryPayrollId) : null,
+  salaryScaleId: f.salaryScaleId ? Number(f.salaryScaleId) : null,
+  salaryCoefficient: f.salaryCoefficient ? Number(f.salaryCoefficient) : null,
+  salaryAmount: f.salaryAmount ? Number(f.salaryAmount) : null,
+  laborContractTypeId: f.laborContractTypeId ? Number(f.laborContractTypeId) : null,
+  culturalLevelId: f.culturalLevelId ? Number(f.culturalLevelId) : null,
+  professionalLevelId: f.professionalLevelId ? Number(f.professionalLevelId) : null,
+  itLevelId: f.itLevelId ? Number(f.itLevelId) : null,
+  trainingMajorId: f.trainingMajorId ? Number(f.trainingMajorId) : null,
+  militaryRankId: f.militaryRankId ? Number(f.militaryRankId) : null,
+  policyFamilyId: f.policyFamilyId ? Number(f.policyFamilyId) : null,
+  occupationId: f.occupationId ? Number(f.occupationId) : null,
+  socialInsuranceJobId: f.socialInsuranceJobId ? Number(f.socialInsuranceJobId) : null,
+  decreaseReasonId: f.decreaseReasonId ? Number(f.decreaseReasonId) : null,
+  increaseReasonId: f.increaseReasonId ? Number(f.increaseReasonId) : null,
+  injuryRank: f.injuryRank ? Number(f.injuryRank) : null,
+  height: f.height ? Number(f.height) : null,
+  weight: f.weight ? Number(f.weight) : null,
+  familyIncome: f.familyIncome ? Number(f.familyIncome) : null,
+  housingArea: f.housingArea ? Number(f.housingArea) : null,
+  usableArea: f.usableArea ? Number(f.usableArea) : null,
+  grantedLandArea: f.grantedLandArea ? Number(f.grantedLandArea) : null,
+  purchasedLandArea: f.purchasedLandArea ? Number(f.purchasedLandArea) : null,
+
+  // ── Địa chỉ (string) ──────────────────────────────────────
   contactAddress: f.contactAddress || null,
   permanentAddress: f.permanentAddress || null,
   nativePlace: f.nativePlace || null,
   homeTown: f.homeTown || null,
   birthPlace: f.birthPlace || null,
 
-  // ── Thông tin khác ────────────────────────────────────────────────────────
+  // ── Còn lại ───────────────────────────────────────────────
+  positionAllowance: f.positionAllowance ? Number(f.positionAllowance) : null,
   ethnicity: f.ethnicity || null,
   religion: f.religion || null,
-  nationalityId: f.nationalityId || null,          // ❓ không có trong spec, hỏi BE
-  policyFamilyId: f.policyFamilyId ? Number(f.policyFamilyId) : null,
-
   youthUnionJoinDate: f.youthUnionJoinDate || null,
   partyJoinDate: f.partyJoinDate || null,
   partyOfficialDate: f.partyOfficialDate || null,
   militaryJoinDate: f.militaryJoinDate || null,
   militaryEndDate: f.militaryEndDate || null,
   title: f.title || null,
-  militaryRankId: f.militaryRankId ? Number(f.militaryRankId) : null,
-  injuryRank: f.injuryRank ? Number(f.injuryRank) : null,
   isWoundedSoldier: f.isWoundedSoldier,
-
   healthStatus: f.healthStatus || null,
-  height: f.height ? Number(f.height) : null,
-  weight: f.weight ? Number(f.weight) : null,
   bloodType: f.bloodType || null,
-
   cccdNumber: f.cccdNumber || null,
   cccdDate: f.cccdDate || null,
   cccdPlace: f.cccdPlace || null,
-
-  // ── Nguồn thu nhập ────────────────────────────────────────────────────────
-  familyIncome: f.familyIncome ? Number(f.familyIncome) : null,
   otherIncome: f.otherIncome || null,
   housingType: f.housingType || null,
-  housingArea: f.housingArea ? Number(f.housingArea) : null,
   selfHousingType: f.selfHousingType || null,
-  usableArea: f.usableArea ? Number(f.usableArea) : null,
-  grantedLandArea: f.grantedLandArea ? Number(f.grantedLandArea) : null,
-  purchasedLandArea: f.purchasedLandArea ? Number(f.purchasedLandArea) : null,
   otherLand: f.otherLand || null,
-
   bankAccountNumber: f.bankAccountNumber || null,
   bankName: f.bankName || null,
   bankAccountHolder: f.bankAccountHolder || null,
   bankBranch: f.bankBranch || null,
-
-  // ── Trình độ ──────────────────────────────────────────────────────────────
   previousJob: f.previousJob || null,
   recruitmentDate: f.recruitmentDate || null,
-  organizationId: f.organizationId || null,
   organizationAddress: f.organizationAddress || null,
   educationDetail: f.educationDetail || null,
-  educationLevelId: f.educationLevelId ? Number(f.educationLevelId) : null,  // ❓ hỏi BE
-  politicalTheoryId: f.politicalTheoryId ? Number(f.politicalTheoryId) : null, // ❓ hỏi BE
-  culturalLevelId: f.culturalLevelId ? Number(f.culturalLevelId) : null,
-  professionalLevelId: f.professionalLevelId ? Number(f.professionalLevelId) : null,
-  itLevelId: f.itLevelId ? Number(f.itLevelId) : null,
-  trainingMajorId: f.trainingMajorId ? Number(f.trainingMajorId) : null,
-  laborContractTypeId: f.laborContractTypeId ? Number(f.laborContractTypeId) : null,
-  socialInsuranceJobId: f.socialInsuranceJobId ? Number(f.socialInsuranceJobId) : null,
-  occupationId: f.occupationId ? Number(f.occupationId) : null,
-
   currentJobDetail: f.currentJobDetail || null,
   workStrength: f.workStrength || null,
   longestJob: f.longestJob || null,
-
-  // ── Lương & BHXH ──────────────────────────────────────────────────────────
-  payrollId: f.salaryPayrollId ? Number(f.salaryPayrollId) : null,   // ✅ spec dùng "payrollId"
-  salaryScaleId: f.salaryScaleId ? Number(f.salaryScaleId) : null,
-  salaryCoefficient: f.salaryCoefficient ? Number(f.salaryCoefficient) : null,
-  salaryAmount: f.salaryAmount ? Number(f.salaryAmount) : null,
-  effectiveDate: f.salaryEffectiveDate || null,                       // ✅ spec dùng "effectiveDate"
+  effectiveDate: f.salaryEffectiveDate || null,
   socialInsuranceNumber: f.socialInsuranceNumber || null,
-
-  // ── Lịch sử bản thân ──────────────────────────────────────────────────────
   legalHistory: f.legalHistory || null,
   workedInOldRegime: f.workedInOldRegime || null,
   foreignOrganizationRelation: f.foreignOrganizationRelation || null,
   relativesAbroad: f.relativesAbroad || null,
-
   note: f.note || null,
   cardNumber: f.cardNumber || null,
+  nationalityId: f.nationalityId || null,
 
-  ...(mode === 'edit' && f.user && { userId: f.user.id }),
+  ...(mode === 'edit' && f.user && { userId: Number(f.user.id) }),
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
 export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState(createEmptyForm());
@@ -606,11 +600,10 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.gender) return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn giới tính', variant: 'destructive' });
     if (!formData.departmentId) return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn phòng ban', variant: 'destructive' });
     const payload = mapFormToPayload(formData, mode);
-    console.log('=== PAYLOAD GỬI LÊN API ===', JSON.stringify(payload, null, 2));
-    console.log('=== FORM DATA ===', formData);
     mode === 'create' ? createMutation.mutate(payload) : updateMutation.mutate(payload);
   };
 
@@ -658,12 +651,26 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                 <div>
                   <SectionTitle>Thông tin định danh</SectionTitle>
                   <div className="grid grid-cols-3 gap-3">
+                    <Field label="Công ty" required>
+                      <CategorySelectField
+                        configKey="company"
+                        value={formData.companyId}
+                        displayValue={formData.companyName}
+                        onChange={v => set('companyId', v)}
+                      />
+                    </Field>
                     {/* [1] Phòng ban */}
                     <Field label="Phòng ban" required>
-                      <CategorySelectField configKey="department"
+                      <CategorySelectField
+                        configKey="department"
                         value={formData.departmentId}
                         displayValue={formData.departmentName}
-                        onChange={v => set('departmentId', v)} />
+                        onChange={v => set('departmentId', v)}
+                        onChangeWithName={(id, name) => {
+                          set('departmentId', id);
+                          set('departmentName', name);
+                        }}
+                      />
                     </Field>
                     {/* [2] Mã cán bộ */}
                     <Field label="Mã cán bộ" required>
@@ -781,8 +788,7 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
 
                     {/* Nơi ở hiện nay */}
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Nơi ở hiện nay</p>
-                      <Field label="Địa chỉ hiện tại">
+                      <Field label="Nơi ở hiện nay">
                         <Input
                           className="h-8 text-sm"
                           value={formData.contactAddress}
@@ -794,7 +800,7 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
 
                     {/* Nơi đăng ký thường trú */}
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Nơi đăng ký thường trú</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Thường trú</p>
                       <div className="grid grid-cols-3 gap-3">
                         <Field label="Tỉnh/Thành phố">
                           <CategorySelectField configKey="provinceCity"
@@ -808,7 +814,7 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                             displayValue={formData.wardName}
                             onChange={v => set('wardId', v)} />
                         </Field>
-                        <Field label="Địa chỉ chi tiết">
+                        <Field label="Nơi đăng ký thường trú">
                           <Input
                             className="h-8 text-sm"
                             value={formData.permanentAddress}

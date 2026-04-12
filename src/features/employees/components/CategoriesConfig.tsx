@@ -241,8 +241,17 @@ import { militaryRankApi } from "@/features/categories/api/categoriesApi";
 import { policyFamilyApi } from "@/features/categories/api/categoriesApi";
 import { socialInsuranceJobApi } from "@/features/categories/api/categoriesApi";
 import { partyCommitteeApi } from "@/features/categories/api/categoriesApi";
+import { companyApi } from '@/features/company/api/company';
+
 
 export const categoryConfigs = {
+  company: {
+    api: companyApi,
+    placeholder: "Chọn công ty",
+    modalTitle: "Tạo công ty mới",
+    FormComponent: CodeNameForm,
+    defaultForm: { name: "", code: "" },
+  },
   // Loại hợp đồng lao động
   laborContractType: {
     api: laborContractTypeApi,

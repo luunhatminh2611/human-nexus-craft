@@ -16,20 +16,13 @@ interface CategorySelectFieldProps {
   value: string;           // ID lưu trong formData
   onChange: (id: string) => void;
   displayValue?: string;   // Tên hiển thị lấy từ API (vd: provinceCityName)
-                           // → tránh chớp trắng khi list chưa load xong
+  onChangeWithName?: (id: string, name: string) => void;
 }
 
-const CategorySelectField = ({ configKey, value, onChange, displayValue = '' }: CategorySelectFieldProps) => {
+const CategorySelectField = ({ configKey, value, onChange, displayValue = '', onChangeWithName }: CategorySelectFieldProps) => {
   const cfg = categoryConfigs[configKey];
 
-  if (!cfg) {
-    return (
-      <PendingSelect
-        value={value}
-        onChange={onChange}
-      />
-    );
-  }
+  if (!cfg) return <PendingSelect value={value} onChange={onChange} />;
 
   return (
     <GenericSearchSelect
@@ -37,7 +30,13 @@ const CategorySelectField = ({ configKey, value, onChange, displayValue = '' }: 
       config={cfg}
       value={value}
       displayValue={displayValue}
-      onChange={(id: string) => onChange(id)}
+      onChange={(id: string, item?: any) => {
+        onChange(id);
+        // Nếu cần lưu thêm name thì gọi callback phụ
+        if (onChangeWithName && item) {
+          onChangeWithName(id, item.name);
+        }
+      }}
     />
   );
 };

@@ -813,7 +813,7 @@ export default function Employees() {
                 </SelectContent>
               </Select>
 
-              {selectedEmployeeId ? (
+              {/* {selectedEmployeeId ? (
                 <div>
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                     <Upload className="h-4 w-4 mr-1" />
@@ -840,7 +840,7 @@ export default function Employees() {
                     Tùy chỉnh cột
                   </Button>
                 </>
-              )}
+              )} */}
 
               <div className='flex gap-2'>
                 <Button
