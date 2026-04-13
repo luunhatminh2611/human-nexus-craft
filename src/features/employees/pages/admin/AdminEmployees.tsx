@@ -78,6 +78,8 @@ import EmployeeDocumentsTab from '../../components/EmployeeDocumentTab';
 import FamilyTab from '../../components/FamilyTab';
 import WorkScheduleTab from '../../components/WorkScheduleTab';
 import OverseasTab from '../../components/OverseasTab';
+import { FileDown, Loader2 } from 'lucide-react'; // thêm vào lucide import hiện tại
+import { generateLyLich } from '@/features/employees/components/Generate2C';
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState('employees');
@@ -117,6 +119,8 @@ export default function Employees() {
   const [decisionType, setDecisionType] = useState('all');
   const [medicalType, setMedicalType] = useState('record');
   const [isColumnSettingsOpen, setIsColumnSettingsOpen] = useState(false);
+  const [isExportingWord, setIsExportingWord] = useState(false);
+
 
   const [visibleColumns, setVisibleColumns] = useState({
     employeeName: true,
@@ -443,6 +447,82 @@ export default function Employees() {
         return [...prev, employeeId];
       }
     });
+  };
+
+  const handleExportLyLich = async (d: any) => {
+    // d = employee object (từ row trong bảng HOẶC từ employeeDetailData trong detail panel)
+    if (!d) return;
+    try {
+      setIsExportingWord(true);
+      await generateLyLich({
+        fullName: d.fullName ?? d.name,
+        gender: d.gender,
+        otherName: d.otherName,
+        partyCommitteeName: d.partyCommitteeName,
+        subPartyCommitteeName: d.subPartyCommitteeName,
+        positionName: d.positionName,
+        positionAllowance: d.positionAllowance,
+        dateOfBirth: d.dateOfBirth ?? d.birthday,
+        birthPlace: d.birthPlace,
+        nativePlace: d.nativePlace,
+        homeTown: d.homeTown,
+        contactAddress: d.contactAddress,
+        phone: userDetailData?.phone ?? d.phone,
+        permanentAddress: d.permanentAddress,
+        departmentName: d.departmentName,
+        companyName: d.companyName,
+        ethnicity: d.ethnicity,
+        religionName: d.religionName,
+        policyFamilyName: d.policyFamilyName,
+        youthUnionJoinDate: d.youthUnionJoinDate,
+        partyJoinDate: d.partyJoinDate,
+        partyOfficialDate: d.partyOfficialDate,
+        militaryJoinDate: d.militaryJoinDate,
+        militaryEndDate: d.militaryEndDate,
+        title: d.title,
+        militaryRankName: d.militaryRankName,
+        injuryRank: d.injuryRank,
+        isWoundedSoldier: d.isWoundedSoldier,
+        healthStatus: d.healthStatus,
+        height: d.height,
+        weight: d.weight,
+        bloodType: d.bloodType,
+        cccdNumber: d.cccdNumber,
+        previousJob: d.previousJob,
+        recruitmentDate: d.recruitmentDate,
+        organizationName: d.organizationName,
+        startDate: d.startDate,
+        educationDetail: d.educationDetail,
+        educationLevelName: d.educationLevelName,
+        politicalTheoryName: d.politicalTheoryName,
+        languageLevelName: d.languageLevelName,
+        currentJobDetail: d.currentJobDetail,
+        workStrength: d.workStrength,
+        longestJob: d.longestJob,
+        salaryScaleName: d.salaryScaleName,
+        salaryCoefficient: d.salaryCoefficient,
+        salaryAmount: d.salaryAmount,
+        salaryEffectiveDate: d.salaryEffectiveDate ?? d.effectiveDate,
+        socialInsuranceNumber: d.socialInsuranceNumber,
+        familyIncome: d.familyIncome,
+        otherIncome: d.otherIncome,
+        housingType: d.housingType,
+        housingArea: d.housingArea,
+        selfHousingType: d.selfHousingType,
+        usableArea: d.usableArea,
+        grantedLandArea: d.grantedLandArea,
+        purchasedLandArea: d.purchasedLandArea,
+        legalHistory: d.legalHistory,
+        workedInOldRegime: d.workedInOldRegime,
+        foreignOrganizationRelation: d.foreignOrganizationRelation,
+        relativesAbroad: d.relativesAbroad,
+      });
+    } catch (err) {
+      console.error('Export Word error:', err);
+      toast({ title: 'Lỗi', description: 'Không thể xuất file Word', variant: 'destructive' });
+    } finally {
+      setIsExportingWord(false);
+    }
   };
 
   // Toggle all checkboxes
@@ -1111,6 +1191,18 @@ export default function Employees() {
                                   <Button2
                                     variant="ghost"
                                     size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleExportLyLich(employee);
+                                    }}
+                                    disabled={isExportingWord}
+                                    title="Xuất sơ yếu lý lịch (.docx)"
+                                  >
+                                    <FileDown className="h-4 w-4" />
+                                  </Button2>
+                                  <Button2
+                                    variant="ghost"
+                                    size="sm"
                                     onClick={(e) => handleDeleteEmployee(employee.id, e)}
                                     title="Xóa"
                                     className="text-destructive hover:text-destructive"
@@ -1688,10 +1780,10 @@ export default function Employees() {
                               {subTab === 'leaves' && (
                                 <LeavesTab userData={employeeDetailData} />
                               )}
-                              {subTab === 'abroad' &&  (
-                                <OverseasTab 
+                              {subTab === 'abroad' && (
+                                <OverseasTab
                                   userData={employeeDetailData}
-                                  employeeId={selectedEmployeeId}                                  
+                                  employeeId={selectedEmployeeId}
                                 />
                               )}
                             </div>

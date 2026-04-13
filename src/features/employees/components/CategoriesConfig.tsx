@@ -242,7 +242,10 @@ import { policyFamilyApi } from "@/features/categories/api/categoriesApi";
 import { socialInsuranceJobApi } from "@/features/categories/api/categoriesApi";
 import { partyCommitteeApi } from "@/features/categories/api/categoriesApi";
 import { companyApi } from '@/features/company/api/company';
-
+import { religionApi } from '@/features/religion/api/religion';
+import { organizationApi } from '@/features/organization/api/organization';
+import { payrollApi } from '@/features/payroll/api/payroll';
+import { salaryScaleApi } from '@/features/scaleSalary/api/scaleSalary';
 
 export const categoryConfigs = {
   company: {
@@ -252,6 +255,15 @@ export const categoryConfigs = {
     FormComponent: CodeNameForm,
     defaultForm: { name: "", code: "" },
   },
+
+  organization: {
+    api: organizationApi,
+    placeholder: 'Chọn cơ quan tuyển dụng',
+    modalTitle: 'Tạo cơ quan tuyển dụng mới',
+    FormComponent: CodeNameForm,        // có sẵn: Mã + Tên
+    defaultForm: { name: '', code: '' },
+  },
+
   // Loại hợp đồng lao động
   laborContractType: {
     api: laborContractTypeApi,
@@ -303,6 +315,14 @@ export const categoryConfigs = {
     modalTitle: "Tạo bậc học",
     FormComponent: NameDescForm,
     defaultForm: { name: "", description: "" }
+  },
+
+  religion: {
+    api: religionApi,
+    placeholder: 'Chọn tôn giáo',
+    modalTitle: 'Tạo tôn giáo mới',
+    FormComponent: NameDescForm,
+    defaultForm: { name: '', description: '' },
   },
 
   // Dân tộc
@@ -371,8 +391,8 @@ export const categoryConfigs = {
   // Trình độ văn hóa
   culturalLevel: {
     api: culturalLevelApi,
-    placeholder: "Chọn trình độ văn hóa",
-    modalTitle: "Tạo trình độ văn hóa",
+    placeholder: "Chọn chuyên môn chính",
+    modalTitle: "Tạo chuyên môn chính",
     FormComponent: CodeNameDescForm,
     defaultForm: { name: "", code: "", description: "" }
   },
@@ -437,8 +457,8 @@ export const categoryConfigs = {
   // Quân hàm
   militaryRank: {
     api: militaryRankApi,
-    placeholder: "Chọn quân hàm",
-    modalTitle: "Tạo quân hàm",
+    placeholder: "Chọn danh hiệu",
+    modalTitle: "Tạo danh hiệu",
     FormComponent: CodeNameDescForm,
     defaultForm: { name: "", code: "", description: "" }
   },
@@ -474,6 +494,22 @@ export const categoryConfigs = {
     modalTitle: "Tạo cấp ủy",
     FormComponent: CodeNameForm,
     defaultForm: { name: "", code: "" },
+  },
+
+  payroll: {
+    api: payrollApi,
+    placeholder: 'Chọn bảng lương',
+    modalTitle: 'Tạo bảng lương mới',
+    FormComponent: CodeNameForm,
+    defaultForm: { name: '', code: '' },
+  },
+
+  salaryScale: {
+    api: salaryScaleApi,
+    placeholder: 'Chọn thang bảng lương',
+    modalTitle: 'Tạo thang bảng lương mới',
+    FormComponent: CodeNameForm,
+    defaultForm: { name: '', code: '' },
   },
 
   // Phòng ban (Department)

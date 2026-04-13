@@ -142,7 +142,8 @@ const createEmptyForm = () => ({
   // [23] Dân tộc             → danh mục DanToc
   ethnicity: '',
   // [24] Tôn giáo            → danh mục TonGiao (TODO)
-  religion: '',
+  religionId: '',
+  religionName: '',
   // [25] Quốc tịch           → danh mục QuocTich
   nationalityId: '',
   // [26] Thành phần gia đình xuất thân → danh mục ThanhPhanGiaDinh
@@ -209,6 +210,7 @@ const createEmptyForm = () => ({
   bankBranch: '',
 
   // ════ TAB 4: TRÌNH ĐỘ ════════════════════════════════════════════════════
+  organizationName: '',
   // [56] Nghề nghiệp trước khi được tuyển dụng
   previousJob: '',
   // [57] Ngày tuyển dụng     (dd/MM/yyyy)
@@ -247,6 +249,10 @@ const createEmptyForm = () => ({
   salaryScaleId: '',
   // [73] Hệ số lương         (số)
   salaryCoefficient: '',
+  salaryPayrollName: '',
+  salaryScaleName: '',
+  socialInsurancePayrollName: '',
+  socialInsuranceSalaryScaleName: '',
   // [74] Mức lương           (số)
   salaryAmount: '',
   // [75] Ngày áp dụng        (dd/MM/yyyy)
@@ -267,7 +273,7 @@ const createEmptyForm = () => ({
   unionSalary: '',
   // [83] Chức danh BHXH      → danh mục ChucDanh (TODO)
   socialInsuranceJobTitleId: '',
-
+  socialInsuranceJobTitleName: '',
   // ════ TAB 6: ĐẶC ĐIỂM LỊCH SỬ BẢN THÂN ════════════════════════════════
   // [84] Khai rõ: bị bắt, bị tù...
   legalHistory: '',
@@ -349,7 +355,8 @@ const mapResponseToForm = (d: any) => ({
 
   // ── Thông tin khác ────────────────────────────────────────────────────────
   ethnicity: d.ethnicity ?? '',
-  religion: d.religion ?? '',
+  religionId: d.religionId?.toString() ?? '',
+  religionName: d.religionName ?? '',
   nationalityId: d.nationalityId?.toString() ?? '',
   nationalityName: d.nationalityName ?? '',
   policyFamilyId: d.policyFamilyId?.toString() ?? '',
@@ -393,10 +400,11 @@ const mapResponseToForm = (d: any) => ({
   bankBranch: d.bankBranch ?? '',
 
   // ── Trình độ ──────────────────────────────────────────────────────────────
+  organizationId: d.organizationId?.toString() ?? '',
+  organizationName: d.organizationName ?? '',
   previousJob: d.previousJob ?? '',
   recruitmentDate: d.recruitmentDate ?? '',
   startDate: d.startDate ?? '',
-  organizationId: d.organizationId?.toString() ?? '',
   organizationAddress: d.organizationAddress ?? '',
 
   educationDetail: d.educationDetail ?? '',
@@ -417,20 +425,24 @@ const mapResponseToForm = (d: any) => ({
   longestJob: d.longestJob ?? '',
 
   // ── Lương & BHXH ──────────────────────────────────────────────────────────
-  salaryPayrollId: d.salaries?.[0]?.payroll?.id?.toString() ?? '',
-  salaryScaleId: d.salaries?.[0]?.salaryScale?.id?.toString() ?? '',
   salaryCoefficient: d.salaries?.[0]?.salaryCoefficient?.toString() ?? '',
   salaryAmount: d.salaries?.[0]?.salaryAmount?.toString() ?? '',
   salaryEffectiveDate: d.salaries?.[0]?.effectiveDate ?? '',
-
+  salaryPayrollId: d.salaries?.[0]?.payroll?.id?.toString() ?? d.payrollId?.toString() ?? '',
+  salaryPayrollName: d.salaries?.[0]?.payroll?.name ?? d.payrollName ?? '',
+  salaryScaleId: d.salaries?.[0]?.salaryScale?.id?.toString() ?? d.salaryScaleId?.toString() ?? '',
+  salaryScaleName: d.salaries?.[0]?.salaryScale?.name ?? d.salaryScaleName ?? '',
   socialInsurancePayrollId: d.socialInsurancePayrollId?.toString() ?? '',
+  socialInsurancePayrollName: d.socialInsurancePayrollName ?? '',
   socialInsuranceSalaryScaleId: d.socialInsuranceSalaryScaleId?.toString() ?? '',
+  socialInsuranceSalaryScaleName: d.socialInsuranceSalaryScaleName ?? '',
+  socialInsuranceJobTitleId: d.socialInsuranceJobId?.toString() ?? '',
+  socialInsuranceJobTitleName: d.socialInsuranceJobName ?? '',
   socialInsuranceSalaryCoefficient: d.socialInsuranceSalaryCoefficient?.toString() ?? '',
   socialInsuranceSalaryAmount: d.socialInsuranceSalaryAmount?.toString() ?? '',
   socialInsurancePlace: d.socialInsurancePlace ?? '',
   socialInsuranceNumber: d.socialInsuranceNumber ?? '',
   unionSalary: d.unionSalary?.toString() ?? '',
-  socialInsuranceJobTitleId: d.socialInsuranceJobTitleId?.toString() ?? '',
 
   departmentId: d.departmentId?.toString() ?? '',
   departmentName: d.departmentName ?? '',
@@ -489,7 +501,7 @@ const mapFormToPayload = (f: any, mode: string) => ({
   militaryRankId: f.militaryRankId ? Number(f.militaryRankId) : null,
   policyFamilyId: f.policyFamilyId ? Number(f.policyFamilyId) : null,
   occupationId: f.occupationId ? Number(f.occupationId) : null,
-  socialInsuranceJobId: f.socialInsuranceJobId ? Number(f.socialInsuranceJobId) : null,
+  socialInsuranceJobId: f.socialInsuranceJobTitleId ? Number(f.socialInsuranceJobTitleId) : null,
   decreaseReasonId: f.decreaseReasonId ? Number(f.decreaseReasonId) : null,
   increaseReasonId: f.increaseReasonId ? Number(f.increaseReasonId) : null,
   injuryRank: f.injuryRank ? Number(f.injuryRank) : null,
@@ -511,7 +523,7 @@ const mapFormToPayload = (f: any, mode: string) => ({
   // ── Còn lại ───────────────────────────────────────────────
   positionAllowance: f.positionAllowance ? Number(f.positionAllowance) : null,
   ethnicity: f.ethnicity || null,
-  religion: f.religion || null,
+  religion: f.religionId || null,
   youthUnionJoinDate: f.youthUnionJoinDate || null,
   partyJoinDate: f.partyJoinDate || null,
   partyOfficialDate: f.partyOfficialDate || null,
@@ -861,7 +873,12 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                     {/* [24] Tôn giáo */}
                     <Field label="Tôn giáo">
-                      <PendingSelect value={formData.religion} onChange={(v: string) => set('religion', v)} placeholder="Chọn tôn giáo" />
+                      <CategorySelectField
+                        configKey="religion"
+                        value={formData.religionId}
+                        displayValue={formData.religionName}
+                        onChange={v => set('religionId', v)}
+                      />
                     </Field>
                     {/* [25] Quốc tịch */}
                     <Field label="Quốc tịch">
@@ -1098,7 +1115,12 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                     {/* [59] Cơ quan tuyển dụng */}
                     <Field label="Cơ quan tuyển dụng">
-                      <PendingSelect value={formData.organizationId} onChange={(v: string) => set('organizationId', v)} placeholder="Chọn cơ quan tuyển dụng" />
+                      <CategorySelectField
+                        configKey="organization"
+                        value={formData.organizationId}
+                        displayValue={formData.organizationName}
+                        onChange={v => set('organizationId', v)}
+                      />
                     </Field>
                     {/* [60] Địa chỉ cơ quan */}
                     <Field label="Địa chỉ cơ quan" className="col-span-2">
@@ -1189,11 +1211,21 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                   <div className="grid grid-cols-3 gap-3">
                     {/* [71] Bảng lương */}
                     <Field label="Bảng lương">
-                      <PendingSelect value={formData.salaryPayrollId} onChange={(v: string) => set('salaryPayrollId', v)} placeholder="Chọn bảng lương" />
+                      <CategorySelectField
+                        configKey="payroll"
+                        value={formData.salaryPayrollId}
+                        displayValue={formData.salaryPayrollName}
+                        onChange={v => set('salaryPayrollId', v)}
+                      />
                     </Field>
                     {/* [72] Thang bảng lương */}
                     <Field label="Thang bảng lương">
-                      <PendingSelect value={formData.salaryScaleId} onChange={(v: string) => set('salaryScaleId', v)} placeholder="Chọn thang bảng lương" />
+                      <CategorySelectField
+                        configKey="salaryScale"
+                        value={formData.salaryScaleId}
+                        displayValue={formData.salaryScaleName}
+                        onChange={v => set('salaryScaleId', v)}
+                      />
                     </Field>
                     {/* [73] Hệ số lương */}
                     <Field label="Hệ số lương">
@@ -1216,11 +1248,21 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                   <div className="grid grid-cols-3 gap-3">
                     {/* [76] Bảng lương BHXH */}
                     <Field label="Bảng lương BHXH">
-                      <PendingSelect value={formData.socialInsurancePayrollId} onChange={(v: string) => set('socialInsurancePayrollId', v)} placeholder="Chọn bảng lương BHXH" />
+                      <CategorySelectField
+                        configKey="payroll"
+                        value={formData.socialInsurancePayrollId}
+                        displayValue={formData.socialInsurancePayrollName}
+                        onChange={v => set('socialInsurancePayrollId', v)}
+                      />
                     </Field>
                     {/* [77] Thang bảng lương BHXH */}
                     <Field label="Thang bảng lương BHXH">
-                      <PendingSelect value={formData.socialInsuranceSalaryScaleId} onChange={(v: string) => set('socialInsuranceSalaryScaleId', v)} placeholder="Chọn thang bảng lương BHXH" />
+                      <CategorySelectField
+                        configKey="salaryScale"
+                        value={formData.socialInsuranceSalaryScaleId}
+                        displayValue={formData.socialInsuranceSalaryScaleName}
+                        onChange={v => set('socialInsuranceSalaryScaleId', v)}
+                      />
                     </Field>
                     {/* [78] Hệ số lương BHXH */}
                     <Field label="Hệ số lương BHXH">
@@ -1244,7 +1286,12 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                     {/* [83] Chức danh BHXH */}
                     <Field label="Chức danh BHXH">
-                      <PendingSelect value={formData.socialInsuranceJobTitleId} onChange={(v: string) => set('socialInsuranceJobTitleId', v)} placeholder="Chọn chức danh BHXH" />
+                      <CategorySelectField
+                        configKey="jobTitle"
+                        value={formData.socialInsuranceJobTitleId}
+                        displayValue={formData.socialInsuranceJobTitleName}
+                        onChange={v => set('socialInsuranceJobTitleId', v)}
+                      />
                     </Field>
                   </div>
                 </div>
