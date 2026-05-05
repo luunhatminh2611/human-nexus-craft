@@ -19,8 +19,6 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog';
 import { Textarea } from '@/shared/components/ui/textarea';
-import { Checkbox } from '@/shared/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { employeeApi } from '../../api/employeeApi';
 import { toast } from '@/shared/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -617,12 +615,17 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
     if (!formData.departmentId) return toast({ title: 'Thiếu thông tin', description: 'Vui lòng chọn phòng ban', variant: 'destructive' });
     const payload = mapFormToPayload(formData, mode);
     mode === 'create' ? createMutation.mutate(payload) : updateMutation.mutate(payload);
+    
   };
 
   const set = (field: string, value: any) =>
     setFormData(prev => ({ ...prev, [field]: value }));
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const description =
+    mode === 'create'
+      ? 'Nhập thông tin để tạo nhân viên mới. Các trường (*) là bắt buộc.'
+      : `Chỉnh sửa: ${employee?.data?.fullName ?? employee?.data?.name ?? ''}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -632,32 +635,15 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
             {mode === 'create' ? 'Thêm nhân viên' : 'Chỉnh sửa nhân viên'}
           </DialogTitle>
           <DialogDescription>
-            {mode === 'create'
-              ? 'Nhập thông tin để tạo nhân viên mới. Các trường (*) là bắt buộc.'
-              : `Chỉnh sửa: ${employee?.data?.fullName ?? employee?.data?.name ?? ''}`}
+            {description}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden min-h-0">
-          <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden min-h-0">
-
-            {/* Tab bar */}
-            <div className="px-6 pt-3 pb-0 border-b shrink-0">
-              <TabsList className="grid grid-cols-6 w-full">
-                <TabsTrigger value="basic">Thông tin cơ bản</TabsTrigger>
-                <TabsTrigger value="other">Thông tin khác</TabsTrigger>
-                <TabsTrigger value="finance">Nguồn thu nhập</TabsTrigger>
-                <TabsTrigger value="education">Trình độ</TabsTrigger>
-                <TabsTrigger value="insurance">Lương &amp; BHXH</TabsTrigger>
-                <TabsTrigger value="history">Lịch sử bản thân</TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0 space-y-6">
 
               {/* ══════════ TAB 1: THÔNG TIN CƠ BẢN ══════════ */}
-              <TabsContent value="basic" className="mt-0 space-y-6">
+              <div className="mt-0 space-y-6">
 
                 {/* [1–8] Định danh */}
                 <div>
@@ -856,10 +842,10 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
 
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* ══════════ TAB 2: THÔNG TIN KHÁC ══════════ */}
-              <TabsContent value="other" className="mt-0 space-y-6">
+              <div className="mt-0 space-y-6">
 
                 {/* [23–26] Thông tin cá nhân */}
                 <div>
@@ -1008,10 +994,10 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* ══════════ TAB 3: NGUỒN THU NHẬP ══════════ */}
-              <TabsContent value="finance" className="mt-0 space-y-6">
+              <div className="mt-0 space-y-6">
 
                 {/* [43–44] Thu nhập */}
                 <div>
@@ -1092,10 +1078,10 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* ══════════ TAB 4: TRÌNH ĐỘ ══════════ */}
-              <TabsContent value="education" className="mt-0 space-y-6">
+              <div className="mt-0 space-y-6">
 
                 {/* [56–60] Tuyển dụng */}
                 <div>
@@ -1200,10 +1186,10 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* ══════════ TAB 5: LƯƠNG & BHXH ══════════ */}
-              <TabsContent value="insurance" className="mt-0 space-y-6">
+              <div className="mt-0 space-y-6">
 
                 {/* [71–75] Lương chính */}
                 <div>
@@ -1295,10 +1281,10 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     </Field>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* ══════════ TAB 6: ĐẶC ĐIỂM LỊCH SỬ BẢN THÂN ══════════ */}
-              <TabsContent value="history" className="mt-0 space-y-6">
+              <div className="mt-0 space-y-6">
                 <div>
                   <SectionTitle>Đặc điểm lịch sử bản thân</SectionTitle>
                   <div className="space-y-4">
@@ -1356,10 +1342,9 @@ export default function EmployeeModal({ isOpen, onClose, employeeId, mode }) {
                     className="text-sm"
                   />
                 </div>
-              </TabsContent>
+              </div>
 
             </div>{/* end scroll area */}
-          </Tabs>
 
           <DialogFooter className="px-6 py-4 border-t shrink-0">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
