@@ -31,7 +31,6 @@ import {
 } from '@/shared/components/ui/popover';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Checkbox } from '@/shared/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { employeeApi } from '../../api/employeeApi';
 import { toast } from '@/shared/components/ui/use-toast';
 import { Loader2, X, Search, Check, ChevronsUpDown, Upload, Download, ChevronUp } from 'lucide-react';
@@ -81,6 +80,132 @@ export default function BulkEditEmployeeModal({
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const mapEmployeeToSelected = (employeeData: any) => ({
+        id: employeeData.id,
+        code: employeeData.code || '',
+        fullName: employeeData.name || '',
+        birthDate: employeeData.birthday || '',
+        birthPlace: employeeData.birthPlace || '',
+        startDate: employeeData.startDate || '',
+        endDate: employeeData.endDate || '',
+        gender: employeeData.gender || 'NAM',
+        status: employeeData.status || 'Đang công tác',
+
+        // CCCD
+        cccdNumber: employeeData.cccdNumber || '',
+        cccdDate: employeeData.cccdDate || '',
+        cccdPlace: employeeData.cccdPlace || '',
+
+        // Địa chỉ
+        contactAddress: employeeData.contactAddress || '',
+        nativePlace: employeeData.nativePlace || '',
+        homeTown: employeeData.homeTown || '',
+        permanentAddress: employeeData.permanentAddress || '',
+
+        // Công việc
+        departmentId: employeeData.departmentId?.toString() || '',
+        positionId: employeeData.positionId?.toString() || '',
+        laborContractTypeId: employeeData.laborContractTypeId?.toString() || '',
+        currentJobDetail: employeeData.currentJobDetail || '',
+        title: employeeData.title || '',
+        cardNumber: employeeData.cardNumber || '',
+        documentReturnDate: employeeData.documentReturnDate || '',
+        isWoundedSoldier: employeeData.isWoundedSoldier || false,
+
+        // Thông tin cá nhân
+        ethnicity: employeeData.ethnicity || '',
+        religion: employeeData.religion || '',
+        religionId: employeeData.religionId?.toString() || '',
+        nationalityId: employeeData.nationalityId?.toString() || '',
+        policyFamilyId: employeeData.policyFamilyId?.toString() || '',
+
+        // Địa chỉ hành chính
+        wardId: employeeData.wardId?.toString() || '',
+        provinceCityId: employeeData.provinceCityId?.toString() || '',
+
+        // Đào tạo / trình độ
+        specialtyId: employeeData.specialtyId?.toString() || '',
+        educationLevelId: employeeData.educationLevelId?.toString() || '',
+        educationDetail: employeeData.educationDetail || '',
+        politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
+        languageLevelId: employeeData.languageLevelId?.toString() || '',
+        languageId: employeeData.languageId?.toString() || '',
+        culturalLevelId: employeeData.culturalLevelId?.toString() || '',
+        professionalLevelId: employeeData.professionalLevelId?.toString() || '',
+        itLevelId: employeeData.itLevelId?.toString() || '',
+        trainingInstitutionId: employeeData.trainingInstitutionId?.toString() || '',
+        trainingMajorId: employeeData.trainingMajorId?.toString() || '',
+        trainingTypeId: employeeData.trainingTypeId?.toString() || '',
+
+        // BHXH
+        socialInsuranceNumber: employeeData.socialInsuranceNumber || '',
+        socialInsuranceStartDate: employeeData.socialInsuranceStartDate || '',
+        socialInsuranceJobId: employeeData.socialInsuranceJobId?.toString() || '',
+        socialInsurancePlace: employeeData.socialInsurancePlace || '',
+        socialInsurancePayrollId: employeeData.socialInsurancePayrollId?.toString() || '',
+        socialInsuranceSalaryScaleId: employeeData.socialInsuranceSalaryScaleId?.toString() || '',
+        socialInsuranceSalaryCoefficient: employeeData.socialInsuranceSalaryCoefficient || '',
+        socialInsuranceSalaryAmount: employeeData.socialInsuranceSalaryAmount || '',
+        socialInsuranceJobTitleId: employeeData.socialInsuranceJobTitleId?.toString() || '',
+        unionSalary: employeeData.unionSalary || '',
+
+        // Đảng, Đoàn, Quân đội
+        partyJoinDate: employeeData.partyJoinDate || '',
+        partyOfficialDate: employeeData.partyOfficialDate || '',
+        youthUnionJoinDate: employeeData.youthUnionJoinDate || '',
+        militaryJoinDate: employeeData.militaryJoinDate || '',
+        militaryEndDate: employeeData.militaryEndDate || '',
+        militaryRankId: employeeData.militaryRankId?.toString() || '',
+        injuryRank: employeeData.injuryRank || '',
+
+        // Ghi chú
+        note: employeeData.note || '',
+
+        // Bổ sung thông tin khác
+        companyId: employeeData.companyId?.toString() || '',
+        otherName: employeeData.otherName || '',
+        partyCommitteeId: employeeData.partyCommitteeId?.toString() || '',
+        subPartyCommitteeId: employeeData.subPartyCommitteeId?.toString() || '',
+        positionAllowance: employeeData.positionAllowance || '',
+        taxCode: employeeData.taxCode || '',
+        subPositionId: employeeData.subPositionId?.toString() || '',
+        jobTitleId: employeeData.jobTitleId?.toString() || '',
+        jobPositionId: employeeData.jobPositionId?.toString() || '',
+        organizationId: employeeData.organizationId?.toString() || '',
+        organizationAddress: employeeData.organizationAddress || '',
+        healthStatus: employeeData.healthStatus || '',
+        height: employeeData.height || '',
+        weight: employeeData.weight || '',
+        bloodType: employeeData.bloodType || '',
+        familyIncome: employeeData.familyIncome || '',
+        otherIncome: employeeData.otherIncome || '',
+        housingType: employeeData.housingType || '',
+        housingArea: employeeData.housingArea || '',
+        selfHousingType: employeeData.selfHousingType || '',
+        usableArea: employeeData.usableArea || '',
+        grantedLandArea: employeeData.grantedLandArea || '',
+        purchasedLandArea: employeeData.purchasedLandArea || '',
+        otherLand: employeeData.otherLand || '',
+        bankAccountNumber: employeeData.bankAccountNumber || '',
+        bankName: employeeData.bankName || '',
+        bankAccountHolder: employeeData.bankAccountHolder || '',
+        bankBranch: employeeData.bankBranch || '',
+        previousJob: employeeData.previousJob || '',
+        recruitmentDate: employeeData.recruitmentDate || '',
+        workStrength: employeeData.workStrength || '',
+        longestJob: employeeData.longestJob || '',
+        salaryPayrollId: employeeData.salaryPayrollId?.toString() || '',
+        salaryScaleId: employeeData.salaryScaleId?.toString() || '',
+        salaryCoefficient: employeeData.salaryCoefficient || '',
+        salaryAmount: employeeData.salaryAmount || '',
+        salaryEffectiveDate: employeeData.salaryEffectiveDate || '',
+        legalHistory: employeeData.legalHistory || '',
+        workedInOldRegime: employeeData.workedInOldRegime || '',
+        foreignOrganizationRelation: employeeData.foreignOrganizationRelation || '',
+        relativesAbroad: employeeData.relativesAbroad || '',
+        userId: employeeData.userId || null,
+    });
+
     // Định nghĩa tất cả các cột
     const allColumns = {
         required: [
@@ -92,53 +217,111 @@ export default function BulkEditEmployeeModal({
             { key: 'positionId', label: 'Chức vụ *' },
         ],
         optional: [
-            { key: 'gender', label: 'Giới tính', group: 'Cơ bản' },
-            { key: 'birthPlace', label: 'Nơi sinh', group: 'Cơ bản' },
-            { key: 'ethnicity', label: 'Dân tộc', group: 'Cơ bản' },
-            { key: 'religion', label: 'Tôn giáo', group: 'Cơ bản' },
-            { key: 'nationalityId', label: 'Quốc tịch', group: 'Cơ bản' },
-            { key: 'policyFamilyId', label: 'Gia đình CS', group: 'Cơ bản' },
-            { key: 'cccdNumber', label: 'Số CCCD', group: 'Cơ bản' },
-            { key: 'cccdDate', label: 'Ngày cấp CCCD', group: 'Cơ bản' },
-            { key: 'cccdPlace', label: 'Nơi cấp CCCD', group: 'Cơ bản' },
+            { key: 'companyId', label: 'Công ty', group: 'Thông tin định danh' },
+            { key: 'gender', label: 'Giới tính', group: 'Thông tin định danh' },
+            { key: 'otherName', label: 'Tên gọi khác', group: 'Thông tin định danh' },
+            { key: 'birthPlace', label: 'Nơi sinh', group: 'Thông tin định danh' },
+            { key: 'status', label: 'Trạng thái', group: 'Thông tin định danh' },
 
+            { key: 'partyCommitteeId', label: 'Cấp ủy hiện tại', group: 'Cấp ủy' },
+            { key: 'subPartyCommitteeId', label: 'Cấp ủy kiêm', group: 'Cấp ủy' },
+
+            { key: 'positionAllowance', label: 'Phụ cấp chức vụ', group: 'Chức vụ & Chức danh' },
+            { key: 'taxCode', label: 'Mã số thuế', group: 'Chức vụ & Chức danh' },
+            { key: 'subPositionId', label: 'Chức vụ kiêm', group: 'Chức vụ & Chức danh' },
+            { key: 'jobTitleId', label: 'Chức danh', group: 'Chức vụ & Chức danh' },
+            { key: 'jobPositionId', label: 'Vị trí công việc', group: 'Chức vụ & Chức danh' },
+
+            { key: 'contactAddress', label: 'Nơi ở hiện nay', group: 'Địa chỉ' },
             { key: 'provinceCityId', label: 'Tỉnh/TP', group: 'Địa chỉ' },
             { key: 'wardId', label: 'Phường/Xã', group: 'Địa chỉ' },
-            { key: 'contactAddress', label: 'Địa chỉ liên hệ', group: 'Địa chỉ' },
-            { key: 'permanentAddress', label: 'Hộ khẩu', group: 'Địa chỉ' },
+            { key: 'permanentAddress', label: 'Thường trú', group: 'Địa chỉ' },
             { key: 'nativePlace', label: 'Nguyên quán', group: 'Địa chỉ' },
             { key: 'homeTown', label: 'Quê quán', group: 'Địa chỉ' },
+            { key: 'organizationId', label: 'Cơ quan tuyển dụng', group: 'Địa chỉ' },
+            { key: 'organizationAddress', label: 'Địa chỉ cơ quan', group: 'Địa chỉ' },
 
-            { key: 'endDate', label: 'Ngày kết thúc', group: 'Công việc' },
-            { key: 'laborContractTypeId', label: 'Loại HĐ', group: 'Công việc' },
-            { key: 'currentJobDetail', label: 'Công việc cụ thể', group: 'Công việc' },
-            { key: 'title', label: 'Danh hiệu', group: 'Công việc' },
-            { key: 'cardNumber', label: 'Số thẻ từ', group: 'Công việc' },
-            { key: 'documentReturnDate', label: 'Ngày trả HS', group: 'Công việc' },
-            { key: 'isWoundedSoldier', label: 'Thương binh', group: 'Công việc' },
+            { key: 'ethnicity', label: 'Dân tộc', group: 'Thông tin cá nhân' },
+            { key: 'religionId', label: 'Tôn giáo', group: 'Thông tin cá nhân' },
+            { key: 'nationalityId', label: 'Quốc tịch', group: 'Thông tin cá nhân' },
+            { key: 'policyFamilyId', label: 'Gia đình CS', group: 'Thông tin cá nhân' },
 
-            { key: 'educationLevelId', label: 'Bậc học', group: 'Trình độ' },
-            { key: 'educationDetail', label: 'Trình độ cụ thể', group: 'Trình độ' },
-            { key: 'culturalLevelId', label: 'Văn hóa', group: 'Trình độ' },
-            { key: 'professionalLevelId', label: 'Chuyên môn', group: 'Trình độ' },
-            { key: 'specialtyId', label: 'Nghề nghiệp', group: 'Trình độ' },
-            { key: 'itLevelId', label: 'Tin học', group: 'Trình độ' },
-            { key: 'languageLevelId', label: 'Ngoại ngữ', group: 'Trình độ' },
-            { key: 'politicalTheoryId', label: 'Lý luận CT', group: 'Trình độ' },
-            { key: 'trainingInstitutionId', label: 'Trường ĐT', group: 'Trình độ' },
-            { key: 'trainingMajorId', label: 'Ngành ĐT', group: 'Trình độ' },
-            { key: 'trainingTypeId', label: 'Hình thức ĐT', group: 'Trình độ' },
+            { key: 'youthUnionJoinDate', label: 'Ngày vào Đoàn', group: 'Tổ chức chính trị' },
+            { key: 'partyJoinDate', label: 'Ngày vào Đảng', group: 'Tổ chức chính trị' },
+            { key: 'partyOfficialDate', label: 'Ngày chính thức Đảng', group: 'Tổ chức chính trị' },
 
-            { key: 'socialInsuranceNumber', label: 'Số sổ BHXH', group: 'Khác' },
-            { key: 'socialInsuranceStartDate', label: 'Ngày tham gia BHXH', group: 'Khác' },
-            { key: 'socialInsuranceJobId', label: 'Công việc BHXH', group: 'Khác' },
-            { key: 'partyJoinDate', label: 'Ngày vào Đảng', group: 'Khác' },
-            { key: 'partyOfficialDate', label: 'Ngày CT Đảng', group: 'Khác' },
-            { key: 'youthUnionJoinDate', label: 'Ngày vào Đoàn', group: 'Khác' },
-            { key: 'militaryJoinDate', label: 'Ngày nhập ngũ', group: 'Khác' },
-            { key: 'militaryEndDate', label: 'Ngày xuất ngũ', group: 'Khác' },
-            { key: 'militaryRankId', label: 'Quân hàm', group: 'Khác' },
-            { key: 'note', label: 'Ghi chú', group: 'Khác' },
+            { key: 'militaryJoinDate', label: 'Ngày nhập ngũ', group: 'Quân sự & Danh hiệu' },
+            { key: 'militaryEndDate', label: 'Ngày xuất ngũ', group: 'Quân sự & Danh hiệu' },
+            { key: 'title', label: 'Danh hiệu', group: 'Quân sự & Danh hiệu' },
+            { key: 'militaryRankId', label: 'Danh hiệu', group: 'Quân sự & Danh hiệu' },
+            { key: 'injuryRank', label: 'Hạng thương binh', group: 'Quân sự & Danh hiệu' },
+            { key: 'isWoundedSoldier', label: 'Thương binh', group: 'Quân sự & Danh hiệu' },
+
+            { key: 'healthStatus', label: 'Tình trạng sức khỏe', group: 'Sức khỏe' },
+            { key: 'height', label: 'Chiều cao', group: 'Sức khỏe' },
+            { key: 'weight', label: 'Cân nặng', group: 'Sức khỏe' },
+            { key: 'bloodType', label: 'Nhóm máu', group: 'Sức khỏe' },
+
+            { key: 'cccdNumber', label: 'Số CCCD', group: 'CCCD' },
+            { key: 'cccdDate', label: 'Ngày cấp', group: 'CCCD' },
+            { key: 'cccdPlace', label: 'Nơi cấp', group: 'CCCD' },
+
+            { key: 'familyIncome', label: 'Thu nhập gia đình', group: 'Thu nhập' },
+            { key: 'otherIncome', label: 'Thu nhập khác', group: 'Thu nhập' },
+
+            { key: 'housingType', label: 'Loại nhà', group: 'Nhà ở' },
+            { key: 'housingArea', label: 'Diện tích nhà', group: 'Nhà ở' },
+            { key: 'selfHousingType', label: 'Nhà tự mua', group: 'Nhà ở' },
+            { key: 'usableArea', label: 'Diện tích sử dụng', group: 'Nhà ở' },
+
+            { key: 'grantedLandArea', label: 'Đất được cấp', group: 'Đất đai' },
+            { key: 'purchasedLandArea', label: 'Đất mua', group: 'Đất đai' },
+            { key: 'otherLand', label: 'Đất khác', group: 'Đất đai' },
+
+            { key: 'bankAccountNumber', label: 'Số tài khoản', group: 'Tài khoản ngân hàng' },
+            { key: 'bankName', label: 'Ngân hàng', group: 'Tài khoản ngân hàng' },
+            { key: 'bankAccountHolder', label: 'Chủ tài khoản', group: 'Tài khoản ngân hàng' },
+            { key: 'bankBranch', label: 'Chi nhánh', group: 'Tài khoản ngân hàng' },
+
+            { key: 'previousJob', label: 'Nghề trước', group: 'Tuyển dụng' },
+            { key: 'recruitmentDate', label: 'Ngày tuyển dụng', group: 'Tuyển dụng' },
+
+            { key: 'educationDetail', label: 'Trình độ cụ thể', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'educationLevelId', label: 'Bằng cấp', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'languageId', label: 'Ngoại ngữ', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'languageLevelId', label: 'Trình độ NN', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'culturalLevelId', label: 'Văn hóa', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'professionalLevelId', label: 'Chuyên môn', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'specialtyId', label: 'Nghề nghiệp', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'trainingInstitutionId', label: 'Trường đào tạo', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'trainingMajorId', label: 'Ngành đào tạo', group: 'Trình độ học vấn & chuyên môn' },
+            { key: 'trainingTypeId', label: 'Hình thức đào tạo', group: 'Trình độ học vấn & chuyên môn' },
+
+            { key: 'currentJobDetail', label: 'Công việc hiện tại', group: 'Chi tiết công việc' },
+            { key: 'workStrength', label: 'Sở trường', group: 'Chi tiết công việc' },
+            { key: 'longestJob', label: 'Công việc lâu nhất', group: 'Chi tiết công việc' },
+
+            { key: 'salaryPayrollId', label: 'Bảng lương', group: 'Lương' },
+            { key: 'salaryScaleId', label: 'Thang lương', group: 'Lương' },
+            { key: 'salaryCoefficient', label: 'Hệ số', group: 'Lương' },
+            { key: 'salaryAmount', label: 'Mức lương', group: 'Lương' },
+            { key: 'salaryEffectiveDate', label: 'Ngày áp dụng', group: 'Lương' },
+
+            { key: 'socialInsurancePayrollId', label: 'Bảng lương BHXH', group: 'BHXH' },
+            { key: 'socialInsuranceSalaryScaleId', label: 'Thang BHXH', group: 'BHXH' },
+            { key: 'socialInsuranceSalaryCoefficient', label: 'Hệ số BHXH', group: 'BHXH' },
+            { key: 'socialInsuranceSalaryAmount', label: 'Lương BHXH', group: 'BHXH' },
+            { key: 'socialInsurancePlace', label: 'Nơi đóng', group: 'BHXH' },
+            { key: 'socialInsuranceNumber', label: 'Số BHXH', group: 'BHXH' },
+            { key: 'unionSalary', label: 'Lương công đoàn', group: 'BHXH' },
+            { key: 'socialInsuranceJobTitleId', label: 'Chức danh BHXH', group: 'BHXH' },
+
+            { key: 'legalHistory', label: 'Lịch sử pháp lý', group: 'Lịch sử bản thân' },
+            { key: 'workedInOldRegime', label: 'Chế độ cũ', group: 'Lịch sử bản thân' },
+            { key: 'foreignOrganizationRelation', label: 'Quan hệ nước ngoài', group: 'Lịch sử bản thân' },
+            { key: 'relativesAbroad', label: 'Thân nhân nước ngoài', group: 'Lịch sử bản thân' },
+
+            { key: 'note', label: 'Ghi chú', group: 'Ghi chú' },
         ]
     };
 
@@ -163,63 +346,8 @@ export default function BulkEditEmployeeModal({
                 );
 
                 const employeesData = await Promise.all(promises);
-
-                // Map data giống như handleAddEmployee
-                const mappedEmployees = employeesData.map(employeeData => ({
-                    id: employeeData.id,
-                    code: employeeData.code || '',
-                    fullName: employeeData.name || '',
-                    birthDate: employeeData.birthday || '',
-                    birthPlace: employeeData.birthPlace || '',
-                    startDate: employeeData.startDate || '',
-                    endDate: employeeData.endDate || '',
-                    gender: employeeData.gender || 'NAM',
-                    status: employeeData.status || 'Đang làm việc',
-                    cccdNumber: employeeData.cccdNumber || '',
-                    cccdDate: employeeData.cccdDate || '',
-                    cccdPlace: employeeData.cccdPlace || '',
-                    contactAddress: employeeData.contactAddress || '',
-                    nativePlace: employeeData.nativePlace || '',
-                    homeTown: employeeData.homeTown || '',
-                    permanentAddress: employeeData.permanentAddress || '',
-                    departmentId: employeeData.departmentId?.toString() || '',
-                    positionId: employeeData.positionId?.toString() || '',
-                    laborContractTypeId: employeeData.laborContractTypeId?.toString() || '',
-                    currentJobDetail: employeeData.currentJobDetail || '',
-                    title: employeeData.title || '',
-                    cardNumber: employeeData.cardNumber || '',
-                    documentReturnDate: employeeData.documentReturnDate || '',
-                    isWoundedSoldier: employeeData.isWoundedSoldier || false,
-                    ethnicity: employeeData.ethnicity || '',
-                    religion: employeeData.religion || '',
-                    nationalityId: employeeData.nationalityId?.toString() || '',
-                    policyFamilyId: employeeData.policyFamilyId?.toString() || '',
-                    wardId: employeeData.wardId?.toString() || '',
-                    provinceCityId: employeeData.provinceCityId?.toString() || '',
-                    specialtyId: employeeData.specialtyId?.toString() || '',
-                    educationLevelId: employeeData.educationLevelId?.toString() || '',
-                    educationDetail: employeeData.educationDetail || '',
-                    politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
-                    languageLevelId: employeeData.languageLevelId?.toString() || '',
-                    culturalLevelId: employeeData.culturalLevelId?.toString() || '',
-                    professionalLevelId: employeeData.professionalLevelId?.toString() || '',
-                    itLevelId: employeeData.itLevelId?.toString() || '',
-                    trainingInstitutionId: employeeData.trainingInstitutionId?.toString() || '',
-                    trainingMajorId: employeeData.trainingMajorId?.toString() || '',
-                    trainingTypeId: employeeData.trainingTypeId?.toString() || '',
-                    socialInsuranceNumber: employeeData.socialInsuranceNumber || '',
-                    socialInsuranceStartDate: employeeData.socialInsuranceStartDate || '',
-                    socialInsuranceJobId: employeeData.socialInsuranceJobId?.toString() || '',
-                    partyJoinDate: employeeData.partyJoinDate || '',
-                    partyOfficialDate: employeeData.partyOfficialDate || '',
-                    youthUnionJoinDate: employeeData.youthUnionJoinDate || '',
-                    militaryJoinDate: employeeData.militaryJoinDate || '',
-                    militaryEndDate: employeeData.militaryEndDate || '',
-                    militaryRankId: employeeData.militaryRankId?.toString() || '',
-                    note: employeeData.note || '',
-                    userId: employeeData.userId || null,
-                }));
-
+                console.log("data", employeesData)
+                const mappedEmployees = employeesData.map(mapEmployeeToSelected);
                 setSelectedEmployees(mappedEmployees);
             } catch (error) {
                 console.error('Error loading pre-selected employees:', error);
@@ -273,81 +401,7 @@ export default function BulkEditEmployeeModal({
         try {
             const response = await employeeApi.getById(employeeId);
             const employeeData = response.data || response;
-
-            setSelectedEmployees(prev => [...prev, {
-                id: employeeData.id,
-                code: employeeData.code || '',
-                fullName: employeeData.name || '',
-                birthDate: employeeData.birthday || '',
-                birthPlace: employeeData.birthPlace || '',
-                startDate: employeeData.startDate || '',
-                endDate: employeeData.endDate || '',
-                gender: employeeData.gender || 'NAM',
-                status: employeeData.status || 'Đang làm việc',
-
-                // CCCD
-                cccdNumber: employeeData.cccdNumber || '',
-                cccdDate: employeeData.cccdDate || '',
-                cccdPlace: employeeData.cccdPlace || '',
-
-                // Địa chỉ
-                contactAddress: employeeData.contactAddress || '',
-                nativePlace: employeeData.nativePlace || '',
-                homeTown: employeeData.homeTown || '',
-                permanentAddress: employeeData.permanentAddress || '',
-
-                // Công việc
-                departmentId: employeeData.departmentId?.toString() || '',
-                positionId: employeeData.positionId?.toString() || '',
-                laborContractTypeId: employeeData.laborContractTypeId?.toString() || '',
-                currentJobDetail: employeeData.currentJobDetail || '',
-                title: employeeData.title || '',
-                cardNumber: employeeData.cardNumber || '',
-                documentReturnDate: employeeData.documentReturnDate || '',
-                isWoundedSoldier: employeeData.isWoundedSoldier || false,
-
-                // Thông tin cá nhân
-                ethnicity: employeeData.ethnicity || '',
-                religion: employeeData.religion || '',
-                nationalityId: employeeData.nationalityId?.toString() || '',
-                policyFamilyId: employeeData.policyFamilyId?.toString() || '',
-
-                // Địa chỉ hành chính
-                wardId: employeeData.wardId?.toString() || '',
-                provinceCityId: employeeData.provinceCityId?.toString() || '',
-
-                // Trình độ
-                specialtyId: employeeData.specialtyId?.toString() || '',
-                educationLevelId: employeeData.educationLevelId?.toString() || '',
-                educationDetail: employeeData.educationDetail || '',
-                politicalTheoryId: employeeData.politicalTheoryId?.toString() || '',
-                languageLevelId: employeeData.languageLevelId?.toString() || '',
-                culturalLevelId: employeeData.culturalLevelId?.toString() || '',
-                professionalLevelId: employeeData.professionalLevelId?.toString() || '',
-                itLevelId: employeeData.itLevelId?.toString() || '',
-
-                // Đào tạo
-                trainingInstitutionId: employeeData.trainingInstitutionId?.toString() || '',
-                trainingMajorId: employeeData.trainingMajorId?.toString() || '',
-                trainingTypeId: employeeData.trainingTypeId?.toString() || '',
-
-                // BHXH
-                socialInsuranceNumber: employeeData.socialInsuranceNumber || '',
-                socialInsuranceStartDate: employeeData.socialInsuranceStartDate || '',
-                socialInsuranceJobId: employeeData.socialInsuranceJobId?.toString() || '',
-
-                // Đảng, Đoàn, Quân đội
-                partyJoinDate: employeeData.partyJoinDate || '',
-                partyOfficialDate: employeeData.partyOfficialDate || '',
-                youthUnionJoinDate: employeeData.youthUnionJoinDate || '',
-                militaryJoinDate: employeeData.militaryJoinDate || '',
-                militaryEndDate: employeeData.militaryEndDate || '',
-                militaryRankId: employeeData.militaryRankId?.toString() || '',
-
-                // Ghi chú
-                note: employeeData.note || '',
-                userId: employeeData.userId || null,
-            }]);
+            setSelectedEmployees(prev => [...prev, mapEmployeeToSelected(employeeData)]);
 
             setSearchValue('');
             setSearchOpen(false);
@@ -886,54 +940,9 @@ export default function BulkEditEmployeeModal({
         }
 
         const payload = selectedEmployees.map(emp => ({
+            ...emp,
             id: Number(emp.id),
-            code: emp.code,
-            fullName: emp.fullName,
-            birthDate: emp.birthDate,
-            birthPlace: emp.birthPlace || null,
-            startDate: emp.startDate,
-            endDate: emp.endDate || null,
-            gender: emp.gender,
             status: emp.status,
-
-            // CCCD
-            cccdNumber: emp.cccdNumber || null,
-            cccdDate: emp.cccdDate || null,
-            cccdPlace: emp.cccdPlace || null,
-
-            // Địa chỉ
-            contactAddress: emp.contactAddress || null,
-            nativePlace: emp.nativePlace || null,
-            homeTown: emp.homeTown || null,
-            permanentAddress: emp.permanentAddress || null,
-
-            // Công việc
-            currentJobDetail: emp.currentJobDetail || null,
-            title: emp.title || null,
-            cardNumber: emp.cardNumber || null,
-            documentReturnDate: emp.documentReturnDate || null,
-            isWoundedSoldier: emp.isWoundedSoldier,
-
-            // Thông tin cá nhân
-            ethnicity: emp.ethnicity || null,
-            religion: emp.religion || null,
-            educationDetail: emp.educationDetail || null,
-
-            // BHXH
-            socialInsuranceNumber: emp.socialInsuranceNumber || null,
-            socialInsuranceStartDate: emp.socialInsuranceStartDate || null,
-
-            // Đảng, Đoàn, Quân đội
-            partyJoinDate: emp.partyJoinDate || null,
-            partyOfficialDate: emp.partyOfficialDate || null,
-            youthUnionJoinDate: emp.youthUnionJoinDate || null,
-            militaryJoinDate: emp.militaryJoinDate || null,
-            militaryEndDate: emp.militaryEndDate || null,
-
-            // Ghi chú
-            note: emp.note || null,
-
-            // Object references
             department: emp.departmentId ? { id: Number(emp.departmentId) } : null,
             position: emp.positionId ? { id: Number(emp.positionId) } : null,
             laborContractType: emp.laborContractTypeId ? { id: Number(emp.laborContractTypeId) } : null,
@@ -953,10 +962,21 @@ export default function BulkEditEmployeeModal({
             militaryRank: emp.militaryRankId ? { id: Number(emp.militaryRankId) } : null,
             policyFamily: emp.policyFamilyId ? { id: Number(emp.policyFamilyId) } : null,
             socialInsuranceJob: emp.socialInsuranceJobId ? { id: Number(emp.socialInsuranceJobId) } : null,
-
-            ...(emp.userId && {
-                user: { id: emp.userId }
-            }),
+            company: emp.companyId ? { id: Number(emp.companyId) } : null,
+            partyCommittee: emp.partyCommitteeId ? { id: Number(emp.partyCommitteeId) } : null,
+            subPartyCommittee: emp.subPartyCommitteeId ? { id: Number(emp.subPartyCommitteeId) } : null,
+            subPosition: emp.subPositionId ? { id: Number(emp.subPositionId) } : null,
+            jobTitle: emp.jobTitleId ? { id: Number(emp.jobTitleId) } : null,
+            jobPosition: emp.jobPositionId ? { id: Number(emp.jobPositionId) } : null,
+            organization: emp.organizationId ? { id: Number(emp.organizationId) } : null,
+            salaryPayroll: emp.salaryPayrollId ? { id: Number(emp.salaryPayrollId) } : null,
+            salaryScale: emp.salaryScaleId ? { id: Number(emp.salaryScaleId) } : null,
+            socialInsurancePayroll: emp.socialInsurancePayrollId ? { id: Number(emp.socialInsurancePayrollId) } : null,
+            socialInsuranceSalaryScale: emp.socialInsuranceSalaryScaleId ? { id: Number(emp.socialInsuranceSalaryScaleId) } : null,
+            socialInsuranceJobTitle: emp.socialInsuranceJobTitleId ? { id: Number(emp.socialInsuranceJobTitleId) } : null,
+            religion: emp.religionId ? { id: Number(emp.religionId) } : null,
+            language: emp.languageId ? { id: Number(emp.languageId) } : null,
+            ...(emp.userId && { user: { id: emp.userId } }),
         }));
 
         updateMutation.mutate(payload);
@@ -1097,13 +1117,20 @@ export default function BulkEditEmployeeModal({
                 );
 
             default:
-                return <div className="text-xs text-muted-foreground">-</div>;
+                return (
+                    <Input
+                        value={employee[field] ?? ''}
+                        onChange={(e) => handleFieldChange(employee.id, field, e.target.value)}
+                        className={commonInputClass}
+                        placeholder="..."
+                    />
+                );
         }
     };
 
     const renderEmployeeFieldsExpanded = (employee, index) => (
         <div key={employee.id} className="border rounded-lg p-4 space-y-4 bg-muted/30">
-            <div className="flex items-center justify-between sticky top-0 bg-muted/30 pb-2 border-b z-10">
+            <div className="flex items-center justify-between bg-muted/30 pb-2 border-b">
                 <h4 className="font-semibold text-sm flex items-center gap-2">
                     <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs">
                         {index + 1}
@@ -1119,60 +1146,36 @@ export default function BulkEditEmployeeModal({
                 </Button>
             </div>
 
-            <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="basic">Cơ bản</TabsTrigger>
-                    <TabsTrigger value="address">Địa chỉ</TabsTrigger>
-                    <TabsTrigger value="work">Công việc</TabsTrigger>
-                    <TabsTrigger value="education">Trình độ</TabsTrigger>
-                    <TabsTrigger value="other">Khác</TabsTrigger>
-                </TabsList>
-
-                {/* Tab Cơ bản */}
-                <TabsContent value="basic" className="space-y-3">
+            <div className="space-y-6">
+                {/* TAB 1: THÔNG TIN CƠ BẢN */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Thông tin cơ bản</h3>
                     <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
-                            <Label className="text-xs">Mã nhân viên *</Label>
+                            <Label className="text-xs">Công ty</Label>
+                            <GenericSearchSelect api={categoryConfigs.company.api} config={categoryConfigs.company} value={employee.companyId} onChange={(v) => handleFieldChange(employee.id, 'companyId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Mã nhân viên*</Label>
                             <Input
                                 value={employee.code}
                                 onChange={(e) => handleFieldChange(employee.id, 'code', e.target.value)}
                                 className="h-8 text-sm"
+                                placeholder="Nhập mã nhân viên"
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Tên nhân viên *</Label>
-                            <Input
-                                value={employee.fullName}
-                                onChange={(e) => handleFieldChange(employee.id, 'fullName', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.fullName} onChange={(e) => handleFieldChange(employee.id, 'fullName', e.target.value)} className="h-8 text-sm" placeholder="Nhập tên" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Ngày sinh *</Label>
-                            <Input
-                                type="date"
-                                value={employee.birthDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'birthDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Các tên gọi khác</Label>
+                            <Input value={employee.otherName} onChange={(e) => handleFieldChange(employee.id, 'otherName', e.target.value)} className="h-8 text-sm" placeholder="Tên khác" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Nơi sinh</Label>
-                            <Input
-                                value={employee.birthPlace}
-                                onChange={(e) => handleFieldChange(employee.id, 'birthPlace', e.target.value)}
-                                className="h-8 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs">Giới tính</Label>
-                            <Select
-                                value={employee.gender}
-                                onValueChange={(value) => handleFieldChange(employee.id, 'gender', value)}
-                            >
-                                <SelectTrigger className="h-8 text-sm">
-                                    <SelectValue />
-                                </SelectTrigger>
+                            <Label className="text-xs">Giới tính *</Label>
+                            <Select value={employee.gender} onValueChange={(v) => handleFieldChange(employee.id, 'gender', v)}>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="NAM">Nam</SelectItem>
                                     <SelectItem value="NỮ">Nữ</SelectItem>
@@ -1181,414 +1184,472 @@ export default function BulkEditEmployeeModal({
                             </Select>
                         </div>
                         <div className="space-y-1">
+                            <Label className="text-xs">Ngày sinh *</Label>
+                            <Input type="date" value={employee.birthDate} onChange={(e) => handleFieldChange(employee.id, 'birthDate', e.target.value)} className="h-8 text-sm" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Nơi sinh</Label>
+                            <Input value={employee.birthPlace} onChange={(e) => handleFieldChange(employee.id, 'birthPlace', e.target.value)} className="h-8 text-sm" placeholder="Nhập nơi sinh" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Trạng thái</Label>
+                            <Select value={{
+                                'DANG_CONG_TAC': 'Đang công tác',
+                                'NGHI_CHE_DO': 'Nghỉ chế độ',
+                                'NGHI_HUU_TRI': 'Nghỉ hưu trí',
+                                'NGHI_VIEC': 'Nghỉ việc',
+                                'TU_TRAN': 'Từ trần',
+                            }[employee.status] ?? employee.status} onValueChange={(v) => handleFieldChange(employee.id, 'status', v)}>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Đang công tác">Đang công tác</SelectItem>
+                                    <SelectItem value="Nghỉ chế độ">Nghỉ chế độ</SelectItem>
+                                    <SelectItem value="Nghỉ hưu trí">Nghỉ hưu trí</SelectItem>
+                                    <SelectItem value="Nghỉ việc">Nghỉ việc</SelectItem>
+                                    <SelectItem value="Từ trần">Từ trần</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
                             <Label className="text-xs">Dân tộc</Label>
-                            <Input
-                                value={employee.ethnicity}
-                                onChange={(e) => handleFieldChange(employee.id, 'ethnicity', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <GenericSearchSelect api={categoryConfigs.ethnicity.api} config={categoryConfigs.ethnicity} value={employee.ethnicity?.toString()} onChange={(v) => handleFieldChange(employee.id, "ethnicity", String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Tôn giáo</Label>
-                            <Input
-                                value={employee.religion}
-                                onChange={(e) => handleFieldChange(employee.id, 'religion', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <GenericSearchSelect api={categoryConfigs.religion.api} config={categoryConfigs.religion} value={employee.religionId} onChange={(v) => handleFieldChange(employee.id, 'religionId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Quốc tịch</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.nationality.api}
-                                config={categoryConfigs.nationality}
-                                value={employee.nationalityId}
-                                onChange={(v) => handleFieldChange(employee.id, 'nationalityId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.nationality.api} config={categoryConfigs.nationality} value={employee.nationalityId} onChange={(v) => handleFieldChange(employee.id, 'nationalityId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Gia đình chính sách</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.policyFamily.api}
-                                config={categoryConfigs.policyFamily}
-                                value={employee.policyFamilyId}
-                                onChange={(v) => handleFieldChange(employee.id, 'policyFamilyId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.policyFamily.api} config={categoryConfigs.policyFamily} value={employee.policyFamilyId} onChange={(v) => handleFieldChange(employee.id, 'policyFamilyId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Số CCCD</Label>
-                            <Input
-                                value={employee.cccdNumber}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdNumber', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.cccdNumber} onChange={(e) => handleFieldChange(employee.id, 'cccdNumber', e.target.value)} className="h-8 text-sm" placeholder="Nhập số CCCD" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Ngày cấp CCCD</Label>
-                            <Input
-                                type="date"
-                                value={employee.cccdDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Ngày cấp</Label>
+                            <Input type="date" value={employee.cccdDate} onChange={(e) => handleFieldChange(employee.id, 'cccdDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Nơi cấp CCCD</Label>
-                            <Input
-                                value={employee.cccdPlace}
-                                onChange={(e) => handleFieldChange(employee.id, 'cccdPlace', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Nơi cấp</Label>
+                            <Input value={employee.cccdPlace} onChange={(e) => handleFieldChange(employee.id, 'cccdPlace', e.target.value)} className="h-8 text-sm" placeholder="Nhập nơi cấp" />
                         </div>
                     </div>
-                </TabsContent>
+                </div>
 
-                {/* Tab Địa chỉ */}
-                <TabsContent value="address" className="space-y-3">
+                {/* TAB 1b: SỨC KHỎE */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Sức khỏe</h3>
                     <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
+                            <Label className="text-xs">Tình trạng sức khỏe</Label>
+                            <Input value={employee.healthStatus} onChange={(e) => handleFieldChange(employee.id, 'healthStatus', e.target.value)} className="h-8 text-sm" placeholder="Nhập tình trạng" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chiều cao (cm)</Label>
+                            <Input type="number" value={employee.height} onChange={(e) => handleFieldChange(employee.id, 'height', e.target.value)} className="h-8 text-sm" placeholder="cm" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Cân nặng (kg)</Label>
+                            <Input type="number" value={employee.weight} onChange={(e) => handleFieldChange(employee.id, 'weight', e.target.value)} className="h-8 text-sm" placeholder="kg" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Nhóm máu</Label>
+                            <Select value={employee.bloodType} onValueChange={(v) => handleFieldChange(employee.id, 'bloodType', v)}>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Chọn" /></SelectTrigger>
+                                <SelectContent>
+                                    {['A', 'B', 'AB', 'O', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(t => (
+                                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* TAB 2: CẤP ỦY */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Cấp ủy</h3>
+                    <div className="grid grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Cấp ủy hiện tại</Label>
+                            <GenericSearchSelect api={categoryConfigs.partyCommittee.api} config={categoryConfigs.partyCommittee} value={employee.partyCommitteeId} onChange={(v) => handleFieldChange(employee.id, 'partyCommitteeId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Cấp ủy kiêm</Label>
+                            <GenericSearchSelect api={categoryConfigs.partyCommittee.api} config={categoryConfigs.partyCommittee} value={employee.subPartyCommitteeId} onChange={(v) => handleFieldChange(employee.id, 'subPartyCommitteeId', String(v))} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* TAB 3: CHỨC VỤ & CHỨC DANH */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Chức vụ & Chức danh</h3>
+                    <div className="grid grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chức vụ</Label>
+                            <GenericSearchSelect api={categoryConfigs.position.api} config={categoryConfigs.position} value={employee.positionId} onChange={(v) => handleFieldChange(employee.id, 'positionId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Phụ cấp chức vụ</Label>
+                            <Input type="number" value={employee.positionAllowance} onChange={(e) => handleFieldChange(employee.id, 'positionAllowance', e.target.value)} className="h-8 text-sm" placeholder="VNĐ" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Mã số thuế</Label>
+                            <Input value={employee.taxCode} onChange={(e) => handleFieldChange(employee.id, 'taxCode', e.target.value)} className="h-8 text-sm" placeholder="Nhập mã" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chức vụ kiêm</Label>
+                            <GenericSearchSelect api={categoryConfigs.position.api} config={categoryConfigs.position} value={employee.subPositionId} onChange={(v) => handleFieldChange(employee.id, 'subPositionId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chức danh</Label>
+                            <GenericSearchSelect api={categoryConfigs.jobTitle.api} config={categoryConfigs.jobTitle} value={employee.jobTitleId} onChange={(v) => handleFieldChange(employee.id, 'jobTitleId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Vị trí công việc</Label>
+                            <GenericSearchSelect api={categoryConfigs.jobPosition.api} config={categoryConfigs.jobPosition} value={employee.jobPositionId} onChange={(v) => handleFieldChange(employee.id, 'jobPositionId', String(v))} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* TAB 4: ĐỊA CHỈ */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Địa chỉ</h3>
+                    <div className="grid grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Địa chỉ liên hệ</Label>
+                            <Input value={employee.contactAddress} onChange={(e) => handleFieldChange(employee.id, 'contactAddress', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="space-y-1">
                             <Label className="text-xs">Tỉnh/Thành phố</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.provinceCity.api}
-                                config={categoryConfigs.provinceCity}
-                                value={employee.provinceCityId}
-                                onChange={(v) => handleFieldChange(employee.id, 'provinceCityId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.provinceCity.api} config={categoryConfigs.provinceCity} value={employee.provinceCityId} onChange={(v) => handleFieldChange(employee.id, 'provinceCityId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Phường/Xã</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.ward.api}
-                                config={categoryConfigs.ward}
-                                value={employee.wardId}
-                                onChange={(v) => handleFieldChange(employee.id, 'wardId', String(v))}
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs">Địa chỉ liên hệ</Label>
-                            <Input
-                                value={employee.contactAddress}
-                                onChange={(e) => handleFieldChange(employee.id, 'contactAddress', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <GenericSearchSelect api={categoryConfigs.ward.api} config={categoryConfigs.ward} value={employee.wardId} onChange={(v) => handleFieldChange(employee.id, 'wardId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Hộ khẩu thường trú</Label>
-                            <Input
-                                value={employee.permanentAddress}
-                                onChange={(e) => handleFieldChange(employee.id, 'permanentAddress', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.permanentAddress} onChange={(e) => handleFieldChange(employee.id, 'permanentAddress', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Nguyên quán</Label>
-                            <Input
-                                value={employee.nativePlace}
-                                onChange={(e) => handleFieldChange(employee.id, 'nativePlace', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.nativePlace} onChange={(e) => handleFieldChange(employee.id, 'nativePlace', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Quê quán</Label>
-                            <Input
-                                value={employee.homeTown}
-                                onChange={(e) => handleFieldChange(employee.id, 'homeTown', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.homeTown} onChange={(e) => handleFieldChange(employee.id, 'homeTown', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                     </div>
-                </TabsContent>
+                </div>
 
-                {/* Tab Công việc */}
-                <TabsContent value="work" className="space-y-3">
+                {/* TAB 5: TUYỂN DỤNG */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Tuyển dụng</h3>
                     <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày vào làm *</Label>
-                            <Input
-                                type="date"
-                                value={employee.startDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'startDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.startDate} onChange={(e) => handleFieldChange(employee.id, 'startDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày kết thúc</Label>
-                            <Input
-                                type="date"
-                                value={employee.endDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'endDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.endDate} onChange={(e) => handleFieldChange(employee.id, 'endDate', e.target.value)} className="h-8 text-sm" />
                         </div>
-
                         <div className="space-y-1">
                             <Label className="text-xs">Phòng ban *</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.department.api}
-                                config={categoryConfigs.department}
-                                value={employee.departmentId}
-                                onChange={(v) => handleFieldChange(employee.id, 'departmentId', String(v))}
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs">Chức vụ *</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.jobTitle.api}
-                                config={categoryConfigs.jobTitle}
-                                value={employee.positionId}
-                                onChange={(v) => handleFieldChange(employee.id, 'positionId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.department.api} config={categoryConfigs.department} value={employee.departmentId} onChange={(v) => handleFieldChange(employee.id, 'departmentId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Loại hợp đồng</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.laborContractType.api}
-                                config={categoryConfigs.laborContractType}
-                                value={employee.laborContractTypeId}
-                                onChange={(v) => handleFieldChange(employee.id, 'laborContractTypeId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.laborContractType.api} config={categoryConfigs.laborContractType} value={employee.laborContractTypeId} onChange={(v) => handleFieldChange(employee.id, 'laborContractTypeId', String(v))} />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Công việc cụ thể</Label>
-                            <Input
-                                value={employee.currentJobDetail}
-                                onChange={(e) => handleFieldChange(employee.id, 'currentJobDetail', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Nghề trước tuyển dụng</Label>
+                            <Input value={employee.previousJob} onChange={(e) => handleFieldChange(employee.id, 'previousJob', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Danh hiệu</Label>
-                            <Input
-                                value={employee.title}
-                                onChange={(e) => handleFieldChange(employee.id, 'title', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Ngày tuyển dụng</Label>
+                            <Input type="date" value={employee.recruitmentDate} onChange={(e) => handleFieldChange(employee.id, 'recruitmentDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Số thẻ từ</Label>
-                            <Input
-                                value={employee.cardNumber}
-                                onChange={(e) => handleFieldChange(employee.id, 'cardNumber', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Cơ quan tuyển dụng</Label>
+                            <GenericSearchSelect api={categoryConfigs.organization.api} config={categoryConfigs.organization} value={employee.organizationId} onChange={(v) => handleFieldChange(employee.id, 'organizationId', String(v))} />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Ngày trả hồ sơ</Label>
-                            <Input
-                                type="date"
-                                value={employee.documentReturnDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'documentReturnDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Label className="text-xs">Địa chỉ cơ quan</Label>
+                            <Input value={employee.organizationAddress} onChange={(e) => handleFieldChange(employee.id, 'organizationAddress', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
-                        <div className="space-y-1 flex items-center gap-2 pt-5">
-                            <Checkbox
-                                checked={employee.isWoundedSoldier}
-                                onCheckedChange={(checked) => handleFieldChange(employee.id, 'isWoundedSoldier', checked)}
-                            />
-                            <Label className="text-xs cursor-pointer">Thương binh</Label>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Công việc chính đang làm</Label>
+                            <Input value={employee.currentJobDetail} onChange={(e) => handleFieldChange(employee.id, 'currentJobDetail', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Sở trường công tác</Label>
+                            <Input value={employee.workStrength} onChange={(e) => handleFieldChange(employee.id, 'workStrength', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Công việc đã làm lâu nhất</Label>
+                            <Input value={employee.longestJob} onChange={(e) => handleFieldChange(employee.id, 'longestJob', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                     </div>
-                </TabsContent>
+                </div>
 
-                {/* Tab Trình độ */}
-                <TabsContent value="education" className="space-y-3">
+                {/* TAB 6: TRÌNH ĐỘ & LƯƠNG BHXH */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Trình độ & Lương BHXH</h3>
                     <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
                             <Label className="text-xs">Bậc học</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.degree.api}
-                                config={categoryConfigs.degree}
-                                value={employee.educationLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'educationLevelId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.degree.api} config={categoryConfigs.degree} value={employee.educationLevelId} onChange={(v) => handleFieldChange(employee.id, 'educationLevelId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trình độ cụ thể</Label>
-                            <Input
-                                value={employee.educationDetail}
-                                onChange={(e) => handleFieldChange(employee.id, 'educationDetail', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.educationDetail} onChange={(e) => handleFieldChange(employee.id, 'educationDetail', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trình độ văn hóa</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.culturalLevel.api}
-                                config={categoryConfigs.culturalLevel}
-                                value={employee.culturalLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'culturalLevelId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.culturalLevel.api} config={categoryConfigs.culturalLevel} value={employee.culturalLevelId} onChange={(v) => handleFieldChange(employee.id, 'culturalLevelId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trình độ chuyên môn</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.professionalLevel.api}
-                                config={categoryConfigs.professionalLevel}
-                                value={employee.professionalLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'professionalLevelId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.professionalLevel.api} config={categoryConfigs.professionalLevel} value={employee.professionalLevelId} onChange={(v) => handleFieldChange(employee.id, 'professionalLevelId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Nghề nghiệp</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.specialty.api}
-                                config={categoryConfigs.specialty}
-                                value={employee.specialtyId}
-                                onChange={(v) => handleFieldChange(employee.id, 'specialtyId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.specialty.api} config={categoryConfigs.specialty} value={employee.specialtyId} onChange={(v) => handleFieldChange(employee.id, 'specialtyId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trình độ tin học</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.itLevel.api}
-                                config={categoryConfigs.itLevel}
-                                value={employee.itLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'itLevelId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.itLevel.api} config={categoryConfigs.itLevel} value={employee.itLevelId} onChange={(v) => handleFieldChange(employee.id, 'itLevelId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Ngoại ngữ</Label>
+                            <GenericSearchSelect api={categoryConfigs.languageLevel.api} config={categoryConfigs.languageLevel} value={employee.languageId} onChange={(v) => {
+                                handleFieldChange(employee.id, 'languageId', String(v));
+                                console.log("ngoaingu", v);
+                            }} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trình độ ngoại ngữ</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.languageLevel.api}
-                                config={categoryConfigs.languageLevel}
-                                value={employee.languageLevelId}
-                                onChange={(v) => handleFieldChange(employee.id, 'languageLevelId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.languageLevel.api} config={categoryConfigs.languageLevel} value={employee.languageLevelId} onChange={(v) => handleFieldChange(employee.id, 'languageLevelId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Lý luận chính trị</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.politicalTheory.api}
-                                config={categoryConfigs.politicalTheory}
-                                value={employee.politicalTheoryId}
-                                onChange={(v) => handleFieldChange(employee.id, 'politicalTheoryId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.politicalTheory.api} config={categoryConfigs.politicalTheory} value={employee.politicalTheoryId} onChange={(v) => handleFieldChange(employee.id, 'politicalTheoryId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Trường đào tạo</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.trainingInstitution.api}
-                                config={categoryConfigs.trainingInstitution}
-                                value={employee.trainingInstitutionId}
-                                onChange={(v) => handleFieldChange(employee.id, 'trainingInstitutionId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.trainingInstitution.api} config={categoryConfigs.trainingInstitution} value={employee.trainingInstitutionId} onChange={(v) => handleFieldChange(employee.id, 'trainingInstitutionId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngành đào tạo</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.trainingMajor.api}
-                                config={categoryConfigs.trainingMajor}
-                                value={employee.trainingMajorId}
-                                onChange={(v) => handleFieldChange(employee.id, 'trainingMajorId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.trainingMajor.api} config={categoryConfigs.trainingMajor} value={employee.trainingMajorId} onChange={(v) => handleFieldChange(employee.id, 'trainingMajorId', String(v))} />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Hình thức đào tạo</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.trainingType.api}
-                                config={categoryConfigs.trainingType}
-                                value={employee.trainingTypeId}
-                                onChange={(v) => handleFieldChange(employee.id, 'trainingTypeId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.trainingType.api} config={categoryConfigs.trainingType} value={employee.trainingTypeId} onChange={(v) => handleFieldChange(employee.id, 'trainingTypeId', String(v))} />
                         </div>
-                    </div>
-                </TabsContent>
-
-                {/* Tab Khác */}
-                <TabsContent value="other" className="space-y-3">
-                    <div className="grid grid-cols-4 gap-3">
                         <div className="space-y-1">
                             <Label className="text-xs">Số sổ BHXH</Label>
-                            <Input
-                                value={employee.socialInsuranceNumber}
-                                onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceNumber', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input value={employee.socialInsuranceNumber} onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceNumber', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày tham gia BHXH</Label>
-                            <Input
-                                type="date"
-                                value={employee.socialInsuranceStartDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceStartDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.socialInsuranceStartDate} onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceStartDate', e.target.value)} className="h-8 text-sm" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Nơi đóng BHXH</Label>
+                            <Input value={employee.socialInsurancePlace} onChange={(e) => handleFieldChange(employee.id, 'socialInsurancePlace', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Công việc BHXH</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.socialInsuranceJob.api}
-                                config={categoryConfigs.socialInsuranceJob}
-                                value={employee.socialInsuranceJobId}
-                                onChange={(v) => handleFieldChange(employee.id, 'socialInsuranceJobId', String(v))}
-                            />
+                            <GenericSearchSelect api={categoryConfigs.socialInsuranceJob.api} config={categoryConfigs.socialInsuranceJob} value={employee.socialInsuranceJobId} onChange={(v) => handleFieldChange(employee.id, 'socialInsuranceJobId', String(v))} />
+                        </div>
+                        {/* Lương chính */}
+                        <div className="space-y-1">
+                            <Label className="text-xs">Bảng lương</Label>
+                            <GenericSearchSelect api={categoryConfigs.payroll.api} config={categoryConfigs.payroll} value={employee.salaryPayrollId} onChange={(v) => handleFieldChange(employee.id, 'salaryPayrollId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Bậc lương</Label>
+                            <GenericSearchSelect api={categoryConfigs.salaryScale.api} config={categoryConfigs.salaryScale} value={employee.salaryScaleId} onChange={(v) => handleFieldChange(employee.id, 'salaryScaleId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Hệ số lương</Label>
+                            <Input type="number" step="0.01" value={employee.salaryCoefficient} onChange={(e) => handleFieldChange(employee.id, 'salaryCoefficient', e.target.value)} className="h-8 text-sm" placeholder="Nhập hệ số" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Mức lương (VNĐ)</Label>
+                            <Input type="number" value={employee.salaryAmount} onChange={(e) => handleFieldChange(employee.id, 'salaryAmount', e.target.value)} className="h-8 text-sm" placeholder="Nhập mức lương" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Ngày áp dụng lương</Label>
+                            <Input type="date" value={employee.salaryEffectiveDate} onChange={(e) => handleFieldChange(employee.id, 'salaryEffectiveDate', e.target.value)} className="h-8 text-sm" />
+                        </div>
+                        {/* Lương BHXH */}
+                        <div className="space-y-1">
+                            <Label className="text-xs">Bảng lương BHXH</Label>
+                            <GenericSearchSelect api={categoryConfigs.payroll.api} config={categoryConfigs.payroll} value={employee.socialInsurancePayrollId} onChange={(v) => handleFieldChange(employee.id, 'socialInsurancePayrollId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Bậc lương BHXH</Label>
+                            <GenericSearchSelect api={categoryConfigs.salaryScale.api} config={categoryConfigs.salaryScale} value={employee.socialInsuranceSalaryScaleId} onChange={(v) => handleFieldChange(employee.id, 'socialInsuranceSalaryScaleId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Hệ số lương BHXH</Label>
+                            <Input type="number" step="0.01" value={employee.socialInsuranceSalaryCoefficient} onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceSalaryCoefficient', e.target.value)} className="h-8 text-sm" placeholder="Nhập hệ số" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Mức lương BHXH (VNĐ)</Label>
+                            <Input type="number" value={employee.socialInsuranceSalaryAmount} onChange={(e) => handleFieldChange(employee.id, 'socialInsuranceSalaryAmount', e.target.value)} className="h-8 text-sm" placeholder="Nhập mức lương" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Lương NS tài chính công đoàn (VNĐ)</Label>
+                            <Input type="number" value={employee.unionSalary} onChange={(e) => handleFieldChange(employee.id, 'unionSalary', e.target.value)} className="h-8 text-sm" placeholder="Nhập số tiền" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chức danh BHXH</Label>
+                            <GenericSearchSelect api={categoryConfigs.jobTitle.api} config={categoryConfigs.jobTitle} value={employee.socialInsuranceJobTitleId} onChange={(v) => handleFieldChange(employee.id, 'socialInsuranceJobTitleId', String(v))} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* TAB 6b: NGUỒN THU NHẬP */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Nguồn thu nhập</h3>
+                    <div className="grid grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Nguồn thu nhập gia đình (VNĐ)</Label>
+                            <Input type="number" value={employee.familyIncome} onChange={(e) => handleFieldChange(employee.id, 'familyIncome', e.target.value)} className="h-8 text-sm" placeholder="Nhập số tiền" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Các nguồn thu nhập khác</Label>
+                            <Input value={employee.otherIncome} onChange={(e) => handleFieldChange(employee.id, 'otherIncome', e.target.value)} className="h-8 text-sm" placeholder="Mô tả" />
+                        </div>
+                        {/* Nhà ở */}
+                        <div className="space-y-1">
+                            <Label className="text-xs">Loại nhà được cấp/thuê</Label>
+                            <Input value={employee.housingType} onChange={(e) => handleFieldChange(employee.id, 'housingType', e.target.value)} className="h-8 text-sm" placeholder="Nhập loại nhà" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Diện tích được cấp/thuê (m²)</Label>
+                            <Input type="number" value={employee.housingArea} onChange={(e) => handleFieldChange(employee.id, 'housingArea', e.target.value)} className="h-8 text-sm" placeholder="m²" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Nhà tự mua/xây – Loại nhà</Label>
+                            <Input value={employee.selfHousingType} onChange={(e) => handleFieldChange(employee.id, 'selfHousingType', e.target.value)} className="h-8 text-sm" placeholder="Nhập loại nhà" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Diện tích tự mua/xây (m²)</Label>
+                            <Input type="number" value={employee.usableArea} onChange={(e) => handleFieldChange(employee.id, 'usableArea', e.target.value)} className="h-8 text-sm" placeholder="m²" />
+                        </div>
+                        {/* Đất đai */}
+                        <div className="space-y-1">
+                            <Label className="text-xs">Đất được cấp (m²)</Label>
+                            <Input type="number" value={employee.grantedLandArea} onChange={(e) => handleFieldChange(employee.id, 'grantedLandArea', e.target.value)} className="h-8 text-sm" placeholder="m²" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Đất tự mua (m²)</Label>
+                            <Input type="number" value={employee.purchasedLandArea} onChange={(e) => handleFieldChange(employee.id, 'purchasedLandArea', e.target.value)} className="h-8 text-sm" placeholder="m²" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Các loại đất khác</Label>
+                            <Input value={employee.otherLand} onChange={(e) => handleFieldChange(employee.id, 'otherLand', e.target.value)} className="h-8 text-sm" placeholder="Mô tả" />
+                        </div>
+                        {/* Tài khoản ngân hàng */}
+                        <div className="space-y-1">
+                            <Label className="text-xs">Số tài khoản ngân hàng</Label>
+                            <Input value={employee.bankAccountNumber} onChange={(e) => handleFieldChange(employee.id, 'bankAccountNumber', e.target.value)} className="h-8 text-sm" placeholder="Nhập số tài khoản" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Tên ngân hàng</Label>
+                            <Input value={employee.bankName} onChange={(e) => handleFieldChange(employee.id, 'bankName', e.target.value)} className="h-8 text-sm" placeholder="Nhập tên ngân hàng" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chủ tài khoản</Label>
+                            <Input value={employee.bankAccountHolder} onChange={(e) => handleFieldChange(employee.id, 'bankAccountHolder', e.target.value)} className="h-8 text-sm" placeholder="Nhập tên chủ tài khoản" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Chi nhánh ngân hàng</Label>
+                            <Input value={employee.bankBranch} onChange={(e) => handleFieldChange(employee.id, 'bankBranch', e.target.value)} className="h-8 text-sm" placeholder="Nhập chi nhánh" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* TAB 7: LỊCH SỬ BẢN THÂN */}
+                <div>
+                    <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">Lịch sử bản thân</h3>
+                    <div className="grid grid-cols-4 gap-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Ngày tham gia cách mạng</Label>
+                            <Input type="date" value={employee.youthUnionJoinDate} onChange={(e) => handleFieldChange(employee.id, 'youthUnionJoinDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày vào Đảng</Label>
-                            <Input
-                                type="date"
-                                value={employee.partyJoinDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'partyJoinDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.partyJoinDate} onChange={(e) => handleFieldChange(employee.id, 'partyJoinDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày chính thức Đảng</Label>
-                            <Input
-                                type="date"
-                                value={employee.partyOfficialDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'partyOfficialDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs">Ngày vào Đoàn</Label>
-                            <Input
-                                type="date"
-                                value={employee.youthUnionJoinDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'youthUnionJoinDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.partyOfficialDate} onChange={(e) => handleFieldChange(employee.id, 'partyOfficialDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày nhập ngũ</Label>
-                            <Input
-                                type="date"
-                                value={employee.militaryJoinDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'militaryJoinDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.militaryJoinDate} onChange={(e) => handleFieldChange(employee.id, 'militaryJoinDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
                             <Label className="text-xs">Ngày xuất ngũ</Label>
-                            <Input
-                                type="date"
-                                value={employee.militaryEndDate}
-                                onChange={(e) => handleFieldChange(employee.id, 'militaryEndDate', e.target.value)}
-                                className="h-8 text-sm"
-                            />
+                            <Input type="date" value={employee.militaryEndDate} onChange={(e) => handleFieldChange(employee.id, 'militaryEndDate', e.target.value)} className="h-8 text-sm" />
                         </div>
                         <div className="space-y-1">
-                            <Label className="text-xs">Quân hàm</Label>
-                            <GenericSearchSelect
-                                api={categoryConfigs.militaryRank.api}
-                                config={categoryConfigs.militaryRank}
-                                value={employee.militaryRankId}
-                                onChange={(v) => handleFieldChange(employee.id, 'militaryRankId', String(v))}
-                            />
+                            <Label className="text-xs">Quân hàm, chức vụ cao nhất</Label>
+                            <Input value={employee.title} onChange={(e) => handleFieldChange(employee.id, 'title', e.target.value)} className="h-8 text-sm" placeholder="Nhập quân hàm / chức vụ" />
                         </div>
-                        <div className="space-y-1 col-span-3">
+                        <div className="space-y-1">
+                            <Label className="text-xs">Danh hiệu được phong</Label>
+                            <GenericSearchSelect api={categoryConfigs.militaryRank.api} config={categoryConfigs.militaryRank} value={employee.militaryRankId} onChange={(v) => handleFieldChange(employee.id, 'militaryRankId', String(v))} />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Thương binh hạng</Label>
+                            <Input type="number" value={employee.injuryRank} onChange={(e) => handleFieldChange(employee.id, 'injuryRank', e.target.value)} className="h-8 text-sm" placeholder="Nhập hạng (số)" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Gia đình liệt sĩ</Label>
+                            <Select value={employee.isWoundedSoldier ? 'co' : 'khong'} onValueChange={(v) => handleFieldChange(employee.id, 'isWoundedSoldier', v === 'co')}>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="co">Có</SelectItem>
+                                    <SelectItem value="khong">Không</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Lịch sử pháp lý</Label>
+                            <Input value={employee.legalHistory} onChange={(e) => handleFieldChange(employee.id, 'legalHistory', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Công tác tại chế độ cũ</Label>
+                            <Input value={employee.workedInOldRegime} onChange={(e) => handleFieldChange(employee.id, 'workedInOldRegime', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Quan hệ nước ngoài</Label>
+                            <Input value={employee.foreignOrganizationRelation} onChange={(e) => handleFieldChange(employee.id, 'foreignOrganizationRelation', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-xs">Thân nhân ở nước ngoài</Label>
+                            <Input value={employee.relativesAbroad} onChange={(e) => handleFieldChange(employee.id, 'relativesAbroad', e.target.value)} className="h-8 text-sm" placeholder="Nhập" />
+                        </div>
+                        <div className="col-span-4 space-y-1">
                             <Label className="text-xs">Ghi chú</Label>
-                            <Textarea
-                                value={employee.note}
-                                onChange={(e) => handleFieldChange(employee.id, 'note', e.target.value)}
-                                className="text-sm"
-                            />
+                            <Textarea value={employee.note} onChange={(e) => handleFieldChange(employee.id, 'note', e.target.value)} className="text-sm" rows={3} placeholder="Nhập ghi chú" />
                         </div>
                     </div>
-
-                </TabsContent>
-            </Tabs>
+                </div>
+            </div>
         </div>
     );
 
@@ -1647,7 +1708,7 @@ export default function BulkEditEmployeeModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle>Chỉnh sửa</DialogTitle>
                     <DialogDescription>
@@ -1655,7 +1716,7 @@ export default function BulkEditEmployeeModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden flex flex-col min-h-0">
                     {/* Search Bar - giữ nguyên như cũ */}
                     {preSelectedEmployeeIds.length === 0 && (
                         <div className="px-4 py-3 border-b bg-muted/30">
@@ -1762,7 +1823,7 @@ export default function BulkEditEmployeeModal({
                     )}
 
                     {/* Content */}
-                    <div className="flex-1 overflow-auto px-4 py-4">
+                    <div className="flex-1 overflow-auto px-4 py-4 min-h-0">
                         {selectedEmployees.length === 0 ? (
                             <div className="text-center py-12 text-muted-foreground">
                                 <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
