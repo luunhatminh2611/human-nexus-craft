@@ -21,7 +21,6 @@ const GenericSearchSelect = ({ api, config, value, onChange, displayValue = "" }
   const fetchData = async () => {
     try {
       const data = await api.getAll();
-      console.log("RAW API response:", data);
       setList(data || []);
       setFilteredList(data || []);
     } catch (err) {
