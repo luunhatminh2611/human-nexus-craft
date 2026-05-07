@@ -76,12 +76,9 @@ apiClient.interceptors.response.use(
 // Đơn giản hóa API methods
 export const api = {
   // GET request
-  get: async (url: string, params?: any, config?: any) => {
+  get: async (url: string, config?: AxiosRequestConfig) => {
     try {
-      return await apiClient.get(url, {
-        params,
-        ...config  // merge thêm config như headers
-      });
+      return await apiClient.get(url, config);
     } catch (error) {
       throw error;
     }

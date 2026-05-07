@@ -3,7 +3,7 @@ import { api } from "../../../lib/axios";
 // Các field kiểu YEAR trong MySQL - chỉ chấp nhận 1901-2155 hoặc NULL
 const YEAR_FIELDS = new Set([
   'namGiamDinhBnn',
-  'namHuongTroCapBnn', 
+  'namHuongTroCapBnn',
   'namHuongTroCapTnld',
   'namRuaPhoi',
 ]);
@@ -105,5 +105,45 @@ export const routineHealthCheckApi = {
   delete: async (id: number) => {
     const response = await api.delete(`/routine-health-check/delete?id=${id}`);
     return response.data;
+  },
+
+  downloadReport: async (employeeId: number) => {
+    try {
+      const response = await api.get(
+        `/v1/health-check/report/download?employeeId=${employeeId}`,
+        { responseType: 'blob' }
+      );
+
+      const blob: Blob = response.data;
+
+      console.log('[downloadReport] blob.type:', blob?.type);
+      console.log('[downloadReport] blob.size:', blob?.size);
+      console.log('[downloadReport] instanceof Blob:', blob instanceof Blob);
+
+      if (!(blob instanceof Blob)) {
+        throw new Error(`response.data không phải Blob, nhận được: ${typeof blob}`);
+      }
+
+      if (blob.type.includes('application/json') || blob.type.includes('text/plain')) {
+        const text = await blob.text();
+        console.log('[downloadReport] Server trả lỗi JSON:', text);
+        const json = JSON.parse(text);
+        throw new Error(json.message || 'Lỗi từ server');
+      }
+
+      // ✅ Phần này đang bị thiếu trong code của bạn
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `KhamSucKhoe_${employeeId}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Lỗi khi tải báo cáo khám sức khỏe:', error);
+      throw error;
+    }
   },
 };

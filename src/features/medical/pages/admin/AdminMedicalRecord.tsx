@@ -25,12 +25,11 @@ import BulkAddHealthModal from '../../components/BulkAddHealthModal';
 import BulkEditHealthModal from '../../components/BulkEditHealthModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FileDown } from 'lucide-react';
-import { downloadHealthDoc } from '../../types/generateHealthDoc';
 
 // ─── Health Level Badge ──────────────────────────────────────────────────────
 
 function HealthLevelBadge({ level }: { level?: number }) {
-  if (!level) return <span className="text-muted-foreground text-xs">—</span>;
+  if (!level) return <span className="text-muted-foreground text-xs" >—</span>;
   const map: Record<number, { label: string; cls: string }> = {
     1: { label: 'Loại I', cls: 'bg-emerald-100 text-emerald-700' },
     2: { label: 'Loại II', cls: 'bg-blue-100   text-blue-700' },
@@ -40,9 +39,10 @@ function HealthLevelBadge({ level }: { level?: number }) {
   };
   const cfg = map[level] ?? { label: `Loại ${level}`, cls: 'bg-gray-100 text-gray-700' };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${cfg.cls}`}>
-      {cfg.label}
-    </span>
+    <span className= {`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${cfg.cls}`
+}>
+  { cfg.label }
+  </span>
   );
 }
 
@@ -92,19 +92,21 @@ function StatsBar({
   ];
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {stats.map(({ label, value, icon: Icon, color, bg }) => (
-        <Card key={label} className="p-4 flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${bg}`}>
-            <Icon className={`h-5 w-5 ${color}`} />
+    <div className= "grid grid-cols-2 md:grid-cols-4 gap-3" >
+    {
+      stats.map(({ label, value, icon: Icon, color, bg }) => (
+        <Card key= { label } className = "p-4 flex items-center gap-3" >
+        <div className={`p-2 rounded-lg ${bg}`} >
+    <Icon className={ `h-5 w-5 ${color}` } />
+      </div>
+      < div >
+      <p className="text-2xl font-bold" > { value } </p>
+        < p className = "text-xs text-muted-foreground" > { label } </p>
           </div>
-          <div>
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-xs text-muted-foreground">{label}</p>
-          </div>
-        </Card>
-      ))}
-    </div>
+          </Card>
+      ))
+}
+</div>
   );
 }
 
@@ -164,6 +166,20 @@ export default function HealthManagement() {
     setShowDetail(true);
   };
 
+  const handleDownloadReport = async (employeeId: number) => {
+    try {
+      await routineHealthCheckApi.downloadReport(employeeId);
+      toast({ title: 'Đã tải xuống báo cáo thành công' });
+    } catch (error: any) {
+      toast({
+        title: 'Lỗi tải file',
+        description: error?.message || 'Lỗi không xác định',
+        variant: 'destructive',
+      });
+    }
+  };
+
+
   // ── Unique months for filter dropdown ─────────────────────────────────────
   const uniqueMonths = useMemo(() => {
     const set = new Set<string>();
@@ -208,218 +224,224 @@ export default function HealthManagement() {
   const isIndeterminate = selectedIds.length > 0 && selectedIds.length < filtered.length;
 
   return (
-    <div className="space-y-6">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Khám sức khỏe định kỳ</h1>
-          <p className="text-muted-foreground mt-1">
-            Quản lý lịch khám sức khỏe định kỳ của nhân viên ({records.length} hồ sơ)
-          </p>
-        </div>
-        <div>
-          <Button2 onClick={() => setShowBulkAdd(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Thêm hàng loạt
-          </Button2>
-          <Button2 variant="outline" onClick={() => setShowBulkEdit(true)} disabled={selectedIds.length === 0}>
-            <Edit className="h-4 w-4 mr-2" /> Sửa hàng loạt ({selectedIds.length})
-          </Button2>
-        </div>
-      </div>
+    <div className= "space-y-6" >
+    {/* ── Header ─────────────────────────────────────────────────────────── */ }
+    < div className = "flex flex-col md:flex-row items-start md:items-center justify-between gap-4" >
+      <div>
+      <h1 className="text-3xl font-bold" > Khám sức khỏe định kỳ </h1>
+        < p className = "text-muted-foreground mt-1" >
+          Quản lý lịch khám sức khỏe định kỳ của nhân viên({ records.length } hồ sơ)
+            </p>
+            </div>
+            < div >
+            <Button2 onClick={ () => setShowBulkAdd(true) }>
+              <Plus className="h-4 w-4 mr-2" /> Thêm hàng loạt
+                </Button2>
+                < Button2 variant = "outline" onClick = {() => setShowBulkEdit(true)
+} disabled = { selectedIds.length === 0 } >
+  <Edit className="h-4 w-4 mr-2" /> Sửa hàng loạt({ selectedIds.length })
+    </Button2>
+    </div>
+    </div>
 
-      {/* ── Stats ──────────────────────────────────────────────────────────── */}
-      <StatsBar records={records} filterMonth={filterMonth} />
+{/* ── Stats ──────────────────────────────────────────────────────────── */ }
+<StatsBar records={ records } filterMonth = { filterMonth } />
 
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+  {/* ── Filter bar ─────────────────────────────────────────────────────── */ }
+  < Card className = "p-4" >
+    <div className="flex flex-col md:flex-row gap-3" >
+      <div className="flex-1 relative" >
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
               placeholder="Tìm theo mã NV, đơn vị..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+value = { searchTerm }
+onChange = { e => setSearchTerm(e.target.value) }
+className = "pl-10"
+  />
+  </div>
 
-          <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-full md:w-52">
-              <SelectValue placeholder="Lọc theo tháng" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tất cả tháng</SelectItem>
-              {uniqueMonths.map(m => {
-                const [year, month] = m.split('-');
-                return (
-                  <SelectItem key={m} value={m}>
-                    Tháng {month}/{year}
-                  </SelectItem>
+  < Select value = { filterMonth } onValueChange = { setFilterMonth } >
+    <SelectTrigger className="w-full md:w-52" >
+      <SelectValue placeholder="Lọc theo tháng" />
+        </SelectTrigger>
+        < SelectContent >
+        <SelectItem value="all" > Tất cả tháng </SelectItem>
+{
+  uniqueMonths.map(m => {
+    const [year, month] = m.split('-');
+    return (
+      <SelectItem key= { m } value = { m } >
+        Tháng { month }/{year}
+          </SelectItem>
                 );
-              })}
-            </SelectContent>
-          </Select>
+})}
+</SelectContent>
+  </Select>
 
-          <Button2
-            onClick={openCreate}
-            className="bg-green-500 hover:bg-green-600 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Thêm kết quả khám
-          </Button2>
+  < Button2
+onClick = { openCreate }
+className = "bg-green-500 hover:bg-green-600 text-white"
+  >
+  <Plus className="h-4 w-4 mr-2" />
+    Thêm kết quả khám
+      </Button2>
 
-        </div>
+      </div>
       </Card>
 
-      {/* ── Table ──────────────────────────────────────────────────────────── */}
-      <Card className="overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center p-16">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <span className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              <p>Đang tải dữ liệu...</p>
-            </div>
-          </div>
+{/* ── Table ──────────────────────────────────────────────────────────── */ }
+<Card className="overflow-hidden" >
+{
+  isLoading?(
+          <div className = "flex items-center justify-center p-16" >
+      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+  <span className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
+    <p>Đang tải dữ liệu...</p>
+      </div>
+      </div>
         ) : (
-          <div className="max-h-[calc(100vh-400px)] overflow-y-auto">
-            <table className="w-full">
-              <thead className="bg-muted sticky top-0 z-10">
-                <tr>
-                  <th className="text-center p-3 w-10">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={handleToggleAll}
-                    />
-                  </th>
-                  <th className="text-center p-3 text-sm font-semibold w-10">STT</th>
-                  <th className="text-left p-3 text-sm font-semibold">Nhân viên</th>
-                  <th className="text-left p-3 text-sm font-semibold">Đơn vị</th>
-                  <th className="text-left p-3 text-sm font-semibold">Ngày khám</th>
-                  <th className="text-left p-3 text-sm font-semibold">Huyết áp</th>
-                  <th className="text-left p-3 text-sm font-semibold">Mạch</th>
-                  <th className="text-left p-3 text-sm font-semibold">PL Sức khỏe</th>
-                  <th className="text-center p-3 text-sm font-semibold w-32">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-16 text-muted-foreground">
-                      <div className="flex flex-col items-center gap-2">
-                        <AlertCircle className="h-8 w-8 text-muted-foreground/40" />
-                        <p>Không tìm thấy hồ sơ nào</p>
-                      </div>
-                    </td>
+  <div className= "max-h-[calc(100vh-400px)] overflow-y-auto" >
+  <table className="w-full" >
+    <thead className="bg-muted sticky top-0 z-10" >
+      <tr>
+      <th className="text-center p-3 w-10" >
+        <Checkbox
+                      checked={ isAllSelected }
+onCheckedChange = { handleToggleAll }
+  />
+  </th>
+  < th className = "text-center p-3 text-sm font-semibold w-10" > STT </th>
+    < th className = "text-left p-3 text-sm font-semibold" > Nhân viên </th>
+      < th className = "text-left p-3 text-sm font-semibold" > Đơn vị </th>
+        < th className = "text-left p-3 text-sm font-semibold" > Ngày khám </th>
+          < th className = "text-left p-3 text-sm font-semibold" > Huyết áp </th>
+            < th className = "text-left p-3 text-sm font-semibold" > Mạch </th>
+              < th className = "text-left p-3 text-sm font-semibold" > PL Sức khỏe </th>
+                < th className = "text-center p-3 text-sm font-semibold w-32" > Thao tác </th>
                   </tr>
+                  </thead>
+                  <tbody>
+{
+  filtered.length === 0 ? (
+    <tr>
+    <td colSpan= { 8} className = "text-center py-16 text-muted-foreground" >
+      <div className="flex flex-col items-center gap-2" >
+        <AlertCircle className="h-8 w-8 text-muted-foreground/40" />
+          <p>Không tìm thấy hồ sơ nào </p>
+            </div>
+            </td>
+            </tr>
                 ) : (
-                  filtered.map((r, i) => (
-                    <tr
-                      key={r.id}
-                      className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => openDetail(r)}
+    filtered.map((r, i) => (
+      <tr
+                      key= { r.id }
+                      className = "border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick = {() => openDetail(r)}
                     >
-                      <td className="p-3 text-center" onClick={e => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedIds.includes(r.id!)}
-                          onCheckedChange={() => handleToggleOne(r.id!)}
+  <td className="p-3 text-center" onClick = { e => e.stopPropagation() } >
+    <Checkbox
+                          checked={ selectedIds.includes(r.id!) }
+onCheckedChange = {() => handleToggleOne(r.id!)}
                         />
+  </td>
+  < td className = "p-3 text-center text-sm text-muted-foreground" >
+    { i + 1}
+</td>
+
+{/* Nhân viên */ }
+<td className="p-3" >
+  <div className="flex items-center gap-2" >
+    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0" >
+      <User className="h-4 w-4 text-primary/60" />
+        </div>
+        < span className = "text-sm font-medium" > NV #{ r.employeeId } </span>
+          </div>
+          </td>
+
+          < td className = "p-3 text-sm" > { r.donVi || '—' } </td>
+
+            < td className = "p-3 text-sm" >
+            {
+              r.ngayKham
+                ? new Date(r.ngayKham + 'T00:00:00').toLocaleDateString('vi-VN')
+                : '—'
+            }
+              </td>
+
+              < td className = "p-3 text-sm" > { r.huyetAp || '—' } </td>
+
+                < td className = "p-3 text-sm" >
+                  { r.mach ? `${r.mach} lần/phút` : '—' }
+                  </td>
+
+                  < td className = "p-3" >
+                    <HealthLevelBadge level={ r.plSucKhoe } />
                       </td>
-                      <td className="p-3 text-center text-sm text-muted-foreground">
-                        {i + 1}
-                      </td>
 
-                      {/* Nhân viên */}
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <User className="h-4 w-4 text-primary/60" />
-                          </div>
-                          <span className="text-sm font-medium">NV #{r.employeeId}</span>
-                        </div>
-                      </td>
-
-                      <td className="p-3 text-sm">{r.donVi || '—'}</td>
-
-                      <td className="p-3 text-sm">
-                        {r.ngayKham
-                          ? new Date(r.ngayKham + 'T00:00:00').toLocaleDateString('vi-VN')
-                          : '—'}
-                      </td>
-
-                      <td className="p-3 text-sm">{r.huyetAp || '—'}</td>
-
-                      <td className="p-3 text-sm">
-                        {r.mach ? `${r.mach} lần/phút` : '—'}
-                      </td>
-
-                      <td className="p-3">
-                        <HealthLevelBadge level={r.plSucKhoe} />
-                      </td>
-
-                      {/* Actions — stopPropagation để không trigger row click */}
-                      <td className="p-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button
+{/* Actions — stopPropagation để không trigger row click */ }
+<td className="p-3" onClick = { e => e.stopPropagation() } >
+  <div className="flex items-center justify-center gap-1" >
+    <Button
                             variant="ghost"
-                            size="sm"
-                            title="Xem chi tiết"
-                            onClick={() => openDetail(r)}
+size = "sm"
+title = "Xem chi tiết"
+onClick = {() => openDetail(r)}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Chỉnh sửa"
-                            onClick={() => openEdit(r)}
+  <Eye className="h-4 w-4" />
+    </Button>
+    < Button
+variant = "ghost"
+size = "sm"
+title = "Chỉnh sửa"
+onClick = {() => openEdit(r)}
                           >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Tải về Word (Mẫu 03 - TT32/2023)"
-                            className="text-blue-600 hover:text-blue-700"
-                            onClick={() => downloadHealthDoc(r)}
+  <Edit className="h-4 w-4" />
+    </Button>
+    < Button
+variant = "ghost"
+size = "sm"
+title = "Tải về Word (Mẫu 03 - TT32/2023)"
+className = "text-blue-600 hover:text-blue-700"
+onClick = {() => handleDownloadReport(r.employeeId)}
                           >
-                            <FileDown className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title="Xóa"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(r.id!)}
+  <FileDown className="h-4 w-4" />
+    </Button>
+    < Button
+variant = "ghost"
+size = "sm"
+title = "Xóa"
+className = "text-destructive hover:text-destructive"
+onClick = {() => handleDelete(r.id!)}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
+  <Trash2 className="h-4 w-4" />
+    </Button>
+    </div>
+    </td>
+    </tr>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+</tbody>
+  </table>
+  </div>
         )}
-      </Card>
+</Card>
 
-      {/* ── Modals ─────────────────────────────────────────────────────────── */}
-      <MedicalDetailModal
-        isOpen={showDetail}
-        onClose={() => setShowDetail(false)}
-        record={detailRecord}
+{/* ── Modals ─────────────────────────────────────────────────────────── */ }
+<MedicalDetailModal
+        isOpen={ showDetail }
+onClose = {() => setShowDetail(false)}
+record = { detailRecord }
+  />
+
+  <MedicalFormModal
+        isOpen={ showForm }
+onClose = {() => { setShowForm(false); setEditRecord(null); }}
+record = { editRecord }
+onSuccess = {() => { setShowForm(false); setEditRecord(null); }}
       />
 
-      <MedicalFormModal
-        isOpen={showForm}
-        onClose={() => { setShowForm(false); setEditRecord(null); }}
-        record={editRecord}
-        onSuccess={() => { setShowForm(false); setEditRecord(null); }}
-      />
-
-      <BulkAddHealthModal isOpen={showBulkAdd} onClose={() => setShowBulkAdd(false)} onSuccess={() => { setShowBulkAdd(false); queryClient.invalidateQueries({ queryKey: ['health-records'] }); }} />
-      <BulkEditHealthModal isOpen={showBulkEdit} onClose={() => setShowBulkEdit(false)} preSelectedIds={selectedIds} onSuccess={() => { setShowBulkEdit(false); setSelectedIds([]); queryClient.invalidateQueries({ queryKey: ['health-records'] }); }} />
-    </div>
+  < BulkAddHealthModal isOpen = { showBulkAdd } onClose = {() => setShowBulkAdd(false)} onSuccess = {() => { setShowBulkAdd(false); queryClient.invalidateQueries({ queryKey: ['health-records'] }); }} />
+    < BulkEditHealthModal isOpen = { showBulkEdit } onClose = {() => setShowBulkEdit(false)} preSelectedIds = { selectedIds } onSuccess = {() => { setShowBulkEdit(false); setSelectedIds([]); queryClient.invalidateQueries({ queryKey: ['health-records'] }); }} />
+      </div>
   );
 }
