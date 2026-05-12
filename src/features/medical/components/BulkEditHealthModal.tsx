@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { routineHealthCheckApi } from '../api/medicalApi';
 import type { HealthRecord } from './MedicalFormModal';
+import { OPTIONAL_COLS, REQUIRED_COLS } from './BulkAddHealthModal';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -50,46 +51,7 @@ const num = (v: string) => {
   return isNaN(n) ? undefined : n;
 };
 
-// ─── Column definitions (same as BulkAdd) ────────────────────────────────────
-
-const REQUIRED_COLS = [
-  { key: 'employeeId', label: 'Mã NV *' },
-  { key: 'ngayKham',   label: 'Ngày khám *' },
-];
-
-const OPTIONAL_COLS_RAW = [
-  { key: 'donVi',              label: 'Đơn vị',            group: 'Thông tin chung' },
-  { key: 'chieuCao',           label: 'Chiều cao (cm)',     group: 'Thông tin chung' },
-  { key: 'canNang',            label: 'Cân nặng (kg)',      group: 'Thông tin chung' },
-  { key: 'mach',               label: 'Mạch',               group: 'Thông tin chung' },
-  { key: 'huyetAp',            label: 'Huyết áp',           group: 'Thông tin chung' },
-  { key: 'nhomMau',            label: 'Nhóm máu',           group: 'Thông tin chung' },
-  { key: 'plTheLuc',           label: 'PL Thể lực',         group: 'Thông tin chung' },
-  { key: 'plSucKhoe',          label: 'PL Sức khỏe',        group: 'Thông tin chung' },
-  { key: 'phanLoaiNgheNghiep', label: 'PL Nghề nghiệp',     group: 'Thông tin chung' },
-  { key: 'wbc',         label: 'WBC',         group: 'Xét nghiệm máu' },
-  { key: 'rbc',         label: 'RBC',         group: 'Xét nghiệm máu' },
-  { key: 'hgb',         label: 'HGB',         group: 'Xét nghiệm máu' },
-  { key: 'plt',         label: 'PLT',         group: 'Xét nghiệm máu' },
-  { key: 'vss',         label: 'VSS',         group: 'Xét nghiệm máu' },
-  { key: 'hba1c',       label: 'HbA1c',       group: 'Xét nghiệm máu' },
-  { key: 'glucoza',     label: 'Glucoza',      group: 'Xét nghiệm máu' },
-  { key: 'ure',         label: 'Ure',          group: 'Xét nghiệm máu' },
-  { key: 'creatinin',   label: 'Creatinin',    group: 'Xét nghiệm máu' },
-  { key: 'auric',       label: 'A. Uric',      group: 'Xét nghiệm máu' },
-  { key: 'cholesterol', label: 'Cholesterol',  group: 'Xét nghiệm máu' },
-  { key: 'triglycerid', label: 'Triglycerid',  group: 'Xét nghiệm máu' },
-  { key: 'hdl',         label: 'HDL',          group: 'Xét nghiệm máu' },
-  { key: 'ldl',         label: 'LDL',          group: 'Xét nghiệm máu' },
-  { key: 'got',         label: 'GOT',          group: 'Xét nghiệm máu' },
-  { key: 'gpt',         label: 'GPT',          group: 'Xét nghiệm máu' },
-  { key: 'ggt',         label: 'GGT',          group: 'Xét nghiệm máu' },
-  { key: 'moTaKetLuan',    label: 'Mô tả kết luận',   group: 'Kết luận' },
-  { key: 'huongGiaiQuyet', label: 'Hướng giải quyết', group: 'Kết luận' },
-  { key: 'nguoiKetLuan',   label: 'Người kết luận',   group: 'Kết luận' },
-];
-
-const OPTIONAL_COLS = OPTIONAL_COLS_RAW.filter(
+const UNIQUE_OPTIONAL_COLS = OPTIONAL_COLS.filter(
   (col, idx, self) => self.findIndex(c => c.key === col.key) === idx,
 );
 
@@ -168,12 +130,17 @@ export default function BulkEditHealthModal({
       return s;
     });
 
-  const toggleCol = (key: string) =>
-    setVisibleCols(p => {
-      const s = new Set(p);
-      s.has(key) ? s.delete(key) : s.add(key);
-      return s;
-    });
+  const toggleCol = (columnKey: string) => {
+    const newVisible = new Set(visibleCols);
+
+    if (newVisible.has(columnKey)) {
+      newVisible.delete(columnKey);
+    } else {
+      newVisible.add(columnKey);
+    }
+
+    setVisibleCols(newVisible);
+  };
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   const handleSubmit = () => {
@@ -307,43 +274,244 @@ export default function BulkEditHealthModal({
   };
 
   // ── Cell renderer ──────────────────────────────────────────────────────────
-  const renderCell = (row: HealthRecord, key: string) => {
-    const cls = 'h-8 text-sm w-full min-w-[120px]';
-    if (['employeeId','chieuCao','canNang','mach','plTheLuc','plSucKhoe','phanLoaiNgheNghiep',
-      'wbc','rbc','hgb','plt','vss','hba1c','glucoza','ure','creatinin','auric',
-      'cholesterol','triglycerid','hdl','ldl','got','gpt','ggt'].includes(key)) {
+  const renderCell = (row: Row, key: string) => {
+      const cls = "h-8 text-sm w-full min-w-[120px]";
+      const booleanFields = [
+        "nldTiepXucYeuToCoHai",
+        "biTaiNanLaoDong",
+        "nldKskPhatHienBnn",
+        "nldChanDoanBnn",
+        "daRuaPhoi",
+  
+        "dauBungKinh",
+        "daLapGiaDinh",
+        "apDungBptt",
+  
+        "xuTriDt",
+        "xuTriTd",
+        "xuTriCk",
+        "luuY",
+  
+        "hbsag",
+        "hav",
+        "hcv",
+        "hev",
+        "hpylori",
+  
+        "laoPhoi",
+        "ungThuPhoi",
+        "viemXoangCap",
+        "viemXoangMan",
+        "viemPheQuanCap",
+        "viemPheQuanMan",
+        "viemPhoi",
+        "henPheQuanDiUng",
+        "iaCHayViemDaDayRuot",
+        "noiTiet",
+        "benhTamThan",
+        "benhThanKinhTwNgoaiBien",
+        "haCanTheoDoi",
+        "haCanDieuTri",
+        "benhTimMach",
+        "benhVanTim",
+        "roiLoanNhipTim",
+        "viemDaDay",
+        "viemDaiTrang",
+        "basedow",
+        "tieuDuong",
+        "tangRlDuong",
+        "rlMoMau",
+        "tangMenGan",
+        "tangAcidUric",
+        "viemGanXoGan",
+        "benhThanTietNieu",
+        "soiTietNieu",
+        "nangThan",
+        "nangNhanTuyenGiap",
+        "ganNhiemMo",
+        "soiPolipTuiMat",
+        "ungThuNoiKhoa",
+        "benhSotRet",
+  
+        "vmuiHongAmidalXoang",
+        "viemTai",
+        "polipMui",
+  
+        "sauRang",
+        "rangMocLech",
+        "matRang",
+  
+        "tatKhucXa",
+        "laoThi",
+        "giamThiLuc",
+        "ducThuyTinhThe",
+  
+        "ucacLoai",
+        "nangNhanTuyenVu",
+        "tri",
+        "benhXuongKhop",
+        "vetMoOBung",
+        "gayXuongCu",
+        "matDotNgonTayChanCu",
+        "taiNanChanThuongCu",
+        "sayThai",
+  
+        "viemNamAmDao",
+        "viemCtc",
+        "nhanXoTuCung",
+        "uxoTuCung",
+        "nangBt",
+        "polipCtc",
+  
+        "viemDa",
+        "vayNen",
+        "langBen",
+        "namDa",
+        "sanNgua",
+      ];
+      const numberFields = [
+        "employeeId",
+  
+        "namSinh",
+  
+        "chieuCao",
+        "canNang",
+        "mach",
+  
+        "plTheLuc",
+        "plSucKhoe",
+        "phanLoaiNgheNghiep",
+  
+        "soNgayNghiOm",
+        "soNgayDieuTriTnld",
+        "tyLeGiamDinhTnld",
+        "namHuongTroCapTnld",
+  
+        "namGiamDinhBnn",
+        "tyLeGiamDinhBnn",
+        "namHuongTroCapBnn",
+        "namRuaPhoi",
+  
+        "plKhamTuanHoan",
+        "plKhamHoHap",
+        "plKhamTieuHoa",
+        "plKhamThanTietNieu",
+        "plKhamNoiTiet",
+        "plKhamCxk",
+        "plKhamThanKinh",
+        "plKhamTamThan",
+        "plKhamNgoai",
+        "plKhamDaLieu",
+        "plKhamSanKhoa",
+        "plKhamMat",
+        "plKhamTmh",
+        "plKhamRhm",
+  
+        "tuoiBatDauKinhNguyet",
+        "chuKyKinh",
+        "luongKinh",
+        "soLanMoSanPhuKhoa",
+  
+        "noiThuongTaiTrai",
+        "noiThuongTaiPhai",
+        "noiThamTaiTrai",
+        "noiThamTaiPhai",
+  
+        "wbc",
+        "rbc",
+        "hgb",
+        "plt",
+        "vss",
+        "ure",
+        "glucoza",
+        "creatinin",
+        "auric",
+        "cholesterol",
+        "triglycerid",
+        "hdl",
+        "ldl",
+        "got",
+        "gpt",
+        "ggt",
+        "albumin",
+        "bilirubinTp",
+        "bilirubinTt",
+        "bilirubinGt",
+        "ckmb",
+        "canxi",
+  
+        "ntPh",
+        "ntSg",
+  
+        "hba1c",
+      ];
+      const dateFields = [
+        "ngayKham",
+        "ngayBiTaiNanLaoDong",
+        "thoiGianHoiChanBnn",
+      ];
+      if (booleanFields.includes(key)) {
+        return (
+          <div className="flex items-center justify-center">
+            <input
+              type="checkbox"
+              checked={Boolean((row as any)[key])}
+              onChange={(e) => setField(row._tid, key, e.target.checked)}
+            />
+          </div>
+        );
+      }
+      if (numberFields.includes(key)) {
+        return (
+          <Input
+            type="number"
+            step="0.01"
+            className={cls}
+            value={(row as any)[key] ?? ""}
+            onChange={(e) => setField(row._tid, key, num(e.target.value))}
+          />
+        );
+      }
+      if (dateFields.includes(key)) {
+        return (
+          <Input
+            type="date"
+            className={cls}
+            value={(row as any)[key] ?? ""}
+            onChange={(e) => setField(row._tid, key, e.target.value)}
+          />
+        );
+      }
+      if (key === "nhomMau") {
+        return (
+          <Select
+            value={(row as any)[key] ?? ""}
+            onValueChange={(v) => setField(row._tid, key, v)}
+          >
+            <SelectTrigger className={cls}>
+              <SelectValue placeholder="Chọn" />
+            </SelectTrigger>
+  
+            <SelectContent>
+              {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      }
       return (
-        <Input type="number" step="0.01" className={cls}
-          value={(row as any)[key] ?? ''}
-          onChange={e => setField(row.id!, key, num(e.target.value))} />
+        <Input
+          className={cls}
+          value={(row as any)[key] ?? ""}
+          onChange={(e) => setField(row._tid, key, e.target.value)}
+          placeholder="..."
+        />
       );
-    }
-    if (key === 'ngayKham') {
-      return (
-        <Input type="date" className={cls}
-          value={(row as any)[key] ?? ''}
-          onChange={e => setField(row.id!, key, e.target.value)} />
-      );
-    }
-    if (key === 'nhomMau') {
-      return (
-        <Select value={(row as any)[key] ?? ''} onValueChange={v => setField(row.id!, key, v)}>
-          <SelectTrigger className={cls}><SelectValue placeholder="Chọn" /></SelectTrigger>
-          <SelectContent>
-            {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b => (
-              <SelectItem key={b} value={b}>{b}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      );
-    }
-    return (
-      <Input className={cls}
-        value={(row as any)[key] ?? ''}
-        onChange={e => setField(row.id!, key, e.target.value)}
-        placeholder="..." />
-    );
-  };
+    };
+  
 
   // ── Expanded card ──────────────────────────────────────────────────────────
   const renderExpanded = (row: HealthRecord, index: number) => (
@@ -504,7 +672,7 @@ export default function BulkEditHealthModal({
                     <Checkbox checked={Boolean((row as any)[k])}
                       onCheckedChange={v => setField(row.id!, k, v)} />
                     <span className="text-sm">{l}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded ${(row as any)[k] ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ` + ((row as any)[k] ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500')}>
                       {(row as any)[k] ? 'Dương tính' : 'Âm tính'}
                     </span>
                   </label>
@@ -592,20 +760,20 @@ export default function BulkEditHealthModal({
 
   // ── Column selector ────────────────────────────────────────────────────────
   const ColumnSelector = () => {
-    const groups = OPTIONAL_COLS.reduce((acc, col) => {
+    const groups = UNIQUE_OPTIONAL_COLS.reduce((acc, col) => {
       if (!acc[col.group]) acc[col.group] = [];
       acc[col.group].push(col);
       return acc;
-    }, {} as Record<string, typeof OPTIONAL_COLS>);
+    }, {} as Record<string, typeof UNIQUE_OPTIONAL_COLS>);
     return (
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
             <ChevronDown className="h-4 w-4" />
-            Tùy chỉnh cột ({visibleCols.size + REQUIRED_COLS.length}/{REQUIRED_COLS.length + OPTIONAL_COLS.length})
+            Tùy chỉnh cột ({visibleCols.size + REQUIRED_COLS.length}/{REQUIRED_COLS.length + UNIQUE_OPTIONAL_COLS.length})
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 max-h-80 overflow-y-auto">
+        <PopoverContent className="w-72 max-h-80 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold mb-1">Cột bắt buộc</p>
@@ -733,7 +901,7 @@ export default function BulkEditHealthModal({
                       {REQUIRED_COLS.map(c => (
                         <TableHead key={c.key} className="whitespace-nowrap">{c.label}</TableHead>
                       ))}
-                      {OPTIONAL_COLS.filter(c => visibleCols.has(c.key)).map(c => (
+                      {UNIQUE_OPTIONAL_COLS.filter(c => visibleCols.has(c.key)).map(c => (
                         <TableHead key={c.key} className="whitespace-nowrap">{c.label}</TableHead>
                       ))}
                     </TableRow>
@@ -757,13 +925,13 @@ export default function BulkEditHealthModal({
                           {REQUIRED_COLS.map(c => (
                             <TableCell key={c.key}>{renderCell(row, c.key)}</TableCell>
                           ))}
-                          {OPTIONAL_COLS.filter(c => visibleCols.has(c.key)).map(c => (
+                          {UNIQUE_OPTIONAL_COLS.filter(c => visibleCols.has(c.key)).map(c => (
                             <TableCell key={c.key}>{renderCell(row, c.key)}</TableCell>
                           ))}
                         </TableRow>
                         {expandedRows.has(row.id!) && (
                           <TableRow key={`${row.id}-exp`}>
-                            <TableCell colSpan={2 + REQUIRED_COLS.length + OPTIONAL_COLS.filter(c => visibleCols.has(c.key)).length}>
+                            <TableCell colSpan={2 + REQUIRED_COLS.length + UNIQUE_OPTIONAL_COLS.filter(c => visibleCols.has(c.key)).length}>
                               {renderExpanded(row, idx)}
                             </TableCell>
                           </TableRow>
