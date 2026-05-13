@@ -449,6 +449,7 @@ export default function Employees() {
     });
   };
 
+  // Export Ly Lich
   const handleExportLyLich = async (d: any) => {
     // d = employee object (từ row trong bảng HOẶC từ employeeDetailData trong detail panel)
     if (!d) return;
@@ -522,6 +523,14 @@ export default function Employees() {
       toast({ title: 'Lỗi', description: 'Không thể xuất file Word', variant: 'destructive' });
     } finally {
       setIsExportingWord(false);
+    }
+  };
+
+  const handleDownloadCv = async (id: number) => {
+    try {
+      await employeeApi.downloadCv(id);
+    } catch (error) {
+      toast({ title: 'Lỗi', description: 'Không thể tải xuống CV', variant: 'destructive' });
     }
   };
 
@@ -1193,10 +1202,10 @@ export default function Employees() {
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleExportLyLich(employee);
+                                      handleDownloadCv(employee.id);
                                     }}
                                     disabled={isExportingWord}
-                                    title="Xuất sơ yếu lý lịch (.docx)"
+                                    title="Tải xuống CV (.docx)"
                                   >
                                     <FileDown className="h-4 w-4" />
                                   </Button2>

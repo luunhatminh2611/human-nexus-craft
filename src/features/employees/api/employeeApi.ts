@@ -147,6 +147,17 @@ export const employeeApi = {
       throw error;
     }
   },
+  // Tải xuống cv của nhân viên
+  downloadCv: async (id: number) => {
+    try {
+      const response = await api.post(`/employees/${id}/cv`);
+      const presignedUrl = response.data;
+      window.open(presignedUrl, "_blank");
+    } catch (error) {
+      console.error("Lỗi khi tải CV:", error);
+      throw error;
+    }
+  },
 
   importExcel: async (file: File) => {
     const formData = new FormData();
