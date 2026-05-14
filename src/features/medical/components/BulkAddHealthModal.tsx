@@ -1,6 +1,6 @@
 // components/BulkAddHealthModal.tsx
-import { useState, useEffect, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Input } from "@/shared/components/ui/input";
@@ -58,6 +58,8 @@ import {
 } from "lucide-react";
 import { routineHealthCheckApi } from "../api/medicalApi";
 import type { HealthRecord } from "./MedicalFormModal";
+import useDebounce from "@/hooks/useDebounce";
+import { employeeApi } from "@/features/employees";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -78,30 +80,25 @@ const num = (v: string) => {
 // ─── Column definitions ───────────────────────────────────────────────────────
 
 export const REQUIRED_COLS = [
-  { key: "employeeId", label: "Mã NV *" },
-  { key: "maBhxh", label: "Mã BHXH *" },
-  { key: "ngayKham", label: "Ngày khám *" },
-  { key: "donVi", label: "Đơn vị *" },
+  { key: "socialInsuranceNumber", label: "Mã BHXH *", group: "Thông tin chung" },
+  { key: "employeeId", label: "Mã NV *", group: "Thông tin chung" },
+  { key: "ngayKham", label: "Ngày khám *", group: "Kết quả" },
+  { key: "donVi", label: "Đơn vị *", group: "Thông tin chung" },
 ];
 
 export const OPTIONAL_COLS = [
   // ─── Thông tin chung ───────────────────────────────────────────
-  { key: "maBhxh", label: "Mã BHXH *", group: "Thông tin chung" },
-  { key: "employeeId", label: "Mã NV *", group: "Thông tin chung" },
-  { key: "hoVaTen", label: "Họ và tên", group: "Thông tin chung" },
-  { key: "namSinh", label: "Năm sinh", group: "Thông tin chung" },
-  { key: "chucDanh", label: "Chức danh", group: "Thông tin chung" },
+  { key: "employeeName", label: "Họ và tên", group: "Thông tin chung" },
+  { key: "birthday", label: "Năm sinh", group: "Thông tin chung" },
+  { key: "jobTitleName", label: "Chức danh", group: "Thông tin chung" },
   {
-    key: "congTruong",
+    key: "departmentName",
     label: "Công trường / Phân xưởng / Phòng ban",
     group: "Thông tin chung",
   },
-  { key: "donVi", label: "Đơn vị *", group: "Thông tin chung" },
-
   // ─── Kết quả ───────────────────────────────────────────────────
-  { key: "ngayKham", label: "Ngày khám *", group: "Kết quả" },
-  { key: "chieuCao", label: "Chiều cao (cm)", group: "Kết quả" },
-  { key: "canNang", label: "Cân nặng (kg)", group: "Kết quả" },
+  { key: "height", label: "Chiều cao (cm)", group: "Kết quả" },
+  { key: "weight", label: "Cân nặng (kg)", group: "Kết quả" },
   { key: "mach", label: "Mạch", group: "Kết quả" },
   { key: "huyetAp", label: "Huyết áp", group: "Kết quả" },
   { key: "plTheLuc", label: "PL Thể lực", group: "Kết quả" },
@@ -636,8 +633,13 @@ export const OPTIONAL_COLS = [
   { key: "benhKhacDaLieu", label: "Bệnh khác (da liễu)", group: "Da liễu" },
 ];
 
+export const ALL_COLUMNS = {
+  required: REQUIRED_COLS,
+  optional: OPTIONAL_COLS,
+};
+
 // deduplicate by key
-const UNIQUE_OPTIONAL_COLS = OPTIONAL_COLS.filter(
+export const UNIQUE_OPTIONAL_COLS = ALL_COLUMNS.optional.filter(
   (col, idx, self) => self.findIndex((c) => c.key === col.key) === idx,
 );
 
@@ -656,16 +658,10 @@ const createEmpty = (id: number): Partial<HealthRecord> & { _tid: number } => ({
   employeeId: "",
 
   ngayKham: new Date().toISOString().slice(0, 10),
-  donVi: "",
-  // Thông tin chung
-  hoVaTen: "",
-  namSinh: 0,
-  chucDanh: "",
-  congTruong: "",
 
   // Kết quả
-  chieuCao: 0,
-  canNang: 0,
+  height: 0,
+  weight: 0,
   mach: 0,
   huyetAp: "",
   plTheLuc: 0,
@@ -926,11 +922,52 @@ export default function BulkAddHealthModal({
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [viewMode, setViewMode] = useState<"table" | "expanded">("table");
   const [visibleCols, setVisibleCols] = useState<Set<string>>(DEFAULT_VISIBLE);
+  const [socialInsuranceNumber, setSocialInsuranceNumber] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeBhxhTid, setActiveBhxhTid] = useState<number | null>(null);
+
+  const debounceSocialInsuranceNumber = useDebounce(socialInsuranceNumber, 1800);
 
   useEffect(() => {
     if (isOpen && rows.length === 0) addRow();
   }, [isOpen]);
+
+  const { data: employeeByBhxh, isError } = useQuery({
+    queryKey: ["employee-bhxh", debounceSocialInsuranceNumber],
+    queryFn: () => employeeApi.getBySocialInsurance(debounceSocialInsuranceNumber),
+    enabled: !!debounceSocialInsuranceNumber,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  useEffect(() => {
+    if (!employeeByBhxh || activeBhxhTid === null) return;
+      setField(activeBhxhTid, "employeeId", employeeByBhxh.id);
+      setField(activeBhxhTid, "employeeName", employeeByBhxh.name);
+      setField(activeBhxhTid, "birthday", employeeByBhxh.birthday);
+      setField(activeBhxhTid, "jobTitleName", employeeByBhxh.positionName);
+      setField(activeBhxhTid, "departmentName", employeeByBhxh.departmentName);
+      setField(activeBhxhTid, "donVi", employeeByBhxh.companyName);
+      setField(activeBhxhTid, "height", employeeByBhxh.height);
+      setField(activeBhxhTid, "weight", employeeByBhxh.weight);
+      
+  }, [employeeByBhxh]);
+
+  useEffect(() => {
+    if (isError && debounceSocialInsuranceNumber) {
+      toast({ 
+        title: "Không tìm thấy nhân viên", 
+        description: `Mã BHXH "${debounceSocialInsuranceNumber}" không tồn tại`,
+        variant: "destructive" 
+      });
+    }
+  }, [isError, debounceSocialInsuranceNumber]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSocialInsuranceNumber(e.target.value);
+  };
+
+  
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const createMutation = useMutation({
@@ -1003,13 +1040,15 @@ export default function BulkAddHealthModal({
     }
     const payload = rows.map(({ _tid, ...rest }) => rest);
     console.log("Submitting payload:", payload);
-    payload.forEach(item => createMutation.mutate(item));
+    createMutation.mutate(payload);
   };
 
   const handleClose = () => {
     setRows([]);
     setNextId(1);
     setExpandedRows(new Set());
+    setSocialInsuranceNumber("");
+    setActiveBhxhTid(null); 
     onClose();
   };
 
@@ -1294,7 +1333,7 @@ export default function BulkAddHealthModal({
     const numberFields = [
       "employeeId",
 
-      "namSinh",
+      
 
       "chieuCao",
       "canNang",
@@ -1372,7 +1411,25 @@ export default function BulkAddHealthModal({
       "ngayKham",
       "ngayBiTaiNanLaoDong",
       "thoiGianHoiChanBnn",
+      "namSinh",
     ];
+
+    const mxBhxhFields = ["socialInsuranceNumber"];
+
+    if(mxBhxhFields.includes(key)) {
+      return(
+        <Input
+          className={cls}
+          value={(row as any)[key] ? (row as any)[key] : ""}
+          onChange={(e) => {
+            setField(row._tid, key, e.target.value);
+            handleInputChange(e);
+            setActiveBhxhTid(row._tid); 
+          }}
+          placeholder="..."
+        />
+      );
+    }
 
     if (booleanFields.includes(key)) {
       return (
@@ -1439,13 +1496,13 @@ export default function BulkAddHealthModal({
 
   // ── Expanded card ──────────────────────────────────────────────────────────
   const renderExpanded = (row: Row, index: number) => {
-    const groupedColumns = OPTIONAL_COLS.reduce(
+    const groupedColumns = [...ALL_COLUMNS.required, ...ALL_COLUMNS.optional].reduce(
       (acc, col) => {
         if (!acc[col.group]) acc[col.group] = [];
         acc[col.group].push(col);
         return acc;
       },
-      {} as Record<string, typeof OPTIONAL_COLS>,
+      {} as Record<string, typeof ALL_COLUMNS.optional>,
     );
 
     const numberFields = [
@@ -1766,23 +1823,47 @@ export default function BulkAddHealthModal({
       "plKhamRhm",
     ];
 
+    const mxBhxhFields = ["socialInsuranceNumber"];
+
+    const readOnlyFields = [
+      "employeeId",
+      "employeeName", 
+      "donVi",
+      "birthday",
+      "jobTitleName",
+      "departmentName",
+    ];
+
     const renderField = (key: string, label: string) => {
+      if (readOnlyFields.includes(key)) {
+        return (
+          <div key={key} className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <Input
+              className="h-8 text-sm cursor-not-allowed bg-muted"
+              value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+              readOnly
+            />
+          </div>
+        );
+      }
+
       if (booleanFields.includes(key)) {
-    return (
-      <div key={key} className="space-y-1">
-      <Label className="text-xs">{label}</Label>
-      <label className="flex items-center gap-1.5 h-8 border rounded-md px-2 bg-background cursor-pointer hover:bg-muted/50 w-full">
-        <Checkbox
-          checked={Boolean(row[key as keyof Row])}
-          onCheckedChange={(v) => setField(row._tid, key, v)}
-        />
-        <span className="text-xs">
-          {Boolean(row[key as keyof Row]) ? "Có" : "Không"}
-        </span>
-      </label>
-    </div>
-    );
-  }
+        return (
+          <div key={key} className="space-y-1">
+          <Label className="text-xs">{label}</Label>
+          <label className="flex items-center gap-1.5 h-8 border rounded-md px-2 bg-background cursor-pointer hover:bg-muted/50 w-full">
+            <Checkbox
+              checked={Boolean(row[key as keyof Row])}
+              onCheckedChange={(v) => setField(row._tid, key, v)}
+            />
+            <span className="text-xs">
+              {Boolean(row[key as keyof Row]) ? "Có" : "Không"}
+            </span>
+          </label>
+        </div>
+        );
+      }
       if (textareaFields.includes(key)) {
         return (
           <div key={key} className="space-y-1">
@@ -1806,6 +1887,24 @@ export default function BulkAddHealthModal({
               className="h-8 text-sm"
               value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
               onChange={(e) => setField(row._tid, key, e.target.value)}
+            />
+          </div>
+        );
+      }
+
+      if(mxBhxhFields.includes(key)) {
+        return(
+          <div key={key} className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <Input
+              className="h-8 text-sm"
+              type="text"
+              value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+              onChange={(e) => {
+                setField(row._tid, key, e.target.value); 
+                handleInputChange(e);
+                setActiveBhxhTid(row._tid); 
+              }}
             />
           </div>
         );
@@ -1894,7 +1993,7 @@ export default function BulkAddHealthModal({
               {index + 1}
             </span>
 
-            {row.employeeId ? `NV #${row.employeeId}` : "Lượt khám mới"}
+            {row.employeeId ? `${row.employeeName}` : "Lượt khám mới"}
           </h4>
 
           <Button variant="ghost" size="sm" onClick={() => removeRow(row._tid)}>
@@ -1919,13 +2018,13 @@ export default function BulkAddHealthModal({
 
   // ── Column selector popover ────────────────────────────────────────────────
   const ColumnSelector = () => {
-    const groups = UNIQUE_OPTIONAL_COLS.reduce(
+    const groups = ALL_COLUMNS.optional.reduce(
       (acc, col) => {
         if (!acc[col.group]) acc[col.group] = [];
         acc[col.group].push(col);
         return acc;
       },
-      {} as Record<string, typeof UNIQUE_OPTIONAL_COLS>,
+      {} as Record<string, typeof ALL_COLUMNS.optional>,
     );
 
     return (
@@ -1933,8 +2032,8 @@ export default function BulkAddHealthModal({
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
             <ChevronDown className="h-4 w-4" />
-            Tùy chỉnh cột ({visibleCols.size + REQUIRED_COLS.length}/
-            {REQUIRED_COLS.length + UNIQUE_OPTIONAL_COLS.length})
+            Tùy chỉnh cột ({visibleCols.size}/
+            {ALL_COLUMNS.required.length + ALL_COLUMNS.optional.length})
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -1944,7 +2043,7 @@ export default function BulkAddHealthModal({
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold mb-1">Cột bắt buộc</p>
-              {REQUIRED_COLS.map((c) => (
+              {ALL_COLUMNS.required.map((c) => (
                 <div
                   key={c.key}
                   className="flex items-center gap-2 opacity-50 py-0.5"
@@ -2066,12 +2165,12 @@ export default function BulkAddHealthModal({
                       <TableHead className="w-28 sticky left-10 bg-background z-10 text-center">
                         Thao tác
                       </TableHead>
-                      {REQUIRED_COLS.map((c) => (
+                      {ALL_COLUMNS.required.map((c) => (
                         <TableHead key={c.key} className="whitespace-nowrap">
                           {c.label}
                         </TableHead>
                       ))}
-                      {UNIQUE_OPTIONAL_COLS.filter((c) =>
+                      {ALL_COLUMNS.optional.filter((c) =>
                         visibleCols.has(c.key),
                       ).map((c) => (
                         <TableHead key={c.key} className="whitespace-nowrap">

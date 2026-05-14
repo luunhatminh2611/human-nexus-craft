@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { routineHealthCheckApi } from '../api/medicalApi';
 import type { HealthRecord } from './MedicalFormModal';
-import { OPTIONAL_COLS, REQUIRED_COLS } from './BulkAddHealthModal';
+import { ALL_COLUMNS, OPTIONAL_COLS, REQUIRED_COLS, UNIQUE_OPTIONAL_COLS } from './BulkAddHealthModal';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -50,10 +50,6 @@ const num = (v: string) => {
   const n = Number(v);
   return isNaN(n) ? undefined : n;
 };
-
-const UNIQUE_OPTIONAL_COLS = OPTIONAL_COLS.filter(
-  (col, idx, self) => self.findIndex(c => c.key === col.key) === idx,
-);
 
 const DEFAULT_VISIBLE = new Set([
   'donVi', 'mach', 'huyetAp', 'plSucKhoe', 'moTaKetLuan',
@@ -97,7 +93,7 @@ export default function BulkEditHealthModal({
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const updateMutation = useMutation({
-    mutationFn: (payload: HealthRecord[]) => routineHealthCheckApi.update(payload as any),
+    mutationFn: (payload: HealthRecord[]) => routineHealthCheckApi.updateBulk(payload as any),
     onSuccess: () => {
       toast({ title: `Đã cập nhật ${rows.length} lượt khám` });
       queryClient.invalidateQueries({ queryKey: ['health-records'] });
@@ -456,7 +452,7 @@ export default function BulkEditHealthModal({
             <input
               type="checkbox"
               checked={Boolean((row as any)[key])}
-              onChange={(e) => setField(row._tid, key, e.target.checked)}
+              onChange={(e) => setField(row.id, key, e.target.checked)}
             />
           </div>
         );
@@ -467,8 +463,8 @@ export default function BulkEditHealthModal({
             type="number"
             step="0.01"
             className={cls}
-            value={(row as any)[key] ?? ""}
-            onChange={(e) => setField(row._tid, key, num(e.target.value))}
+            value={(row as any)[key] ? (row as any)[key] : ""}
+            onChange={(e) => setField(row.id, key, num(e.target.value))}
           />
         );
       }
@@ -477,16 +473,16 @@ export default function BulkEditHealthModal({
           <Input
             type="date"
             className={cls}
-            value={(row as any)[key] ?? ""}
-            onChange={(e) => setField(row._tid, key, e.target.value)}
+            value={(row as any)[key] ? (row as any)[key] : ""}
+            onChange={(e) => setField(row.id, key, e.target.value)}
           />
         );
       }
       if (key === "nhomMau") {
         return (
           <Select
-            value={(row as any)[key] ?? ""}
-            onValueChange={(v) => setField(row._tid, key, v)}
+            value={(row as any)[key] ? (row as any)[key] : ""}
+            onValueChange={(v) => setField(row.id, key, v)}
           >
             <SelectTrigger className={cls}>
               <SelectValue placeholder="Chọn" />
@@ -505,8 +501,8 @@ export default function BulkEditHealthModal({
       return (
         <Input
           className={cls}
-          value={(row as any)[key] ?? ""}
-          onChange={(e) => setField(row._tid, key, e.target.value)}
+          value={(row as any)[key] ? (row as any)[key] : ""}
+          onChange={(e) => setField(row.id, key, e.target.value)}
           placeholder="..."
         />
       );
@@ -514,270 +510,530 @@ export default function BulkEditHealthModal({
   
 
   // ── Expanded card ──────────────────────────────────────────────────────────
-  const renderExpanded = (row: HealthRecord, index: number) => (
-    <div key={row.id} className="border rounded-lg p-4 space-y-4 bg-muted/30">
-      <div className="flex items-center justify-between border-b pb-2">
-        <h4 className="font-semibold text-sm flex items-center gap-2">
-          <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs">
-            {index + 1}
-          </span>
-          NV #{row.employeeId} — {row.ngayKham ? new Date(row.ngayKham + 'T00:00:00').toLocaleDateString('vi-VN') : ''}
-          {row.donVi && <span className="text-muted-foreground font-normal">({row.donVi})</span>}
-        </h4>
-        <Button variant="ghost" size="sm" onClick={() => removeRow(row.id!)}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+  const renderExpanded = (row: Row, index: number) => {
+      const groupedColumns = [...ALL_COLUMNS.required, ...ALL_COLUMNS.optional].reduce(
+        (acc, col) => {
+          if (!acc[col.group]) acc[col.group] = [];
+          acc[col.group].push(col);
+          return acc;
+        },
+        {} as Record<string, typeof ALL_COLUMNS.optional>,
+      );
+  
+      const numberFields = [
+        "employeeId",
+  
+        // Kết quả
+        "chieuCao",
+        "canNang",
+        "mach",
+        "plTheLuc",
+        "plSucKhoe",
+        "phanLoaiNgheNghiep",
+        "soNgayNghiOm",
+        "soNgayDieuTriTnld",
+        "tyLeGiamDinhTnld",
+        "namHuongTroCapTnld",
+        "namGiamDinhBnn",
+        "tyLeGiamDinhBnn",
+        "namHuongTroCapBnn",
+        "namRuaPhoi",
+  
+        // Sản phụ khoa
+        "tuoiBatDauKinhNguyet",
+        "chuKyKinh",
+        "luongKinh",
+        "soLanMoSanPhuKhoa",
+  
+        // Xét nghiệm
+        "wbc",
+        "rbc",
+        "hgb",
+        "plt",
+        "vss",
+        "ure",
+        "glucoza",
+        "creatinin",
+        "auric",
+        "cholesterol",
+        "triglycerid",
+        "hdl",
+        "ldl",
+        "got",
+        "gpt",
+        "ggt",
+        "albumin",
+        "bilirubinTp",
+        "bilirubinTt",
+        "bilirubinGt",
+        "ckmb",
+        "canxi",
+        "ntPh",
+        "ntSg",
+        "hba1c",
+  
+        // Tai mũi họng
+        "noiThuongTaiTrai",
+        "noiThuongTaiPhai",
+        "noiThamTaiTrai",
+        "noiThamTaiPhai",
+  
+        // Phân loại khám
+        "plKhamTuanHoan",
+        "plKhamHoHap",
+        "plKhamTieuHoa",
+        "plKhamThanTietNieu",
+        "plKhamNoiTiet",
+        "plKhamCxk",
+        "plKhamThanKinh",
+        "plKhamTamThan",
+        "plKhamNgoai",
+        "plKhamDaLieu",
+        "plKhamSanKhoa",
+        "plKhamMat",
+        "plKhamTmh",
+        "plKhamRhm",
+  
+        // Xét nghiệm nước tiểu
+        "ntLeu",
+        "ntNit",
+        "ntPro",
+        "ntEry",
+        "ntKet",
+        "ntBil",
+        "ntGlu",
+        "ntUbg",
+  
+        // Mắt
+        "kqMatTraiKhongKinh",
+        "kqMatPhaiKhongKinh",
+        "kqMatTraiCoKinh",
+        "kqMatPhaiCoKinh",
+      ];
+  
+      const booleanFields = [
+        // Xử trí
+        "xuTriDt",
+        "xuTriTd",
+        "xuTriCk",
+        "luuY",
+  
+        // Virus / test
+        "hbsag",
+        "hav",
+        "hcv",
+        "hev",
+        "hpylori",
+  
+        // Nghề nghiệp
+        "nldTiepXucYeuToCoHai",
+        "biTaiNanLaoDong",
+        "nldKskPhatHienBnn",
+        "nldChanDoanBnn",
+        "daRuaPhoi",
+  
+        // Phụ khoa
+        "dauBungKinh",
+        "daLapGiaDinh",
+        "apDungBptt",
+  
+        // Nội khoa
+        "laoPhoi",
+        "ungThuPhoi",
+        "viemXoangCap",
+        "viemXoangMan",
+        "viemPheQuanCap",
+        "viemPheQuanMan",
+        "viemPhoi",
+        "henPheQuanDiUng",
+        "iaCHayViemDaDayRuot",
+        "noiTiet",
+        "benhTamThan",
+        "benhThanKinhTwNgoaiBien",
+        "haCanTheoDoi",
+        "haCanDieuTri",
+        "benhTimMach",
+        "benhVanTim",
+        "roiLoanNhipTim",
+        "viemDaDay",
+        "viemDaiTrang",
+        "basedow",
+        "tieuDuong",
+        "tangRlDuong",
+        "rlMoMau",
+        "tangMenGan",
+        "tangAcidUric",
+        "viemGanXoGan",
+        "benhThanTietNieu",
+        "soiTietNieu",
+        "nangThan",
+        "nangNhanTuyenGiap",
+        "ganNhiemMo",
+        "soiPolipTuiMat",
+        "ungThuNoiKhoa",
+        "benhSotRet",
+  
+        // Tai mũi họng
+        "vmuiHongAmidalXoang",
+        "viemTai",
+        "polipMui",
+  
+        // Răng hàm mặt
+        "sauRang",
+        "rangMocLech",
+        "matRang",
+  
+        // Mắt
+        "tatKhucXa",
+        "laoThi",
+        "giamThiLuc",
+        "ducThuyTinhThe",
+  
+        // Ngoại khoa
+        "ucacLoai",
+        "nangNhanTuyenVu",
+        "tri",
+        "benhXuongKhop",
+        "vetMoOBung",
+        "gayXuongCu",
+        "matDotNgonTayChanCu",
+        "taiNanChanThuongCu",
+        "sayThai",
+  
+        // Phụ khoa
+        "viemNamAmDao",
+        "viemCtc",
+        "nhanXoTuCung",
+        "uxoTuCung",
+        "nangBt",
+        "polipCtc",
+  
+        // Da liễu
+        "viemDa",
+        "vayNen",
+        "langBen",
+        "namDa",
+        "sanNgua",
+      ];
+  
+      const dateFields = [
+        "ngayKham",
+        "ngayBiTaiNanLaoDong",
+        "thoiGianHoiChanBnn",
+      ];
+  
+      const textareaFields = [
+        // Kết luận
+        "moTaKetLuan",
+        "huongGiaiQuyet",
+  
+        // Mô tả
+        "tinhChatKinhNguyet",
+        "moTaMoSanPhuKhoa",
+        "moTaBptt",
+  
+        // Khám
+        "khamTuanHoan",
+        "khamHoHap",
+        "khamTieuHoa",
+        "khamThanTietNieu",
+        "khamNoiTiet",
+        "khamCoXuongKhop",
+        "khamThanKinh",
+        "khamTamThan",
+        "khamNgoai",
+        "khamDaLieu",
+        "khamSanPhuKhoa",
+        "khamMat",
+        "khamTaiMuiHong",
+        "khamRangHamMat",
+  
+        // CLS
+        "ketQuaCls",
+        "danhGiaCls",
+  
+        // Nội khoa
+        "benhKhacNoiKhoa",
+  
+        // TMH
+        "benhKhacTmh",
+  
+        // RHM
+        "benhKhacRhm",
+  
+        // Mắt
+        "benhKhacMat",
+  
+        // Ngoại khoa
+        "benhKhacNgoaiKhoa",
+  
+        // Phụ khoa
+        "benhKhacPhuKhoa",
+  
+        // Da liễu
+        "benhKhacDaLieu",
+  
+        // Khác
+        "benhThongThuong",
+        "maBenhThongThuong",
+        "benhManTinh",
+        "maBenhManTinh",
+        "chucDanhNgheKhiMacBnn",
+        "tenBenhNgheNghiep",
+        "maBenhNgheNghiep",
+        "theBenh",
+        "chongChiDinhRuaPhoi",
+        "tienSuBenhGiaDinh",
+        "para",
+        "hamTren",
+        "hamDuoi",
+        "nguoiKetLuan",
+  
+        // CLS
+        "sieuAmOBung",
+        "saTuyenGiap",
+        "saTim",
+        "saDopplerMachKhac",
+        "saVu",
+        "dienTim",
+        "noiSoiTmh",
+        "noiSoiDaDay",
+        "noiSoiDaiTrang",
+        "chucNangHoHap",
+        "loangXuong",
+        "xoVuaMach",
+        "luuHuyetNao",
+        "xquangTimPhoi",
+        "xquangKhac",
+        "ctCanThiep",
+        "sinhThiet",
+        "soiCtc",
+        "papmer",
+        "viaTest",
+        "viliTest",
+        "xnTeBaoCoTuCung",
+        "xnHpv",
+      ];
+  
+      const bloodFields = ["nhomMau"];
+  
+      const selectFields = [
+        "plTheLuc",
+        "plSucKhoe",
+        "phanLoaiNgheNghiep",
+  
+        "plKhamTuanHoan",
+        "plKhamHoHap",
+        "plKhamTieuHoa",
+        "plKhamThanTietNieu",
+        "plKhamNoiTiet",
+        "plKhamCxk",
+        "plKhamThanKinh",
+        "plKhamTamThan",
+        "plKhamNgoai",
+        "plKhamDaLieu",
+        "plKhamSanKhoa",
+        "plKhamMat",
+        "plKhamTmh",
+        "plKhamRhm",
+      ];
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="general">Thông tin chung</TabsTrigger>
-          <TabsTrigger value="clinical">Lâm sàng</TabsTrigger>
-          <TabsTrigger value="lab">Xét nghiệm</TabsTrigger>
-          <TabsTrigger value="conclusion">Kết luận</TabsTrigger>
-        </TabsList>
-
-        {/* Tab 1 — Thông tin chung */}
-        <TabsContent value="general">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-            {([
-              ['employeeId','Mã NV *','number'],['ngayKham','Ngày khám *','date'],
-              ['donVi','Đơn vị','text'],['nhomMau','Nhóm máu','blood'],
-              ['chieuCao','Chiều cao (cm)','number'],['canNang','Cân nặng (kg)','number'],
-              ['mach','Mạch (lần/phút)','number'],['huyetAp','Huyết áp','text'],
-            ] as [keyof HealthRecord, string, string][]).map(([k, l, t]) => (
-              <div key={k} className="space-y-1">
-                <Label className="text-xs">{l}</Label>
-                {t === 'blood' ? (
-                  <Select value={(row as any)[k] ?? ''} onValueChange={v => setField(row.id!, k, v)}>
-                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Chọn" /></SelectTrigger>
-                    <SelectContent>
-                      {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b => (
-                        <SelectItem key={b} value={b}>{b}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input type={t} value={(row as any)[k] ?? ''} className="h-8 text-sm"
-                    onChange={e => setField(row.id!, k, t === 'number' ? num(e.target.value) : e.target.value)} />
-                )}
-              </div>
-            ))}
-            {([
-              ['plTheLuc','PL Thể lực'],['plSucKhoe','PL Sức khỏe'],['phanLoaiNgheNghiep','PL Nghề nghiệp'],
-            ] as [keyof HealthRecord, string][]).map(([k, l]) => (
-              <div key={k} className="space-y-1">
-                <Label className="text-xs">{l}</Label>
-                <Select value={(row as any)[k]?.toString() ?? ''}
-                  onValueChange={v => setField(row.id!, k, num(v))}>
-                  <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Loại" /></SelectTrigger>
-                  <SelectContent>
-                    {[1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>Loại {i}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+      const readOnlyFields = [
+        "socialInsuranceNumber",
+        "employeeId",
+        "employeeName", 
+        "donVi",
+        "birthday",
+        "jobTitleName",
+        "departmentName",
+      ];
+  
+      const renderField = (key: string, label: string) => {
+        if (readOnlyFields.includes(key)) {
+          return (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Input
+                className="h-8 text-sm cursor-not-allowed bg-muted"
+                value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+                readOnly
+              />
+            </div>
+          );
+        }
+        if (booleanFields.includes(key)) {
+          return (
+            <div key={key} className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+            <label className="flex items-center gap-1.5 h-8 border rounded-md px-2 bg-background cursor-pointer hover:bg-muted/50 w-full">
+              <Checkbox
+                checked={Boolean(row[key as keyof Row])}
+                onCheckedChange={(v) => setField(row.id, key, v)}
+              />
+              <span className="text-xs">
+                {Boolean(row[key as keyof Row]) ? "Có" : "Không"}
+              </span>
+            </label>
           </div>
-          <div className="flex flex-wrap gap-4 mt-3">
-            {([
-              ['nldTiepXucYeuToCoHai','Tiếp xúc yếu tố có hại'],
-              ['biTaiNanLaoDong','Bị tai nạn lao động'],
-            ] as [keyof HealthRecord, string][]).map(([k, l]) => (
-              <label key={k} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox checked={Boolean((row as any)[k])}
-                  onCheckedChange={v => setField(row.id!, k, v)} />
-                <span className="text-sm">{l}</span>
-              </label>
-            ))}
+          );
+        }
+        if (textareaFields.includes(key)) {
+          return (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Input
+                className="h-8 text-sm"
+                type="text"
+                value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+                onChange={(e) => setField(row.id, key, e.target.value)}
+              />
+            </div>
+          );
+        }
+  
+        if (dateFields.includes(key)) {
+          return (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Input
+                type="date"
+                className="h-8 text-sm"
+                value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+                onChange={(e) => setField(row.id, key, e.target.value)}
+              />
+            </div>
+          );
+        }
+  
+        if (bloodFields.includes(key)) {
+          return (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+              <Select
+                value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+                onValueChange={(v) => setField(row.id, key, v)}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Chọn" />
+                </SelectTrigger>
+  
+                <SelectContent>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        }
+  
+        if (selectFields.includes(key)) {
+          return (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{label}</Label>
+  
+              <Select
+                value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+                onValueChange={(v) => setField(row.id, key, num(v))}
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Chọn" />
+                </SelectTrigger>
+  
+                <SelectContent>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      Loại {i}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          );
+        }
+  
+        return (
+          <div key={key} className="space-y-1">
+            <Label className="text-xs">{label}</Label>
+  
+            <Input
+              type={numberFields.includes(key) ? "number" : "text"}
+              step={numberFields.includes(key) ? "0.01" : undefined}
+              className="h-8 text-sm"
+              value={row[key as keyof Row] ? String(row[key as keyof Row]) : ""}
+              onChange={(e) =>
+                setField(
+                  row.id,
+                  key,
+                  numberFields.includes(key)
+                    ? num(e.target.value)
+                    : e.target.value,
+                )
+              }
+            />
           </div>
-        </TabsContent>
-
-        {/* Tab 2 — Lâm sàng */}
-        <TabsContent value="clinical">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
-            {([
-              ['khamTuanHoan','Tuần hoàn','plKhamTuanHoan'],
-              ['khamHoHap','Hô hấp','plKhamHoHap'],
-              ['khamTieuHoa','Tiêu hóa','plKhamTieuHoa'],
-              ['khamThanTietNieu','Thận - Tiết niệu','plKhamThanTietNieu'],
-              ['khamNoiTiet','Nội tiết','plKhamNoiTiet'],
-              ['khamCoXuongKhop','Cơ - Xương - Khớp','plKhamCxk'],
-              ['khamThanKinh','Thần kinh','plKhamThanKinh'],
-              ['khamTamThan','Tâm thần','plKhamTamThan'],
-              ['khamNgoai','Ngoại khoa','plKhamNgoai'],
-              ['khamDaLieu','Da liễu','plKhamDaLieu'],
-              ['khamMat','Mắt','plKhamMat'],
-              ['khamTaiMuiHong','Tai Mũi Họng','plKhamTmh'],
-              ['khamRangHamMat','Răng Hàm Mặt','plKhamRhm'],
-            ] as [keyof HealthRecord, string, keyof HealthRecord][]).map(([vk, label, pk]) => (
-              <div key={vk} className="grid grid-cols-3 gap-1">
-                <div className="col-span-2 space-y-1">
-                  <Label className="text-xs">{label}</Label>
-                  <Input value={(row as any)[vk] ?? ''} className="h-8 text-sm"
-                    onChange={e => setField(row.id!, vk, e.target.value)} placeholder="Mô tả..." />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">PL</Label>
-                  <Select value={(row as any)[pk]?.toString() ?? ''}
-                    onValueChange={v => setField(row.id!, pk, num(v))}>
-                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
-                    <SelectContent>
-                      {[1,2,3,4,5].map(i => <SelectItem key={i} value={String(i)}>{i}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))}
+        );
+      };
+  
+      return (
+        <div
+          key={row._tid}
+          className="border rounded-lg p-4 space-y-6 bg-muted/30"
+        >
+          <div className="flex items-center justify-between border-b pb-2">
+            <h4 className="font-semibold text-sm flex items-center gap-2">
+              <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                {index + 1}
+              </span>
+  
+              {row.employeeId ? `NV #${row.employeeId}` : "Lượt khám mới"}
+            </h4>
+  
+            <Button variant="ghost" size="sm" onClick={() => removeRow(row.id)}>
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-        </TabsContent>
-
-        {/* Tab 3 — Xét nghiệm */}
-        <TabsContent value="lab">
-          <div className="space-y-4 mt-3">
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Công thức máu</p>
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                {([['wbc','WBC'],['rbc','RBC'],['hgb','HGB'],['plt','PLT'],['vss','VSS'],['hba1c','HbA1c']] as [keyof HealthRecord,string][]).map(([k,l]) => (
-                  <div key={k} className="space-y-1">
-                    <Label className="text-xs">{l}</Label>
-                    <Input type="number" step="0.01" value={(row as any)[k] ?? ''} className="h-8 text-sm"
-                      onChange={e => setField(row.id!, k, num(e.target.value))} />
-                  </div>
-                ))}
+  
+          {Object.entries(groupedColumns).map(([group, cols]) => (
+            <div key={group}>
+              <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+                {group}
+              </h3>
+  
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {cols.map((col) => renderField(col.key, col.label))}
               </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sinh hóa máu</p>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                {([
-                  ['glucoza','Glucoza'],['ure','Ure'],['creatinin','Creatinin'],['auric','A.Uric'],
-                  ['cholesterol','Cholesterol'],['triglycerid','Triglycerid'],['hdl','HDL'],
-                  ['ldl','LDL'],['got','GOT'],['gpt','GPT'],['ggt','GGT'],
-                  ['albumin','Albumin'],['bilirubinTp','Bili TP'],['bilirubinTt','Bili TT'],
-                  ['ckmb','CKMB'],['canxi','Canxi'],
-                ] as [keyof HealthRecord,string][]).map(([k,l]) => (
-                  <div key={k} className="space-y-1">
-                    <Label className="text-xs">{l}</Label>
-                    <Input type="number" step="0.01" value={(row as any)[k] ?? ''} className="h-8 text-sm"
-                      onChange={e => setField(row.id!, k, num(e.target.value))} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Huyết thanh học</p>
-              <div className="flex flex-wrap gap-4">
-                {([['hbsag','HBsAg'],['hav','HAV'],['hcv','HCV'],['hev','HEV'],['hpylori','H.Pylori']] as [keyof HealthRecord,string][]).map(([k,l]) => (
-                  <label key={k} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox checked={Boolean((row as any)[k])}
-                      onCheckedChange={v => setField(row.id!, k, v)} />
-                    <span className="text-sm">{l}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded ` + ((row as any)[k] ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500')}>
-                      {(row as any)[k] ? 'Dương tính' : 'Âm tính'}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Nước tiểu</p>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-                {([['ntLeu','Bạch cầu'],['ntNit','Nitrite'],['ntPro','Protein'],['ntEry','Hồng cầu'],['ntGlu','Glucose'],['ntKet','Ketone'],['ntBil','Bilirubin'],['ntUbg','UBG']] as [keyof HealthRecord,string][]).map(([k,l]) => (
-                  <div key={k} className="space-y-1">
-                    <Label className="text-xs">{l}</Label>
-                    <Input value={(row as any)[k] ?? ''} className="h-8 text-sm"
-                      onChange={e => setField(row.id!, k, e.target.value)} placeholder="Âm/Dương" />
-                  </div>
-                ))}
-                <div className="space-y-1">
-                  <Label className="text-xs">pH</Label>
-                  <Input type="number" step="0.1" value={(row as any).ntPh ?? ''} className="h-8 text-sm"
-                    onChange={e => setField(row.id!, 'ntPh', num(e.target.value))} />
-                </div>
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Chẩn đoán hình ảnh</p>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  ['sieuAmOBung','Siêu âm ổ bụng'],['saTuyenGiap','SA tuyến giáp'],
-                  ['saTim','SA tim'],['xquangTimPhoi','X-quang tim phổi'],
-                  ['dienTim','Điện tim'],['chucNangHoHap','Chức năng hô hấp'],
-                ] as [keyof HealthRecord,string][]).map(([k,l]) => (
-                  <div key={k} className="space-y-1">
-                    <Label className="text-xs">{l}</Label>
-                    <Input value={(row as any)[k] ?? ''} className="h-8 text-sm"
-                      onChange={e => setField(row.id!, k, e.target.value)} placeholder="Kết quả..." />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Tab 4 — Kết luận */}
-        <TabsContent value="conclusion">
-          <div className="space-y-3 mt-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Kết quả CLS</Label>
-                <Input value={(row as any).ketQuaCls ?? ''} className="h-8 text-sm"
-                  onChange={e => setField(row.id!, 'ketQuaCls', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Người kết luận</Label>
-                <Input value={(row as any).nguoiKetLuan ?? ''} className="h-8 text-sm"
-                  onChange={e => setField(row.id!, 'nguoiKetLuan', e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Mô tả kết luận</Label>
-              <Textarea rows={2} value={(row as any).moTaKetLuan ?? ''}
-                onChange={e => setField(row.id!, 'moTaKetLuan', e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Hướng giải quyết</Label>
-              <Textarea rows={2} value={(row as any).huongGiaiQuyet ?? ''}
-                onChange={e => setField(row.id!, 'huongGiaiQuyet', e.target.value)} />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Xử trí</p>
-              <div className="flex gap-6">
-                {([['xuTriDt','Điều trị (ĐT)'],['xuTriTd','Theo dõi (TD)'],['xuTriCk','Chuyển khoa (CK)'],['luuY','Lưu ý']] as [keyof HealthRecord,string][]).map(([k,l]) => (
-                  <label key={k} className="flex items-center gap-2 cursor-pointer">
-                    <Checkbox checked={Boolean((row as any)[k])}
-                      onCheckedChange={v => setField(row.id!, k, v)} />
-                    <span className="text-sm">{l}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+          ))}
+        </div>
+      );
+    };
 
   // ── Column selector ────────────────────────────────────────────────────────
   const ColumnSelector = () => {
-    const groups = UNIQUE_OPTIONAL_COLS.reduce((acc, col) => {
-      if (!acc[col.group]) acc[col.group] = [];
-      acc[col.group].push(col);
-      return acc;
-    }, {} as Record<string, typeof UNIQUE_OPTIONAL_COLS>);
+    const groups = ALL_COLUMNS.optional.reduce(
+      (acc, col) => {
+        if (!acc[col.group]) acc[col.group] = [];
+        acc[col.group].push(col);
+        return acc;
+      },
+      {} as Record<string, typeof ALL_COLUMNS.optional>,
+    );
     return (
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="gap-2">
             <ChevronDown className="h-4 w-4" />
-            Tùy chỉnh cột ({visibleCols.size + REQUIRED_COLS.length}/{REQUIRED_COLS.length + UNIQUE_OPTIONAL_COLS.length})
+            Tùy chỉnh cột ({visibleCols.size}/{ALL_COLUMNS.required.length + UNIQUE_OPTIONAL_COLS.length})
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-72 max-h-80 overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold mb-1">Cột bắt buộc</p>
-              {REQUIRED_COLS.map(c => (
+              {ALL_COLUMNS.required.map(c => (
                 <div key={c.key} className="flex items-center gap-2 opacity-50 py-0.5">
                   <Checkbox checked disabled />
                   <span className="text-sm">{c.label}</span>

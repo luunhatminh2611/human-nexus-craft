@@ -76,11 +76,11 @@ export const routineHealthCheckApi = {
     }
   },
 
-  create: async (data: object) => {
+  create: async (data: object[]) => {
     try {
       const response = await api.post(
-        "/routine-health-check/create",
-        sanitizePayload(data)
+        "/routine-health-check/batch/create",
+        data
       );
       return response.data;
     } catch (error) {
@@ -94,6 +94,19 @@ export const routineHealthCheckApi = {
       const response = await api.put(
         "/routine-health-check/update",
         sanitizePayload(data)
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật hồ sơ khám sức khỏe định kỳ:", error);
+      throw error;
+    }
+  },
+
+  updateBulk: async (data: object[]) => {
+    try {
+      const response = await api.put(
+        "/routine-health-check/batch/update",
+        data
       );
       return response.data;
     } catch (error) {

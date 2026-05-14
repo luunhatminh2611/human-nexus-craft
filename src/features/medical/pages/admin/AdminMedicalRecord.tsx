@@ -323,7 +323,7 @@ export default function HealthManagement() {
                           </div>
                           <span className="text-sm font-medium">
                             {" "}
-                            NV #{r.employeeId}{" "}
+                            {r.employeeName}{" "}
                           </span>
                         </div>
                       </td>
