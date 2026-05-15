@@ -24,31 +24,30 @@ export default function SectionThongTinChung({ form, set, errors, num }: Props) 
         {/* [0] Mã BHXH */}
         <Field label="Mã BHXH" required error={errors.maBhxh}>
           <Input
-            value={form.maBhxh ?? ''}
-            onChange={e => set('maBhxh', e.target.value)}
+            value={form.socialInsuranceNumber ?? ''}
             placeholder="Mã BHXH"
             className={errors.maBhxh ? 'border-red-500' : ''}
           />
         </Field>
         {/* [1] Họ và tên */}
         <Field label="Họ và tên">
-          <Input value={form.hoVaTen ?? ''} onChange={e => set('hoVaTen', e.target.value)} />
+          <Input value={form.employeeName ?? ''}/>
         </Field>
         {/* [2] Năm sinh */}
         <Field label="Năm sinh">
-          <Input type="number" value={form.namSinh ?? ''} onChange={e => set('namSinh', num(e.target.value))} placeholder="1990" />
+          <Input type="date" value={form.birthday ?? ''}/>
         </Field>
         {/* [3] Chức danh */}
         <Field label="Chức danh">
-          <Input value={form.chucDanh ?? ''} onChange={e => set('chucDanh', e.target.value)} />
+          <Input value={form.jobTitleName ?? ''} />
         </Field>
         {/* [4] Công trường / Phân xưởng / Phòng ban */}
         <Field label="Công trường / Phân xưởng / Phòng ban">
-          <Input value={form.congTruong ?? ''} onChange={e => set('congTruong', e.target.value)} />
+          <Input value={form.departmentName ?? ''}/>
         </Field>
         {/* [5] Đơn vị */}
         <Field label="Đơn vị">
-          <Input value={form.donVi ?? ''} onChange={e => set('donVi', e.target.value)} />
+          <Input value={form.donVi ?? ''}/>
         </Field>
       </div>
 
@@ -66,11 +65,11 @@ export default function SectionThongTinChung({ form, set, errors, num }: Props) 
         </Field>
         {/* [7] Chiều cao */}
         <Field label="Chiều cao (cm)">
-          <Input type="number" value={form.chieuCao ?? ''} onChange={e => set('chieuCao', num(e.target.value))} />
+          <Input type="number" value={form.height ?? ''} onChange={e => set('height', num(e.target.value))} />
         </Field>
         {/* [8] Cân nặng */}
         <Field label="Cân nặng (kg)">
-          <Input type="number" value={form.canNang ?? ''} onChange={e => set('canNang', num(e.target.value))} />
+          <Input type="number" value={form.weight ?? ''} onChange={e => set('weight', num(e.target.value))} />
         </Field>
         {/* [9] Mạch */}
         <Field label="Mạch (lần/phút)">

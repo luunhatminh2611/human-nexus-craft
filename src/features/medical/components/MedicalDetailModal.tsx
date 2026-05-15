@@ -280,7 +280,7 @@ export default function MedicalDetailModal({ isOpen, onClose, record }: Props) {
                   <User className="h-4 w-4 text-blue-600" />
                   <span className="text-xs text-blue-600 font-medium">Nhân viên</span>
                 </div>
-                <p className="text-lg font-bold">NV #{record.employeeId}</p>
+                <p className="text-lg font-bold">{record.employeeName}</p>
                 {record.donVi && (
                   <div className="flex items-center gap-1.5 mt-2">
                     <Building2 className="h-4 w-4 text-blue-500" />
@@ -317,8 +317,8 @@ export default function MedicalDetailModal({ isOpen, onClose, record }: Props) {
           {/* ── Sinh hiệu & Thông số ────────────────────────────────────── */}
           <SectionCard icon={<Heart className="h-4 w-4" />} title="Sinh hiệu & Thông số cơ bản">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <InfoRow label="Chiều cao" value={record.chieuCao ? `${record.chieuCao} cm` : undefined} />
-              <InfoRow label="Cân nặng" value={record.canNang ? `${record.canNang} kg` : undefined} />
+              <InfoRow label="Chiều cao" value={record.height ? `${record.height} cm` : undefined} />
+              <InfoRow label="Cân nặng" value={record.weight ? `${record.weight} kg` : undefined} />
               <InfoRow label="Mạch" value={record.mach ? `${record.mach} lần/phút` : undefined} />
               <InfoRow label="Huyết áp" value={record.huyetAp ? `${record.huyetAp} mmHg` : undefined} />
               <InfoRow label="Nhóm máu" value={record.nhomMau} />

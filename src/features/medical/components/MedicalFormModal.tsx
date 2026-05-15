@@ -35,17 +35,17 @@ export interface HealthRecord {
   isActive?: boolean;
 
   // === Thông tin chung (cols 0-5) ===
-  maBhxh?: string;           // [0]
-  hoVaTen?: string;           // [1]
-  namSinh?: number;           // [2]
-  chucDanh?: string;          // [3]
-  congTruong?: string;        // [4] Công trường/Phân xưởng/Phòng ban
+  socialInsuranceNumber?: string;           // [0]
+  employeeName?: string;           // [1]
+  birthday?: number;           // [2]
+  jobTitleName?: string;          // [3]
+  departmentName?: string;        // [4] Công trường/Phân xưởng/Phòng ban
   donVi?: string;             // [5]
 
   // === Kết quả (cols 6-38) ===
   ngayKham?: string;          // [6]
-  chieuCao?: number;          // [7]
-  canNang?: number;           // [8]
+  height?: number;          // [7]
+  weight?: number;           // [8]
   mach?: number;              // [9]
   huyetAp?: string;           // [10]
   plTheLuc?: number;          // [11]
@@ -354,7 +354,7 @@ export default function MedicalFormModal({ isOpen, onClose, record, onSuccess }:
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.maBhxh) e.maBhxh = 'Vui lòng nhập mã BHXH';
+    if (!form.socialInsuranceNumber) e.socialInsuranceNumber = 'Vui lòng nhập mã BHXH';
     if (!form.ngayKham) e.ngayKham = 'Vui lòng chọn ngày khám';
     setErrors(e);
     return Object.keys(e).length === 0;

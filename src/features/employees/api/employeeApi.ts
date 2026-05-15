@@ -147,6 +147,16 @@ export const employeeApi = {
       throw error;
     }
   },
+  // Lấy thông tin nhân viên theo mã bảo hiểm xã hội
+  getBySocialInsurance: async (socialInsuranceNumber: string) => {
+    try {
+      const response = await api.get(`/employee/social/${socialInsuranceNumber}`);
+      return response.data;
+    } catch (error) {
+      console.error("Lỗi khi lấy nhân viên theo mã bảo hiểm xã hội:", error);
+      throw error;
+    }
+  },
   // Tải xuống cv của nhân viên
   downloadCv: async (id: number) => {
     try {
