@@ -28,6 +28,7 @@ export const ROUTES = {
   ADMIN_DEGREE_MANAGEMENT: '/admin/employees/degree',
   ADMIN_EXIT_MANAGEMENT: '/admin/exit',
   ADMIN_FAMILY_MANAGEMENT: '/admin/family',
+  ADMIN_WORK_PROCESS: '/admin/work-process',
 
 
 
@@ -43,6 +44,7 @@ export const ROUTES = {
   MANAGER_TRANSFER: '/manager/transfer',
   MANAGER_TRAINING: '/manager/learning',
   MANAGER_PPE_DETAILS: '/manager/ppe/plans/:id',
+  MANAGER_WORK_PROCESS: '/manager/work-process',
 
   EMPLOYEE_PROFILE: '/employee/profile',
   EMPLOYEE_PAYROLL: '/employee/payroll',

@@ -8,7 +8,6 @@ import { useAuthStore } from '@/features/employees/hooks/useAuth';
 export function Layout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  console.log('User in Layout:', user);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
 
   const handleLogout = React.useCallback(() => {
