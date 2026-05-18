@@ -35,9 +35,13 @@ import { toast } from "sonner";
 import { TrainingSystem, trainingSystemApi } from "../api/trainingSystem";
 import BulkAddTrainingSystemModal from "./modal/BulkAddTrainingSystemModal";
 import BulkEditTrainingSystemModal from "./modal/BulkEditTrainingSystemModal";
+import BulkAddTrainingLevelModal from "./modal/BulkAddTrainingLevelModal";
+import BulkEditTrainingLevelModal from "./modal/BulkEditTrainingLevelModal";
+import { trainingLevelApi } from "../api/trainingLevel";
 
-export default function TrainingSystem() {
-  const [trainingSystems, setTrainingSystems] = useState<TrainingSystem[]>([]);
+export default function TrainingLevel() {
+  const [trainingSystems, setTrainingSystems] =
+    useState<TrainingSystem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TrainingSystem | null>(null);
@@ -65,8 +69,8 @@ export default function TrainingSystem() {
   const fetchTrainingSystems = async () => {
     try {
       setLoading(true);
-      const data = await trainingSystemApi.getAll();
-      setTrainingSystems(data || []);
+      const data = await trainingLevelApi.getAll();
+        setTrainingSystems(data || []);
     } catch (error) {
       toast.error("Không thể tải danh sách hệ đào tạo");
       console.error(error);
@@ -200,12 +204,12 @@ export default function TrainingSystem() {
     if (!selectedItem) return;
 
     try {
-        setLoading(true);
-        await trainingSystemApi.delete(selectedItem.id!);
-        toast.success('Xóa hệ đào tạo thành công');
-        setIsDeleteDialogOpen(false);
-        setSelectedItem(null);
-        fetchTrainingSystems();
+      setLoading(true);
+      await trainingSystemApi.delete(selectedItem.id!);
+      toast.success("Xóa hệ đào tạo thành công");
+      setIsDeleteDialogOpen(false);
+      setSelectedItem(null);
+      fetchTrainingSystems();
     } catch (error) {
       toast.error("Xóa hệ đào tạo thất bại");
       console.error(error);
@@ -285,8 +289,10 @@ export default function TrainingSystem() {
                 />
               </TableHead>
               <TableHead className="w-[80px] border">STT</TableHead>
-              <TableHead className="w-[150px] border">Mã hệ đào tạo</TableHead>
-              <TableHead className="border">Tên hệ đào tạo</TableHead>
+              <TableHead className="w-[170px] border">
+                Mã trình độ đào tạo
+              </TableHead>
+              <TableHead className="border">Tên trình độ đào tạo</TableHead>
               <TableHead className="border">Mô tả</TableHead>
               <TableHead className="text-center w-[150px] border">
                 Thao tác
@@ -372,7 +378,7 @@ export default function TrainingSystem() {
               currentPage * itemsPerPage,
               filteredTrainingSystems.length,
             )}{" "}
-            trong tổng số {filteredTrainingSystems.length} hệ đào tạo
+            trong tổng số {filteredTrainingSystems.length} trình độ đào tạo
             {selectedIds.length > 0 && (
               <span className="ml-2 font-semibold text-blue-600">
                 ({selectedIds.length} được chọn)
@@ -530,14 +536,14 @@ export default function TrainingSystem() {
         </DialogContent>
       </Dialog>
 
-      <BulkAddTrainingSystemModal
+      <BulkAddTrainingLevelModal
         isOpen={isBulkAddOpen}
         onClose={() => {
           setIsBulkAddOpen(false);
-          fetchTrainingSystems();
+          fetchTrainingLevels();
         }}
       />
-      <BulkEditTrainingSystemModal
+      <BulkEditTrainingLevelModal
         isOpen={isBulkEditOpen}
         onClose={handleCloseBulkEdit}
         preSelectedIds={selectedIds}

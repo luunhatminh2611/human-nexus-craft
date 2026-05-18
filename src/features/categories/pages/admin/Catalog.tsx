@@ -37,6 +37,7 @@ import SalaryPayrollTab from '../../components/SalaryPayrollTab';
 import SalaryScaleTab from '../../components/SalaryScaleTab';
 import CompanyTab from '@/features/categories/components/CompanyTab';
 import TrainingSystem from '../../components/TrainingSystem';
+import TrainingLevel from '../../components/TrainingLevel';
 
 interface Category {
   id: string;
@@ -70,6 +71,7 @@ const categories: Category[] = [
   { id: 'trainingMajor', label: 'Ngành đào tạo', component: TrainingMajorTab, group: 'Đào tạo' },
   { id: 'trainingType', label: 'Hình thức đào tạo', component: TrainingTypeTab, group: 'Đào tạo' },
   { id: 'trainingSystem', label: 'Hệ đào tạo', component: TrainingSystem, group: 'Đào tạo' },
+  { id: 'trainingLevel', label: 'Trình độ đào tạo', component: TrainingLevel, group: 'Đào tạo' },
 
   // Nhóm Trình độ
   { id: 'culturalLevel', label: 'Trình độ văn hóa', component: CulturalLevelTab, group: 'Trình độ' },
