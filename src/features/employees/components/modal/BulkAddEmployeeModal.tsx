@@ -1634,14 +1634,14 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
       </div>
 
       <div className="space-y-6">
-        {/* TAB THÔNG TIN ĐỊNH DANH */}
+        {/* TAB THÔNG TIN CHUNG */}
         <div>
           <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
-            Thông tin định danh
+            Thông tin chung
           </h3>
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Công ty *</Label>
+              <Label className="text-xs">Tập đoàn/Công ty *</Label>
               <GenericSearchSelect
                 api={categoryConfigs.company.api}
                 config={categoryConfigs.company}
@@ -1652,7 +1652,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Phòng ban *</Label>
+              <Label className="text-xs">Phòng ban quản lý *</Label>
               <GenericSearchSelect
                 api={categoryConfigs.department.api}
                 config={categoryConfigs.department}
@@ -1663,6 +1663,17 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                   console.log("id them pb", v);
                 }
                 }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Số hiệu cán bộ *</Label>
+              <Input
+                value={employee.cccdNumber}
+                onChange={(e) =>
+                  handleFieldChange(employee.tempId, "cccdNumber", e.target.value)
+                }
+                className="h-8 text-sm"
+                placeholder="Nhập số CCCD"
               />
             </div>
             <div className="space-y-1">
@@ -1704,6 +1715,16 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                   <SelectItem value="KHÁC">Khác</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Mã danh bạ *</Label>
+              <Input
+                onChange={(e) =>
+                  console.log("Hiện chưa có mã danh bạ")
+                }
+                className="h-8 text-sm"
+                placeholder="Nhập mã danh bạ"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Các tên gọi khác</Label>
@@ -2418,17 +2439,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
           Căn cước công dân / cccd
         </h3>
         <div className="grid grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Số CCCD</Label>
-            <Input
-              value={employee.cccdNumber}
-              onChange={(e) =>
-                handleFieldChange(employee.tempId, "cccdNumber", e.target.value)
-              }
-              className="h-8 text-sm"
-              placeholder="Nhập số CCCD"
-            />
-          </div>
+          
           <div className="space-y-1">
             <Label className="text-xs">Ngày cấp</Label>
             <Input
@@ -2731,6 +2742,8 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               }
             />
           </div>
+
+          
           <div className="space-y-1">
             <Label className="text-xs">Nghề trước tuyển dụng</Label>
             <Input

@@ -73,7 +73,7 @@ const GenericSearchSelect = ({ api, config, value, onChange, displayValue = "" }
           open={isOpen}
           onOpenChange={setIsOpen}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-8">
             <span className={!value && !displayValue ? 'text-muted-foreground text-sm' : 'text-sm'}>
               {displayLabel}
             </span>
@@ -165,6 +165,7 @@ const GenericSearchSelect = ({ api, config, value, onChange, displayValue = "" }
             onClick={() => setOpenCreate(true)}
             size="icon"
             variant="outline"
+            className="h-8 w-8"
           >
             <Plus className="h-4 w-4" />
           </Button>
