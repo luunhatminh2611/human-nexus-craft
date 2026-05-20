@@ -38,6 +38,7 @@ import RecruitmentPage from '@/features/recruitment/pages/RecruitmentPage';
 import PPEDistributionPage from '@/features/ppe-distribution/pages/PPEDistributionPage';
 import PermissionManagementUI from '@/features/permission/pages/Permission';
 import MyFamilyMembersPage from '@/features/fanilyVisit/pages/EmployeeFamilyPage';
+import AdminWorkProcess from '@/features/workProcess/pages/admin/AdminWorkProcess';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -58,6 +59,8 @@ const AdminMedicalRecords = lazy(() => import('@/features/medical/pages/admin/Ad
 const WorkScheduleManagement = lazy(() => import('@/features/schedule/pages/admin/WorkSchedule'));
 const LeaveRequestPage = lazy(() => import('@/features/leave-request/pages/admin/LeaveRequest'));
 const Reports = lazy(() => import('@/features/reports/pages/admin/Reports'));
+const ManageWorkProcess = lazy(() => import('@/features/workProcess/pages/admin/AdminWorkProcess'));
+
 
 // Manager pages
 const ManagerDashboard = lazy(() => import('@/features/dashboard/pages/manager/ManagerDashboard'));
@@ -129,6 +132,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_SAFETY_DETAIL.slice(1), element: <PPEPlanDetailPage /> },
       { path: ROUTES.ADMIN_DEGREE_MANAGEMENT.slice(1), element: <DegreeHRPage /> },
       { path: ROUTES.ADMIN_EXIT_MANAGEMENT.slice(1), element: <OverseasHRPage /> },
+      { path: ROUTES.ADMIN_WORK_PROCESS.slice(1), element: <AdminWorkProcess /> },
       // Manager Routes
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },
@@ -142,7 +146,6 @@ export const router = createBrowserRouter([
       { path: ROUTES.MANAGER_LEAVE_REQUESTS.slice(1), element: <LeaveRequestManager /> },
       { path: ROUTES.MANAGER_TRANSFER.slice(1), element: <TransferManagerPage /> },
       { path: ROUTES.MANAGER_PPE_DETAILS.slice(1), element: <ManagerPPEPlanDetailPage /> },
-
       // Employee Routes
       { path: ROUTES.EMPLOYEE_PROFILE.slice(1), element: <EmployeeProfile /> },
       { path: ROUTES.EMPLOYEE_PAYROLL.slice(1), element: <EmployeePayroll /> },

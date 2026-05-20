@@ -135,7 +135,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
         // { label: 'KPI', icon: Sparkle, path: '/admin/employees/kpi' },
         // { label: 'Lương', icon: CircleDollarSign, path: '/admin/employees/salary' },
-        // { label: 'Lịch sử công tác', icon: History, path: '/admin/employees/work-history' },
+        { label: 'Quá trình công tác', icon: History, path: '/admin/work-process' },
         // { label: 'Hợp đồng', icon: FileText, path: '/admin/employees/contract' },
         // { label: 'Nghỉ phép', icon: FileText, path: '/admin/employees/leave-requests' }
       ]

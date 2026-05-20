@@ -214,7 +214,7 @@ export default function HealthManagement() {
           </Select>
 
           <Button2 onClick={() => setShowBulkAdd(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Thêm hàng loạt
+            <Plus className="h-4 w-4 mr-2" /> Thêm mới
           </Button2>
 
           <Button2
@@ -222,7 +222,7 @@ export default function HealthManagement() {
             onClick={() => setShowBulkEdit(true)}
             disabled={selectedIds.length === 0}
           >
-            <Edit className="h-4 w-4 mr-2" /> Sửa hàng loạt({selectedIds.length}
+            <Edit className="h-4 w-4 mr-2" /> Sửa sửa({selectedIds.length}
             )
           </Button2>
         </div>
