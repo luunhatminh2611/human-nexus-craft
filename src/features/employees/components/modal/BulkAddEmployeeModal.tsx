@@ -86,8 +86,8 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
 
   const allColumns = {
     required: [
-      { key: "code", label: "Mã nhân viên *" },
-      { key: "fullName", label: "Tên nhân viên *" },
+      { key: "code", label: "Số hiệu cán bộ *" },
+      { key: "fullName", label: "Họ và tên *" },
       { key: "birthDate", label: "Ngày sinh *" },
       { key: "startDate", label: "Ngày vào làm *" },
       { key: "departmentId", label: "Phòng ban *" },
@@ -96,6 +96,11 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
     optional: [
       // ================= THÔNG TIN ĐỊNH DANH =================
       { key: "companyId", label: "Công ty", group: "Thông tin định danh" },
+      {
+        key: "specialized",
+        label: "Phòng chuyên môn",
+        group: "Thông tin định danh",
+      },
       { key: "email", label: "Email", group: "Thông tin định danh" },
       { key: "phone", label: "Số điện thoại", group: "Thông tin định danh" },
       { key: "gender", label: "Giới tính", group: "Thông tin định danh" },
@@ -107,6 +112,11 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         group: "Thông tin định danh",
       },
       { key: "status", label: "Trạng thái", group: "Thông tin định danh" },
+      {
+        key: "directoryCode",
+        label: "Mã danh bạ",
+        group: "Thông tin định danh",
+      },
       { key: "cardNumber", label: "Số thẻ", group: "Thông tin định danh" },
       {
         key: "documentReturnDate",
@@ -584,8 +594,8 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
 
       // Định nghĩa tất cả các cột
       const columns = [
-        { header: "Mã nhân viên *", key: "code", width: 15 },
-        { header: "Tên nhân viên *", key: "fullName", width: 25 },
+        { header: "Số hiệu cán bộ *", key: "code", width: 15 },
+        { header: "Họ và tên *", key: "fullName", width: 25 },
         { header: "Ngày sinh *", key: "birthDate", width: 15 },
         { header: "Giới tính", key: "gender", width: 10 },
         { header: "Nơi sinh", key: "birthPlace", width: 20 },
@@ -1393,6 +1403,8 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
       case "fullName":
       case "birthPlace":
       case "religion":
+      case "specialized":
+      case "directoryCode":
       case "currentJobDetail":
       case "title":
       case "cardNumber":
@@ -1634,14 +1646,16 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
       </div>
 
       <div className="space-y-6">
-        {/* TAB THÔNG TIN CHUNG */}
+        {/* 1. THÔNG TIN CHUNG */}
         <div>
           <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
             Thông tin chung
           </h3>
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Tập đoàn/Công ty *</Label>
+              <Label className="text-xs">
+                Tập đoàn/Công ty <span className="text-red-500">*</span>
+              </Label>
               <GenericSearchSelect
                 api={categoryConfigs.company.api}
                 config={categoryConfigs.company}
@@ -1652,43 +1666,53 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Phòng ban quản lý *</Label>
+              <Label className="text-xs">
+                Phòng ban quản lý <span className="text-red-500">*</span>
+              </Label>
               <GenericSearchSelect
                 api={categoryConfigs.department.api}
                 config={categoryConfigs.department}
                 value={employee.departmentId}
-                onChange={(v) =>
-                {
+                onChange={(v) => {
                   handleFieldChange(employee.tempId, "departmentId", String(v));
                   console.log("id them pb", v);
-                }
-                }
+                }}
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Số hiệu cán bộ *</Label>
+              <Label className="text-xs">
+                Phòng chuyên môn <span className="text-red-500">*</span>
+              </Label>
               <Input
-                value={employee.cccdNumber}
+                value={employee.specialized}
                 onChange={(e) =>
-                  handleFieldChange(employee.tempId, "cccdNumber", e.target.value)
+                  handleFieldChange(
+                    employee.specialized,
+                    "specialized",
+                    e.target.value,
+                  )
                 }
                 className="h-8 text-sm"
-                placeholder="Nhập số CCCD"
+                placeholder="Nhập phòng chuyên môn"
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Mã nhân viên *</Label>
+              <Label className="text-xs">
+                Số hiệu cán bộ <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={employee.code}
                 onChange={(e) =>
                   handleFieldChange(employee.tempId, "code", e.target.value)
                 }
                 className="h-8 text-sm"
-                placeholder="Nhập mã nhân viên"
+                placeholder="Nhập số hiệu cán bộ"
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Họ và tên *</Label>
+              <Label className="text-xs">
+                Họ và tên <span className="text-red-500">*</span>
+              </Label>
               <Input
                 value={employee.fullName}
                 onChange={(e) =>
@@ -1699,7 +1723,9 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Giới tính *</Label>
+              <Label className="text-xs">
+                Giới tính <span className="text-red-500">*</span>
+              </Label>
               <Select
                 value={employee.gender}
                 onValueChange={(v) =>
@@ -1717,16 +1743,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Mã danh bạ *</Label>
-              <Input
-                onChange={(e) =>
-                  console.log("Hiện chưa có mã danh bạ")
-                }
-                className="h-8 text-sm"
-                placeholder="Nhập mã danh bạ"
-              />
-            </div>
-            <div className="space-y-1">
               <Label className="text-xs">Các tên gọi khác</Label>
               <Input
                 value={employee.otherName}
@@ -1742,7 +1758,9 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Ngày sinh *</Label>
+              <Label className="text-xs">
+                Ngày sinh <span className="text-red-500">*</span>
+              </Label>
               <Input
                 type="date"
                 value={employee.birthDate}
@@ -1757,26 +1775,36 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               />
             </div>
             <div className="space-y-1">
-              <Field label="Nơi sinh (Tỉnh/Thành Phố)" required>
-                <NameSelectField
-                  configKey="provinceCity"
-                  currentName={employee.birthPlace}
-                  onChange={(v) =>
-                    handleFieldChange(employee.tempId, "birthPlace", v)
-                  }
-                />
-              </Field>
+              <Label className="text-xs">
+                Nơi sinh (Tỉnh/Thành Phố){" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <NameSelectField
+                configKey="provinceCity"
+                currentName={employee.birthPlace}
+                onChange={(v) =>
+                  handleFieldChange(employee.tempId, "birthPlace", v)
+                }
+              />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Trạng thái hồ sơ *</Label>
+              <Label className="text-xs">
+                Trạng thái hồ sơ <span className="text-red-500">*</span>
+              </Label>
               <Select
-                value={STATUS_MAP[employee.status] ? STATUS_MAP[employee.status] : employee.status}
-                onValueChange={(v) =>
-                {
-                  handleFieldChange(employee.tempId, "status", STATUS_REVERSE_MAP[v] ?? v);
+                value={
+                  STATUS_MAP[employee.status]
+                    ? STATUS_MAP[employee.status]
+                    : employee.status
+                }
+                onValueChange={(v) => {
+                  handleFieldChange(
+                    employee.tempId,
+                    "status",
+                    STATUS_REVERSE_MAP[v] ?? v,
+                  );
                   console.log("status", v);
-                }
-                }
+                }}
               >
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue />
@@ -1791,36 +1819,15 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Email</Label>
+              <Label className="text-xs">
+                Mã danh bạ <span className="text-red-500">*</span>
+              </Label>
               <Input
-                value={employee.email}
-                onChange={(e) =>
-                  handleFieldChange(employee.tempId, "email", e.target.value)
-                }
+                onChange={(e) => console.log("Hiện chưa có mã danh bạ")}
                 className="h-8 text-sm"
-                placeholder="@gmail.com"
+                placeholder="Nhập mã danh bạ"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Số điện thoại</Label>
-              <Input
-                value={employee.phone}
-                onChange={(e) =>
-                  handleFieldChange(employee.tempId, "phone", e.target.value)
-                }
-                className="h-8 text-sm"
-                placeholder="Nhập SĐT"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* TAB CẤP ỦY */}
-        <div>
-          <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
-            Cấp ủy
-          </h3>
-          <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Cấp ủy hiện tại</Label>
               <GenericSearchSelect
@@ -1851,94 +1858,29 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                 }
               />
             </div>
-          </div>
-        </div>
-
-        {/* TAB CHỨC VỤ & CHỨC DANH */}
-        <div>
-          <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
-            Chức vụ & Chức danh
-          </h3>
-          <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Chức vụ</Label>
-              <GenericSearchSelect
-                api={categoryConfigs.position.api}
-                config={categoryConfigs.position}
-                value={employee.positionId}
-                onChange={(v) =>
-                  handleFieldChange(employee.tempId, "positionId", String(v))
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Phòng ban phụ</Label>
-              <GenericSearchSelect
-                api={categoryConfigs.department.api}
-                config={categoryConfigs.department}
-                value={employee.subDepartmentId}
-                onChange={(v) =>
-                  handleFieldChange(
-                    employee.tempId,
-                    "subDepartmentId",
-                    String(v),
-                  )
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Mã số thuế</Label>
+              <Label className="text-xs">Email</Label>
               <Input
-                value={employee.taxCode}
+                value={employee.email}
                 onChange={(e) =>
-                  handleFieldChange(employee.tempId, "taxCode", e.target.value)
+                  handleFieldChange(employee.tempId, "email", e.target.value)
                 }
                 className="h-8 text-sm"
-                placeholder="Nhập mã"
+                placeholder="@gmail.com"
               />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Chức vụ kiêm</Label>
-              <GenericSearchSelect
-                api={categoryConfigs.position.api}
-                config={categoryConfigs.position}
-                value={employee.subPositionId}
-                onChange={(v) =>
-                  handleFieldChange(employee.tempId, "subPositionId", String(v))
+              <Label className="text-xs">Số điện thoại</Label>
+              <Input
+                value={employee.phone}
+                onChange={(e) =>
+                  handleFieldChange(employee.tempId, "phone", e.target.value)
                 }
+                className="h-8 text-sm"
+                placeholder="Nhập SĐT"
               />
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Chức danh</Label>
-              <GenericSearchSelect
-                api={categoryConfigs.jobTitle.api}
-                config={categoryConfigs.jobTitle}
-                value={employee.jobTitleId}
-                onChange={(v) =>
-                  handleFieldChange(employee.tempId, "jobTitleId", String(v))
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Vị trí công việc</Label>
-              <GenericSearchSelect
-                api={categoryConfigs.jobPosition.api}
-                config={categoryConfigs.jobPosition}
-                value={employee.jobPositionId}
-                onChange={(v) =>
-                  handleFieldChange(employee.tempId, "jobPositionId", String(v))
-                }
-              />
-            </div>
-          </div>
-        </div>
 
-        {/* TAB ĐỊA CHỈ */}
-        <div>
-          <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
-            Địa chỉ
-          </h3>
-          <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Địa chỉ liên hệ</Label>
               <Input
@@ -2024,7 +1966,86 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* TAB THÔNG TIN CÁ NHÂN */}
+        {/* 3. CHỨC VỤ & CHỨC DANH - giữ nguyên */}
+        <div>
+          <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+            Chức vụ & Chức danh
+          </h3>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Chức vụ</Label>
+              <GenericSearchSelect
+                api={categoryConfigs.position.api}
+                config={categoryConfigs.position}
+                value={employee.positionId}
+                onChange={(v) =>
+                  handleFieldChange(employee.tempId, "positionId", String(v))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Phòng ban phụ</Label>
+              <GenericSearchSelect
+                api={categoryConfigs.department.api}
+                config={categoryConfigs.department}
+                value={employee.subDepartmentId}
+                onChange={(v) =>
+                  handleFieldChange(
+                    employee.tempId,
+                    "subDepartmentId",
+                    String(v),
+                  )
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Mã số thuế</Label>
+              <Input
+                value={employee.taxCode}
+                onChange={(e) =>
+                  handleFieldChange(employee.tempId, "taxCode", e.target.value)
+                }
+                className="h-8 text-sm"
+                placeholder="Nhập mã"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Chức vụ kiêm</Label>
+              <GenericSearchSelect
+                api={categoryConfigs.position.api}
+                config={categoryConfigs.position}
+                value={employee.subPositionId}
+                onChange={(v) =>
+                  handleFieldChange(employee.tempId, "subPositionId", String(v))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Chức danh</Label>
+              <GenericSearchSelect
+                api={categoryConfigs.jobTitle.api}
+                config={categoryConfigs.jobTitle}
+                value={employee.jobTitleId}
+                onChange={(v) =>
+                  handleFieldChange(employee.tempId, "jobTitleId", String(v))
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Vị trí công việc</Label>
+              <GenericSearchSelect
+                api={categoryConfigs.jobPosition.api}
+                config={categoryConfigs.jobPosition}
+                value={employee.jobPositionId}
+                onChange={(v) =>
+                  handleFieldChange(employee.tempId, "jobPositionId", String(v))
+                }
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 4. THÔNG TIN KHÁC (Dân tộc, Tôn giáo, Quốc tịch...) */}
         <div>
           <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
             Sức khỏe
@@ -2078,10 +2099,82 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                 }
               />
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Tình trạng sức khỏe</Label>
+              <Input
+                value={employee.healthStatus}
+                onChange={(e) =>
+                  handleFieldChange(
+                    employee.tempId,
+                    "healthStatus",
+                    e.target.value,
+                  )
+                }
+                className="h-8 text-sm"
+                placeholder="Nhập tình trạng"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Chiều cao (cm)</Label>
+              <Input
+                type="number"
+                value={employee.height}
+                onChange={(e) =>
+                  handleFieldChange(employee.tempId, "height", e.target.value)
+                }
+                className="h-8 text-sm"
+                placeholder="cm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Cân nặng (kg)</Label>
+              <Input
+                type="number"
+                value={employee.weight}
+                onChange={(e) =>
+                  handleFieldChange(employee.tempId, "weight", e.target.value)
+                }
+                className="h-8 text-sm"
+                placeholder="kg"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Nhóm máu</Label>
+              <Select
+                value={employee.bloodType}
+                onValueChange={(v) =>
+                  handleFieldChange(employee.tempId, "bloodType", v)
+                }
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue placeholder="Chọn" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[
+                    "A",
+                    "B",
+                    "AB",
+                    "O",
+                    "A+",
+                    "A-",
+                    "B+",
+                    "B-",
+                    "AB+",
+                    "AB-",
+                    "O+",
+                    "O-",
+                  ].map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        {/* TAB TỔ CHỨC CHÍNH TRỊ - XÃ HỘI */}
+        {/* 5. TỔ CHỨC CHÍNH TRỊ - XÃ HỘI */}
         <div>
           <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
             Tổ chức chính trị - xã hội
@@ -2135,7 +2228,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* QUÁ TRÌNH CÔNG TÁC */}
+        {/* 6. QUÁ TRÌNH CÔNG TÁC - giữ nguyên */}
         <div>
           <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
             Quá trình công tác
@@ -2144,7 +2237,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
             {employee.workProcesses?.map((process, processIndex) => (
               <div key={processIndex} className="border rounded p-3 bg-white">
                 <div className="flex gap-3 items-end">
-                  {/* Ngày bắt đầu - fixed width */}
                   <div className="w-[140px] space-y-1">
                     <Label className="text-xs">Ngày bắt đầu</Label>
                     <Input
@@ -2165,8 +2257,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                       className="h-8 text-sm"
                     />
                   </div>
-
-                  {/* Ngày kết thúc - fixed width */}
                   <div className="w-[140px] space-y-1">
                     <Label className="text-xs">Ngày kết thúc</Label>
                     <Input
@@ -2187,10 +2277,10 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                       className="h-8 text-sm"
                     />
                   </div>
-
-                  {/* Mô tả - chiếm hết */}
                   <div className="flex-1 space-y-1">
-                    <Label className="text-xs">Chi tiết công việc</Label>
+                    <Label className="text-xs">
+                      Tóm tắt quá trình công tác
+                    </Label>
                     <Input
                       value={process.detail || ""}
                       onChange={(e) => {
@@ -2206,11 +2296,9 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
                         );
                       }}
                       className="h-8 text-sm"
-                      placeholder="Mô tả công việc"
+                      placeholder="Tóm tắt quá trình công tác"
                     />
                   </div>
-
-                  {/* Nút Xóa */}
                   <Button
                     type="button"
                     variant="ghost"
@@ -2258,7 +2346,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB QUÂN SỰ & DANH HIỆU */}
+      {/* 7. QUÂN SỰ & DANH HIỆU - giữ nguyên */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Quân sự & danh hiệu
@@ -2352,94 +2440,23 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB SỨC KHỎE */}
-      <div>
-        <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
-          Sức khỏe
-        </h3>
-        <div className="grid grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Tình trạng sức khỏe</Label>
-            <Input
-              value={employee.healthStatus}
-              onChange={(e) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "healthStatus",
-                  e.target.value,
-                )
-              }
-              className="h-8 text-sm"
-              placeholder="Nhập tình trạng"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Chiều cao (cm)</Label>
-            <Input
-              type="number"
-              value={employee.height}
-              onChange={(e) =>
-                handleFieldChange(employee.tempId, "height", e.target.value)
-              }
-              className="h-8 text-sm"
-              placeholder="cm"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Cân nặng (kg)</Label>
-            <Input
-              type="number"
-              value={employee.weight}
-              onChange={(e) =>
-                handleFieldChange(employee.tempId, "weight", e.target.value)
-              }
-              className="h-8 text-sm"
-              placeholder="kg"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Nhóm máu</Label>
-            <Select
-              value={employee.bloodType}
-              onValueChange={(v) =>
-                handleFieldChange(employee.tempId, "bloodType", v)
-              }
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="Chọn" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "A",
-                  "B",
-                  "AB",
-                  "O",
-                  "A+",
-                  "A-",
-                  "B+",
-                  "B-",
-                  "AB+",
-                  "AB-",
-                  "O+",
-                  "O-",
-                ].map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* TAB CCCD */}
+      {/* 8. CCCD - giữ nguyên */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Căn cước công dân / cccd
         </h3>
         <div className="grid grid-cols-4 gap-3">
-          
+          <div className="space-y-1">
+            <Label className="text-xs">Số CCCD</Label>
+            <Input
+              value={employee.cccdNumber}
+              onChange={(e) =>
+                handleFieldChange(employee.tempId, "cccdNumber", e.target.value)
+              }
+              className="h-8 text-sm"
+              placeholder="Nhập số CCCD"
+            />
+          </div>
           <div className="space-y-1">
             <Label className="text-xs">Ngày cấp</Label>
             <Input
@@ -2491,7 +2508,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB THU NHẬP GIA ĐÌNH & TÀI SẢN */}
+      {/* 9. NGUỒN THU NHẬP & TÀI SẢN */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Thu nhập gia đình & tài sản
@@ -2528,7 +2545,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               placeholder="Mô tả"
             />
           </div>
-          {/* Nhà ở */}
           <div className="space-y-1">
             <Label className="text-xs">Loại nhà được cấp/thuê</Label>
             <Input
@@ -2587,7 +2603,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               placeholder="m²"
             />
           </div>
-          {/* Đất đai */}
           <div className="space-y-1">
             <Label className="text-xs">Đất được cấp (m²)</Label>
             <Input
@@ -2634,7 +2649,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB TÀI KHOẢN NGÂN HÀNG */}
+      {/* 10. THÔNG TIN NGÂN HÀNG */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Tài khoản ngân hàng
@@ -2695,55 +2710,12 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB TUYỂN DỤNG */}
+      {/* 11. TUYỂN DỤNG */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Tuyển dụng
         </h3>
         <div className="grid grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Ngày vào cơ quan *</Label>
-            <Input
-              type="date"
-              value={employee.startDate}
-              onChange={(e) =>
-                handleFieldChange(employee.tempId, "startDate", e.target.value)
-              }
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Loại hợp đồng</Label>
-            <Input
-              value={employee.contractType}
-              onChange={(e) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "contractType",
-                  e.target.value,
-                )
-              }
-              className="h-8 text-sm"
-              placeholder="Nhập loại HĐ"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Loại hợp đồng lao động</Label>
-            <GenericSearchSelect
-              api={categoryConfigs.laborContractType.api}
-              config={categoryConfigs.laborContractType}
-              value={employee.laborContractTypeId}
-              onChange={(v) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "laborContractTypeId",
-                  String(v),
-                )
-              }
-            />
-          </div>
-
-          
           <div className="space-y-1">
             <Label className="text-xs">Nghề trước tuyển dụng</Label>
             <Input
@@ -2775,6 +2747,19 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
             />
           </div>
           <div className="space-y-1">
+            <Label className="text-xs">
+              Ngày vào cơ quan <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="date"
+              value={employee.startDate}
+              onChange={(e) =>
+                handleFieldChange(employee.tempId, "startDate", e.target.value)
+              }
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
             <Label className="text-xs">Cơ quan tuyển dụng</Label>
             <GenericSearchSelect
               api={categoryConfigs.organization.api}
@@ -2798,6 +2783,36 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               }
               className="h-8 text-sm"
               placeholder="Nhập địa chỉ cơ quan"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Loại hợp đồng</Label>
+            <Input
+              value={employee.contractType}
+              onChange={(e) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "contractType",
+                  e.target.value,
+                )
+              }
+              className="h-8 text-sm"
+              placeholder="Nhập loại HĐ"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Loại hợp đồng lao động</Label>
+            <GenericSearchSelect
+              api={categoryConfigs.laborContractType.api}
+              config={categoryConfigs.laborContractType}
+              value={employee.laborContractTypeId}
+              onChange={(v) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "laborContractTypeId",
+                  String(v),
+                )
+              }
             />
           </div>
           <div className="space-y-1">
@@ -2844,12 +2859,23 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB TRÌNH ĐỘ HỌC VẤN & CHUYÊN MÔN*/}
+      {/* 12. TRÌNH ĐỘ HỌC VẤN & CHUYÊN MÔN */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Trình độ học vấn & chuyên môn
         </h3>
         <div className="grid grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Trình độ văn hóa</Label>
+            <GenericSearchSelect
+              api={categoryConfigs.culturalLevel.api}
+              config={categoryConfigs.culturalLevel}
+              value={employee.culturalLevelId}
+              onChange={(v) =>
+                handleFieldChange(employee.tempId, "culturalLevelId", String(v))
+              }
+            />
+          </div>
           <div className="space-y-1">
             <Label className="text-xs">Bậc học</Label>
             <GenericSearchSelect
@@ -2881,13 +2907,43 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Trình độ văn hóa</Label>
+            <Label className="text-xs">Lý luận chính trị</Label>
             <GenericSearchSelect
-              api={categoryConfigs.culturalLevel.api}
-              config={categoryConfigs.culturalLevel}
-              value={employee.culturalLevelId}
+              api={categoryConfigs.politicalTheory.api}
+              config={categoryConfigs.politicalTheory}
+              value={employee.politicalTheoryId}
               onChange={(v) =>
-                handleFieldChange(employee.tempId, "culturalLevelId", String(v))
+                handleFieldChange(
+                  employee.tempId,
+                  "politicalTheoryId",
+                  String(v),
+                )
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Ngoại ngữ</Label>
+            <GenericSearchSelect
+              api={categoryConfigs.languageLevel.api}
+              config={categoryConfigs.languageLevel}
+              value={employee.foreignLanguageId}
+              onChange={(v) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "foreignLanguageId",
+                  String(v),
+                )
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Trình độ ngoại ngữ</Label>
+            <GenericSearchSelect
+              api={categoryConfigs.languageLevel.api}
+              config={categoryConfigs.languageLevel}
+              value={employee.languageLevelId}
+              onChange={(v) =>
+                handleFieldChange(employee.tempId, "languageLevelId", String(v))
               }
             />
           </div>
@@ -2925,47 +2981,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               value={employee.itLevelId}
               onChange={(v) =>
                 handleFieldChange(employee.tempId, "itLevelId", String(v))
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Ngoại ngữ</Label>
-            <GenericSearchSelect
-              api={categoryConfigs.languageLevel.api}
-              config={categoryConfigs.languageLevel}
-              value={employee.foreignLanguageId}
-              onChange={(v) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "foreignLanguageId",
-                  String(v),
-                )
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Trình độ ngoại ngữ</Label>
-            <GenericSearchSelect
-              api={categoryConfigs.languageLevel.api}
-              config={categoryConfigs.languageLevel}
-              value={employee.languageLevelId}
-              onChange={(v) =>
-                handleFieldChange(employee.tempId, "languageLevelId", String(v))
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Lý luận chính trị</Label>
-            <GenericSearchSelect
-              api={categoryConfigs.politicalTheory.api}
-              config={categoryConfigs.politicalTheory}
-              value={employee.politicalTheoryId}
-              onChange={(v) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "politicalTheoryId",
-                  String(v),
-                )
               }
             />
           </div>
@@ -3009,91 +3024,7 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB BHXH - BẢO HIỂM XÃ HỘI */}
-      <div>
-        <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
-          Bhxh - Bảo hiểm xã hội
-        </h3>
-        <div className="grid grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">Số sổ BHXH</Label>
-            <Input
-              value={employee.socialInsuranceNumber}
-              onChange={(e) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "socialInsuranceNumber",
-                  e.target.value,
-                )
-              }
-              className="h-8 text-sm"
-              placeholder="Nhập số sổ BHXH"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Số sổ BHXH (book)</Label>
-            <Input
-              value={employee.insuranceBookNumber}
-              onChange={(e) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "insuranceBookNumber",
-                  e.target.value,
-                )
-              }
-              className="h-8 text-sm"
-              placeholder="Nhập số sổ BHXH (book)"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Ngày tham gia BHXH</Label>
-            <Input
-              type="date"
-              value={employee.socialInsuranceStartDate}
-              onChange={(e) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "socialInsuranceStartDate",
-                  e.target.value,
-                )
-              }
-              className="h-8 text-sm"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Nơi đóng BHXH</Label>
-            <Input
-              value={employee.insurancePlace}
-              onChange={(e) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "insurancePlace",
-                  e.target.value,
-                )
-              }
-              className="h-8 text-sm"
-              placeholder="Nhập nơi đóng BHXH"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Công việc BHXH</Label>
-            <GenericSearchSelect
-              api={categoryConfigs.socialInsuranceJob.api}
-              config={categoryConfigs.socialInsuranceJob}
-              value={employee.socialInsuranceJobId}
-              onChange={(v) =>
-                handleFieldChange(
-                  employee.tempId,
-                  "socialInsuranceJobId",
-                  String(v),
-                )
-              }
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* TAB LƯƠNG CHÍNH */}
+      {/* 13. LƯƠNG CHÍNH */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Lương chính
@@ -3172,13 +3103,12 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB LƯƠNG ĐÓNG BHXH */}
+      {/* 14. LƯƠNG ĐÓNG BHXH */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Lương đóng bảo hiểm xã hội
         </h3>
         <div className="grid grid-cols-4 gap-3">
-          {/* Lương BHXH */}
           <div className="space-y-1">
             <Label className="text-xs">Bảng lương BHXH</Label>
             <GenericSearchSelect
@@ -3278,7 +3208,91 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
         </div>
       </div>
 
-      {/* TAB LỊCH SỬ BẢN THÂN */}
+      {/* 15. BHXH - giữ nguyên */}
+      <div>
+        <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+          Bhxh - Bảo hiểm xã hội
+        </h3>
+        <div className="grid grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Số sổ BHXH</Label>
+            <Input
+              value={employee.socialInsuranceNumber}
+              onChange={(e) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "socialInsuranceNumber",
+                  e.target.value,
+                )
+              }
+              className="h-8 text-sm"
+              placeholder="Nhập số sổ BHXH"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Số sổ BHXH (book)</Label>
+            <Input
+              value={employee.insuranceBookNumber}
+              onChange={(e) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "insuranceBookNumber",
+                  e.target.value,
+                )
+              }
+              className="h-8 text-sm"
+              placeholder="Nhập số sổ BHXH (book)"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Ngày tham gia BHXH</Label>
+            <Input
+              type="date"
+              value={employee.socialInsuranceStartDate}
+              onChange={(e) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "socialInsuranceStartDate",
+                  e.target.value,
+                )
+              }
+              className="h-8 text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Nơi đóng BHXH</Label>
+            <Input
+              value={employee.insurancePlace}
+              onChange={(e) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "insurancePlace",
+                  e.target.value,
+                )
+              }
+              className="h-8 text-sm"
+              placeholder="Nhập nơi đóng BHXH"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Công việc BHXH</Label>
+            <GenericSearchSelect
+              api={categoryConfigs.socialInsuranceJob.api}
+              config={categoryConfigs.socialInsuranceJob}
+              value={employee.socialInsuranceJobId}
+              onChange={(v) =>
+                handleFieldChange(
+                  employee.tempId,
+                  "socialInsuranceJobId",
+                  String(v),
+                )
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 16. ĐẶC ĐIỂM LỊCH SỬ BẢN THÂN */}
       <div>
         <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
           Đặc điểm lịch sử bản thân
@@ -3344,7 +3358,6 @@ export default function BulkAddEmployeeModal({ isOpen, onClose }) {
               placeholder="Nhập thân nhân ở nước ngoài"
             />
           </div>
-          {/* THÊM trước ô Ghi chú */}
           <div className="col-span-4 space-y-1">
             <Label className="text-xs">Ghi chú</Label>
             <Textarea

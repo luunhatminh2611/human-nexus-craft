@@ -136,7 +136,7 @@ export function EmployeeSearch({
             type="text"
             value={query}
             onChange={handleInputChange}
-            onFocus={() => setOpen(true)}
+            onClick={() => setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={isDisabled}
