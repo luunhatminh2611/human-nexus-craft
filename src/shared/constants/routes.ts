@@ -29,6 +29,7 @@ export const ROUTES = {
   ADMIN_EXIT_MANAGEMENT: '/admin/exit',
   ADMIN_FAMILY_MANAGEMENT: '/admin/family',
   ADMIN_WORK_PROCESS: '/admin/work-process',
+  ADMIN_REFRESHER_TRAINING: '/admin/refresher-training',
 
 
 
@@ -45,6 +46,7 @@ export const ROUTES = {
   MANAGER_TRAINING: '/manager/learning',
   MANAGER_PPE_DETAILS: '/manager/ppe/plans/:id',
   MANAGER_WORK_PROCESS: '/manager/work-process',
+  MANAGER_REFRESHER_TRAINING: '/manager/refresher-training',
 
   EMPLOYEE_PROFILE: '/employee/profile',
   EMPLOYEE_PAYROLL: '/employee/payroll',

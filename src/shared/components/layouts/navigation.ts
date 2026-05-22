@@ -35,7 +35,8 @@ import {
   Bolt,
   CoinsIcon,
   File,
-  Hospital
+  Hospital,
+  Presentation
 } from 'lucide-react';
 import type { NavigationItem } from './types';
 
@@ -136,6 +137,7 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         // { label: 'KPI', icon: Sparkle, path: '/admin/employees/kpi' },
         // { label: 'Lương', icon: CircleDollarSign, path: '/admin/employees/salary' },
         { label: 'Quá trình công tác', icon: History, path: '/admin/work-process' },
+        { label: 'Đào tạo bồi dưỡng', icon: Presentation, path: '/admin/refresher-training' },
         // { label: 'Hợp đồng', icon: FileText, path: '/admin/employees/contract' },
         // { label: 'Nghỉ phép', icon: FileText, path: '/admin/employees/leave-requests' }
       ]
