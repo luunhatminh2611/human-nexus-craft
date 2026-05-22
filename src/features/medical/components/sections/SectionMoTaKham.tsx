@@ -15,8 +15,9 @@ interface Props {
 export default function SectionMoTaKham({ form, set, num }: Props) {
   return (
     <div className="space-y-5">
-      <SectionHeader icon={<Stethoscope className="h-4 w-4" />} title="Mô tả khám chuyên khoa" />
-
+      <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+        Mô tả khám chuyên khoa
+      </h3>
       {/* [39-58] Nội khoa */}
       <SubHeader title="Nội khoa" />
       <div className="space-y-3">

@@ -219,6 +219,51 @@ export default function UserAccountModal({
             </Alert>
           )}
 
+          <div className="space-y-2">
+            <Label htmlFor="fullName">
+              Tên nhân viên <span className="text-red-500">*</span>
+            </Label>
+            {mode === "edit" ? (
+              <Input
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="Nhập tên nhân viên"
+                disabled={loading}
+              />
+            ) : (
+              <EmployeeSearch
+                employees={employees ?? []}
+                value={dataSearch.employeeId}
+                onChange={(id, emp) => {
+                  if (emp) {
+                    console.log("Selected employee:", emp);
+                    setFormData((prev) => ({
+                      ...prev,
+                      employeeId: id,
+                      fullName: emp.fullName ?? "",
+                      code: emp.code ?? "",
+                      email: emp.email ?? "",
+                      phone: emp.phone ?? "",
+                    }));
+                  } else {
+                    setFormData((prev) => ({
+                      ...prev,
+                      employeeId: "",
+                      name: "",
+                      code: "",
+                      email: "",
+                      phone: "",
+                    }));
+                  }
+                }}
+                isLoading={isLoadingEmployees}
+                error={errors.employeeId}
+              />
+            )}
+          </div>
+
           <div className={mode === "create" ? "grid grid-cols-2 gap-4" : ""}>
             <div className="space-y-2">
               <Label htmlFor="username">
@@ -262,51 +307,6 @@ export default function UserAccountModal({
                   </button>
                 </div>
               </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fullName">
-              Tên nhân viên <span className="text-red-500">*</span>
-            </Label>
-            {mode === "edit" ? (
-              <Input
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="Nhập tên nhân viên"
-                disabled={loading}
-              />
-            ) : (
-              <EmployeeSearch
-                employees={employees ?? []}
-                value={dataSearch.employeeId}
-                onChange={(id, emp) => {
-                  if (emp) {
-                    console.log("Selected employee:", emp);
-                    setFormData((prev) => ({
-                      ...prev,
-                      employeeId: id,
-                      fullName: emp.fullName ?? "",
-                      code: emp.code ?? "",
-                      email: emp.email ?? "",
-                      phone: emp.phone ?? "",
-                    }));
-                  } else {
-                    setFormData((prev) => ({
-                      ...prev,
-                      employeeId: "",
-                      name: "",
-                      code: "",
-                      email: "",
-                      phone: "",
-                    }));
-                  }
-                }}
-                isLoading={isLoadingEmployees}
-                error={errors.employeeId}
-              />
             )}
           </div>
 

@@ -208,7 +208,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
             </div>
             <div>
               <Label className="text-sm text-muted-foreground mb-1">
-                Phòng ban
+                Phòng ban quản lý
               </Label>
               <Input
                 value={userData.departmentName || ""}
@@ -219,10 +219,21 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
             </div>
             <div>
               <Label className="text-sm text-muted-foreground mb-1">
+                Phòng chuyên môn
+              </Label>
+              <Input
+                value={""}
+                disabled
+                placeholder="Chưa cập nhật"
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-1">
                 Số hiệu cán bộ
               </Label>
               <Input
-                value={userData.cccdNumber || ""}
+                value={userData.code || ""}
                 disabled
                 placeholder="Chưa cập nhật"
                 className="mt-2"
@@ -285,7 +296,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
             </div>
             <div>
               <Label className="text-sm text-muted-foreground mb-1">
-                Trạng thái
+                Trạng thái hồ sơ
               </Label>
               <Input
                 value={
@@ -300,7 +311,18 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
             </div>
             <div>
               <Label className="text-sm text-muted-foreground mb-1">
-                Cấp ủy hiện
+                Mã danh bạ
+              </Label>
+              <Input
+                value={""}
+                disabled
+                placeholder="Chưa cập nhật"
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label className="text-sm text-muted-foreground mb-1">
+                Cấp ủy hiện tại
               </Label>
               <Input
                 value={userData.partyCommitteeName || ""}
@@ -470,7 +492,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
 
           {/* Thông tin khác */}
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">Thông tin khác</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">Thông tin khác</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <Label className="text-sm text-muted-foreground mb-1">
@@ -722,7 +744,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
 
           {/* Nguồn thu nhập */}
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">Nguồn thu nhập</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">Nguồn thu nhập</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-muted-foreground mb-1">
@@ -829,7 +851,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
 
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">Thông tin ngân hàng</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">Thông tin ngân hàng</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-muted-foreground mb-1">
@@ -879,7 +901,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
 
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">Tuyển dụng</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">Tuyển dụng</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <Label className="text-sm text-muted-foreground mb-1">
@@ -953,7 +975,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
           {/* VII. Thông tin Đảng, Đoàn, Quân đội */}
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">Tổ chức chính trị xã hội</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">Tổ chức chính trị xã hội</h3>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm text-muted-foreground mb-1">
@@ -981,7 +1003,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
 
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">Trình độ chuyên môn</h3>
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">Trình độ chuyên môn</h3>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <Label className="text-sm text-muted-foreground mb-1">
@@ -1098,7 +1120,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
 
           <div className="mt-6">
-            <h3 className="font-semibold text-lg mb-4 text-blue-600">
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">
               Thông tin lương
             </h3>
             <h3 className="font-bold text-sm mb-4">
@@ -1282,7 +1304,7 @@ export default function InfoTab({ userData: initialUserData, employeeId }) {
           </div>
           {/* Đặc điểm lịch sử bản thân */}
           <div className="mt-6">
-            <h3 className="font-bold text-sm mb-4">
+            <h3 className="font-semibold text-lg mb-4 text-blue-600 uppercase">
               Đăc điểm lịch sử bản thân
             </h3>
             <div className="grid md:grid-cols gap-4">

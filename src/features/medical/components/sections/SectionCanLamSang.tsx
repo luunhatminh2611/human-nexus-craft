@@ -12,7 +12,9 @@ interface Props {
 export default function SectionCanLamSang({ form, set }: Props) {
   return (
     <div className="space-y-5">
-      <SectionHeader icon={<Activity className="h-4 w-4" />} title="Kết quả Cận lâm sàng" />
+      <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+        Kết quả Cận lâm sàng
+      </h3>
 
       {/* [136-152] Chẩn đoán hình ảnh */}
       <SubHeader title="Chẩn đoán hình ảnh (cols 136-152)" />

@@ -39,6 +39,7 @@ import PPEDistributionPage from '@/features/ppe-distribution/pages/PPEDistributi
 import PermissionManagementUI from '@/features/permission/pages/Permission';
 import MyFamilyMembersPage from '@/features/fanilyVisit/pages/EmployeeFamilyPage';
 import AdminWorkProcess from '@/features/workProcess/pages/admin/AdminWorkProcess';
+import AdminRefresherTraining from '@/features/refresher-training/pages/admin/AdminRefresherTraining';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -133,6 +134,8 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_DEGREE_MANAGEMENT.slice(1), element: <DegreeHRPage /> },
       { path: ROUTES.ADMIN_EXIT_MANAGEMENT.slice(1), element: <OverseasHRPage /> },
       { path: ROUTES.ADMIN_WORK_PROCESS.slice(1), element: <AdminWorkProcess /> },
+      { path: ROUTES.ADMIN_WORK_PROCESS.slice(1), element: <AdminWorkProcess /> },
+      { path: ROUTES.ADMIN_REFRESHER_TRAINING, element: <AdminRefresherTraining /> },
       // Manager Routes
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },

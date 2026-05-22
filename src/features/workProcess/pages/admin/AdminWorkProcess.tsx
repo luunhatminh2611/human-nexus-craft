@@ -45,6 +45,9 @@ export interface WorkProcess {
   startDate: string;
   endDate: string;
   detail: string;
+  positionId?: number;
+  departmentId?: number;
+  companyId?: number;
 }
 
 export interface EmployeeWorkHistory {
@@ -236,14 +239,14 @@ export default function AdminWorkProcess() {
             {isAdmin && (
               <div className="flex gap-2">
                 <Button onClick={() => setIsBulkModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" /> Thêm quá trình
+                  <Plus className="h-4 w-4 mr-2" /> Thêm mới
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setIsBulkEditModalOpen(true)}
                   disabled={selectedIds.length === 0}
                 >
-                  <Edit className="h-4 w-4 mr-2" /> Sửa hàng loạt(
+                  <Edit className="h-4 w-4 mr-2" /> Chỉnh sửa(
                   {selectedIds.length})
                 </Button>
               </div>
@@ -268,8 +271,11 @@ export default function AdminWorkProcess() {
                     />
                   </TableHead>
                   <TableHead className="text-center w-16">STT</TableHead>
-                  <TableHead>Nhân viên</TableHead>
-                  <TableHead>Mã nhân viên</TableHead>
+                  <TableHead>Họ và tên</TableHead>
+                  <TableHead>Mã cán bộ</TableHead>
+                  <TableHead>Chức vụ</TableHead>
+                  <TableHead>Phòng ban quản lý</TableHead>
+                  <TableHead>Tập đoàn/Công ty</TableHead>
                   <TableHead className="text-center">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -327,6 +333,21 @@ export default function AdminWorkProcess() {
                       <TableCell>
                         <p className="text-sm text-muted-foreground">
                           {emp.employeeCode}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-muted-foreground">
+                          Chức vụ ...
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-muted-foreground">
+                          Phòng ban ...
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm text-muted-foreground">
+                          Công ty ...
                         </p>
                       </TableCell>
                       <TableCell>

@@ -114,6 +114,7 @@ import WorkScheduleTab from "../../components/WorkScheduleTab";
 import OverseasTab from "../../components/OverseasTab";
 import { FileDown, Loader2, User } from "lucide-react"; // thêm vào lucide import hiện tại
 import { generateLyLich } from "@/features/employees/components/Generate2C";
+import WorkProcessTab from "../../components/WorkProcessTab";
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState("employees");
@@ -1004,7 +1005,11 @@ export default function Employees() {
                   Thêm mới
                 </Button2>
 
-                <Button2 onClick={handleOpenBulkEdit}>
+                <Button2
+                  variant="outline"
+                  onClick={handleOpenBulkEdit}
+                  disabled={selectedEmployeeIds.length === 0}
+                >
                   <Edit2 className="h-4 w-4 mr-2" />
                   Chỉnh sửa ({selectedEmployeeIds.length})
                 </Button2>
@@ -1262,7 +1267,7 @@ export default function Employees() {
                                       setAccountModalMode("create");
                                       setIsAccountModalOpen(true);
                                     }}
-                                    disabled={employee.email} 
+                                    disabled={employee.email}
                                     title="Tạo tài khoản"
                                   >
                                     <UserPlus className="h-4 w-4" />
@@ -1785,6 +1790,20 @@ export default function Employees() {
                               >
                                 Quan hệ gia đình
                               </Button2>
+                              <Button2
+                                variant={
+                                  subTab === "workProcess" ? "default" : "ghost"
+                                }
+                                size="sm"
+                                onClick={() => setSubTab("workProcess")}
+                                className={
+                                  subTab === "workProcess"
+                                    ? ""
+                                    : "hover:bg-background"
+                                }
+                              >
+                                Quá trình công tác
+                              </Button2>
                             </div>
 
                             {/* Content */}
@@ -1924,6 +1943,9 @@ export default function Employees() {
                               )}
                               {subTab === "family" && (
                                 <FamilyTab employeeId={selectedEmployeeId} />
+                              )}
+                              {subTab === "workProcess" && (
+                                <WorkProcessTab employeeId={selectedEmployeeId} />
                               )}
                             </div>
                           </div>
@@ -2185,12 +2207,12 @@ export default function Employees() {
         isOpen={isAccountModalOpen}
         onClose={() => {
           setIsAccountModalOpen(false);
-          setRowSelectedEmployee(null); // reset khi đóng
+          setRowSelectedEmployee(null);
         }}
         employeeId={Number(rowSelectedEmployee?.id || selectedEmployeeId)}
         existingUser={userDetailData || null}
         mode={accountModalMode}
-        employeeData={rowSelectedEmployee || employeeDetailData} // ← ưu tiên row
+        employeeData={rowSelectedEmployee || employeeDetailData}
         source={rowSelectedEmployee ? "employee-list" : "other"}
       />
 

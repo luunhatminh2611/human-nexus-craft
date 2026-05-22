@@ -298,7 +298,7 @@ function ProfileContent() {
           <TabsTrigger value="training">Đào tạo</TabsTrigger>
           <TabsTrigger value="kpi">KPI</TabsTrigger>
           <TabsTrigger value="salary">Lương</TabsTrigger>
-          <TabsTrigger value="8">Khác</TabsTrigger>
+          <TabsTrigger value="8">Khác</TabsTrigger> 
 
           <TabsTrigger value="leaves">Đơn nghỉ phép</TabsTrigger>
         </TabsList>
