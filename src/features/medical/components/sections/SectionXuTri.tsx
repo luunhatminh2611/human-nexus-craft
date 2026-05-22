@@ -12,7 +12,9 @@ interface Props {
 export default function SectionXuTri({ form, set }: Props) {
   return (
     <div className="space-y-5">
-      <SectionHeader icon={<FileText className="h-4 w-4" />} title="Xử trí" />
+      <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+        Xử trí
+      </h3>
 
       <SubHeader title="Hình thức xử trí (cols 93-96)" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

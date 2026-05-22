@@ -11,11 +11,7 @@ import {
 import { Button as Button2 } from '@/shared/components/ui/button/Button2';
 import Button from '@/shared/components/ui/button/Button';
 import { toast } from '@/shared/hooks/use-toast';
-import {
-  Activity, ChevronRight, ChevronLeft,
-  User, Stethoscope, FlaskConical, FileText,
-  Clipboard, Eye, HeartPulse, Scan, AlertCircle,
-} from 'lucide-react';
+import { Activity } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { routineHealthCheckApi } from '../api/medicalApi';
 
@@ -298,24 +294,6 @@ interface Props {
   onSuccess: () => void;
 }
 
-// ─── Tab definitions (13 tabs matching Excel row 0) ──────────────────────────
-
-const SECTIONS = [
-  { key: 'thong-tin-chung',   label: 'Thông tin chung',         icon: <User className="h-4 w-4" />},
-  { key: 'mo-ta-kham',        label: 'Mô tả khám chuyên khoa',  icon: <Stethoscope className="h-4 w-4" />},
-  { key: 'xu-tri',            label: 'Xử trí',                  icon: <Clipboard className="h-4 w-4" />},
-  { key: 'xet-nghiem',        label: 'Kết quả Xét nghiệm',      icon: <FlaskConical className="h-4 w-4" />},
-  { key: 'can-lam-sang',      label: 'Kết quả Cận lâm sàng',    icon: <Scan className="h-4 w-4" />},
-  { key: 'benh-phat-hien',    label: 'Bệnh phát hiện',          icon: <AlertCircle className="h-4 w-4" />},
-];
-
-// NOTE: The 13 Excel tab headers are mapped into 6 logical form tabs above.
-// "Kết quả" (cols 6-38) is merged into "Thông tin chung" since it contains
-// general exam results (vitals, TNLĐ, BNN).
-// The 7 disease tabs (Nội khoa, TMH, RHM, Mắt, Ngoại khoa, Phụ khoa, Da liễu)
-// are grouped into one "Bệnh phát hiện" tab for usability.
-// All 230 fields are preserved.
-
 const EMPTY: Partial<HealthRecord> = {
   ngayKham: new Date().toISOString().slice(0, 10),
   nldTiepXucYeuToCoHai: false,
@@ -331,19 +309,17 @@ const EMPTY: Partial<HealthRecord> = {
 
 export default function MedicalFormModal({ isOpen, onClose, record, onSuccess }: Props) {
   const [form, setForm] = useState<Partial<HealthRecord>>(record ?? EMPTY);
-  const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (isOpen) {
       setForm(record ?? { ...EMPTY });
-      setStep(0);
       setErrors({});
     }
   }, [isOpen, record]);
 
-  const set = (key: keyof HealthRecord, value: any) =>
+  const set = (key: keyof HealthRecord, value: HealthRecord[keyof HealthRecord]) =>
     setForm(prev => ({ ...prev, [key]: value }));
 
   const num = (v: string): number | undefined => {
@@ -361,7 +337,7 @@ export default function MedicalFormModal({ isOpen, onClose, record, onSuccess }:
   };
 
   const createMutation = useMutation({
-    mutationFn: (d: Partial<HealthRecord>) => routineHealthCheckApi.create(d),
+    mutationFn: (d: Partial<HealthRecord>) => routineHealthCheckApi.create([d]),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['health-records'] });
       toast({ title: 'Tạo hồ sơ thành công' });
@@ -384,29 +360,29 @@ export default function MedicalFormModal({ isOpen, onClose, record, onSuccess }:
 
   const handleSave = () => {
     if (!validate()) {
-      setStep(0);
       toast({ title: 'Vui lòng kiểm tra lại thông tin', variant: 'destructive' });
       return;
     }
-    record?.id
-      ? updateMutation.mutate({ ...form, id: record.id })
-      : createMutation.mutate(form);
+
+    if (record?.id) {
+      updateMutation.mutate({ ...form, id: record.id });
+    } else {
+      createMutation.mutate(form);
+    }
   };
 
   // ─── Section renderer ───────────────────────────────────────────────────────
 
-  const renderSection = () => {
-    const props = { form, set, num, errors };
-    switch (step) {
-      case 0: return <SectionThongTinChung {...props} />;
-      case 1: return <SectionMoTaKham form={form} set={set} num={num} />;
-      case 2: return <SectionXuTri form={form} set={set} />;
-      case 3: return <SectionXetNghiem form={form} set={set} num={num} />;
-      case 4: return <SectionCanLamSang form={form} set={set} />;
-      case 5: return <SectionBenhPhatHien form={form} set={set} />;
-      default: return null;
-    }
-  };
+  const renderSections = () => (
+    <>
+      <SectionThongTinChung form={form} set={set} num={num} errors={errors} />
+      <SectionMoTaKham form={form} set={set} num={num} />
+      <SectionXuTri form={form} set={set} />
+      <SectionXetNghiem form={form} set={set} num={num} />
+      <SectionCanLamSang form={form} set={set} />
+      <SectionBenhPhatHien form={form} set={set} />
+    </>
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -421,59 +397,20 @@ export default function MedicalFormModal({ isOpen, onClose, record, onSuccess }:
           </DialogTitle>
         </DialogHeader>
 
-        {/* Step tabs */}
-        <div className="flex gap-1 border-b pb-3 flex-wrap">
-          {SECTIONS.map((s, i) => (
-            <button
-              key={s.key}
-              onClick={() => setStep(i)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                step === i
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              {s.icon}
-              <span>{s.label}</span>
-            </button>
-          ))}
-        </div>
-
         {/* Content */}
-        <div className="min-h-[300px] py-2">
-          {renderSection()}
+        <div className="min-h-[300px] py-2 space-y-6">
+          {renderSections()}
         </div>
 
         {/* Footer */}
-        <DialogFooter className="flex items-center justify-between gap-2 pt-2 border-t">
-          <div className="flex gap-1.5 items-center">
-            {SECTIONS.map((_, i) => (
-              <div key={i} className={`h-1.5 w-6 rounded-full transition-colors ${i === step ? 'bg-primary' : 'bg-muted'}`} />
-            ))}
-            <span className="text-xs text-muted-foreground ml-2">
-              {step + 1} / {SECTIONS.length}
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} disabled={isPending}>Hủy</Button>
-            {step > 0 && (
-              <Button variant="outline" onClick={() => setStep(s => s - 1)} disabled={isPending}>
-                <ChevronLeft className="h-4 w-4 mr-1" />Quay lại
-              </Button>
-            )}
-            {step < SECTIONS.length - 1 ? (
-              <Button2 onClick={() => setStep(s => s + 1)}>
-                Tiếp theo<ChevronRight className="h-4 w-4 ml-1" />
-              </Button2>
-            ) : (
-              <Button2 onClick={handleSave} disabled={isPending}>
-                {isPending
-                  ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2 inline-block" />Đang lưu...</>
-                  : record ? 'Cập nhật' : 'Lưu hồ sơ'
-                }
-              </Button2>
-            )}
-          </div>
+        <DialogFooter className="flex items-center justify-end gap-2 pt-2 border-t">
+          <Button variant="outline" onClick={onClose} disabled={isPending}>Hủy</Button>
+          <Button2 onClick={handleSave} disabled={isPending}>
+            {isPending
+              ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2 inline-block" />Đang lưu...</>
+              : record ? 'Cập nhật' : 'Lưu hồ sơ'
+            }
+          </Button2>
         </DialogFooter>
       </DialogContent>
     </Dialog>

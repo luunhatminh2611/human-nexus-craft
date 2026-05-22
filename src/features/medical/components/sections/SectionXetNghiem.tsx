@@ -15,7 +15,9 @@ interface Props {
 export default function SectionXetNghiem({ form, set, num }: Props) {
   return (
     <div className="space-y-5">
-      <SectionHeader icon={<FlaskConical className="h-4 w-4" />} title="Kết quả Xét nghiệm" />
+      <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+        Kết quả xét nghiệm
+      </h3>
 
       {/* [97-101] Công thức máu */}
       <SubHeader title="Công thức máu (cols 97-101)" />
@@ -158,7 +160,7 @@ export default function SectionXetNghiem({ form, set, num }: Props) {
           <label key={k} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border hover:bg-muted/50">
             <Checkbox checked={Boolean(form[k])} onCheckedChange={v => set(k, v)} />
             <span className="text-sm font-medium">{l}</span>
-            <span className={`text-xs px-1.5 py-0.5 rounded ${form[k] ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500'}`}>
+            <span className={`text-xs px-1.5 py-0.5 rounded ${form[k] ? 'bg-red-100 text-red-700' : 'bg-green-100 text-gray-500'}`}>
               {form[k] ? 'Dương tính' : 'Âm tính'}
             </span>
           </label>

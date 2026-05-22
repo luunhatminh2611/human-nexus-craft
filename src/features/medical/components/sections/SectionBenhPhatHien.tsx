@@ -12,7 +12,9 @@ interface Props {
 export default function SectionBenhPhatHien({ form, set }: Props) {
   return (
     <div className="space-y-5">
-      <SectionHeader icon={<AlertCircle className="h-4 w-4" />} title="Bệnh phát hiện qua khám sức khỏe" />
+      <h3 className="text-sm font-semibold mb-3 text-blue-600 border-b pb-1 uppercase tracking-wide">
+        Bệnh phát hiện qua khám sức khỏe
+      </h3>
 
       {/* [159-193] Nội khoa */}
       <SubHeader title="Nội khoa (cols 159-193)" />
