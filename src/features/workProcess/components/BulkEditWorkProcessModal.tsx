@@ -1,5 +1,3 @@
-// components/BulkEditWorkProcessModal.tsx
-
 import { useEffect, useState, useRef } from "react";
 import {
   Dialog,
@@ -35,6 +33,9 @@ import {
 
 import { workProcessApi } from "../api/workProcess";
 import { WorkProcess } from "../pages/admin/AdminWorkProcess";
+import GenericSearchSelect from "@/features/employees/components/GenericSearchSelect";
+import { categoryConfigs } from "@/features/employees/components/CategoriesConfig";
+import { WorkProcessRow } from "./BulkAddWorkProcessModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,9 @@ interface WorkProcessEntry {
   endDate: string;
   detail: string;
   isNew?: boolean;
+  positionId?: number;  
+  departmentId?: number; 
+  companyId?: number; 
 }
 
 interface EmployeeRow {
@@ -242,7 +246,6 @@ export default function BulkEditWorkProcessModal({
       })),
     }));
 
-    console.log("Payload edit:", payload);
 
     try {
       await workProcessApi.updateBulk(payload);
@@ -412,13 +415,22 @@ export default function BulkEditWorkProcessModal({
                           <TableHeader>
                             <TableRow className="bg-muted/20">
                               <TableHead className="w-10 text-center">
-                                #
+                                STT
                               </TableHead>
                               <TableHead className="min-w-[155px]">
                                 Ngày bắt đầu *
                               </TableHead>
                               <TableHead className="min-w-[155px]">
                                 Ngày kết thúc *
+                              </TableHead>
+                              <TableHead className="min-w-[155px]">
+                                Chức vụ *
+                              </TableHead>
+                              <TableHead className="min-w-[155px]">
+                                Phòng ban quản lý *
+                              </TableHead>
+                              <TableHead className="min-w-[155px]">
+                                Tập đoàn/Công ty *
                               </TableHead>
                               <TableHead className="min-w-[300px]">
                                 Nội dung công tác *
@@ -470,6 +482,51 @@ export default function BulkEditWorkProcessModal({
                                       )
                                     }
                                     className="h-8 text-sm"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <GenericSearchSelect
+                                    api={categoryConfigs.position.api}
+                                    config={categoryConfigs.position}
+                                    value={en.positionId ? String(en.positionId) : ""}
+                                    onChange={(v) =>
+                                      updateEntry(
+                                        emp.employeeId,
+                                        en.tempId,
+                                        "positionId",
+                                        Number(v),
+                                      )
+                                    }
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <GenericSearchSelect
+                                    api={categoryConfigs.department.api}
+                                    config={categoryConfigs.department}
+                                    value={en.departmentId ? String(en.departmentId) : ""}
+                                    onChange={(v) =>
+                                      updateEntry(
+                                        emp.employeeId,
+                                        en.tempId,
+                                        "departmentId",
+                                        Number(v),
+                                      )
+                                    }
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <GenericSearchSelect
+                                    api={categoryConfigs.company.api}
+                                    config={categoryConfigs.company}
+                                    value={en.companyId ? String(en.companyId) : ""}
+                                    onChange={(v) =>
+                                      updateEntry(
+                                        emp.employeeId,
+                                        en.tempId,
+                                        "companyId",
+                                        Number(v),
+                                      )
+                                    }
                                   />
                                 </TableCell>
                                 <TableCell>
