@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,12 +6,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/components/ui/dialog';
+} from "@/shared/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/shared/components/ui/popover'
+} from "@/shared/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -19,16 +19,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/shared/components/tables/table';
-import { Input } from '@/shared/components/ui/input';
+} from "@/shared/components/tables/table";
+import { Input } from "@/shared/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/components/ui/select';
-import { Button } from '@/shared/components/ui/button/Button2';
+} from "@/shared/components/ui/select";
+import { Button } from "@/shared/components/ui/button/Button2";
 import {
   Loader2,
   Plus,
@@ -38,57 +38,16 @@ import {
   ChevronDown,
   Search,
   GraduationCap,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { employeeApi } from '@/features/employees/api/employeeApi';
-import { Textarea } from '@/components/ui/textarea';
+} from "lucide-react";
+import { toast } from "sonner";
+import { employeeApi } from "@/features/employees/api/employeeApi";
+import { Textarea } from "@/components/ui/textarea";
+import { LookupOption, TrainingEmployeeType } from "../types/refresherTrainingType";
 
-interface LookupOption {
-  code: string;
-  name: string;
-}
-
-export interface TrainingEmployee {
-  id?: number;
-
-  employeeId: number;
-  employeeName: string;
-  employeeCode: string;
-
-  educationSystem: {
-    code: string;
-    name: string;
-  };
-
-  trainingMethod: {
-    code: string;
-    name: string;
-  };
-
-  trainingSchool: {
-    code: string;
-    name: string;
-  };
-
-  educationLevel: {
-    code: string;
-    name: string;
-  };
-
-  trainingMajor: {
-    code: string;
-    name: string;
-  };
-
-  className: string;
-  studyDuration: string;
-  note: string;
-}
-
-interface TrainingEmployeeRow extends TrainingEmployee {
+interface TrainingEmployeeRow extends TrainingEmployeeType {
   tempId: number;
 
-  rowStatus: 'pending' | 'success' | 'error';
+  rowStatus: "pending" | "success" | "error";
   errorMessage?: string;
 }
 
@@ -96,86 +55,82 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-
-  // phase 1
-  mode?: 'create' | 'edit';
-
-  // phase 1
-  initialRows?: TrainingEmployee[];
+  mode?: "create" | "edit";
+  initialRows?: TrainingEmployeeType[];
 }
 
 const educationSystems: LookupOption[] = [
   {
-    code: 'HDT001',
-    name: 'Đại học chính quy',
+    code: "HDT001",
+    name: "Đại học chính quy",
   },
   {
-    code: 'HDT002',
-    name: 'Liên thông',
+    code: "HDT002",
+    name: "Liên thông",
   },
   {
-    code: 'HDT003',
-    name: 'Tại chức',
+    code: "HDT003",
+    name: "Tại chức",
   },
 ];
 
 const trainingMethods: LookupOption[] = [
   {
-    code: 'HT001',
-    name: 'Tập trung',
+    code: "HT001",
+    name: "Tập trung",
   },
   {
-    code: 'HT002',
-    name: 'Online',
+    code: "HT002",
+    name: "Online",
   },
   {
-    code: 'HT003',
-    name: 'Vừa học vừa làm',
+    code: "HT003",
+    name: "Vừa học vừa làm",
   },
 ];
 
 const trainingSchools: LookupOption[] = [
   {
-    code: 'TR001',
-    name: 'Đại học Bách Khoa Hà Nội',
+    code: "TR001",
+    name: "Đại học Bách Khoa Hà Nội",
   },
   {
-    code: 'TR002',
-    name: 'Đại học Quốc Gia Hà Nội',
+    code: "TR002",
+    name: "Đại học Quốc Gia Hà Nội",
   },
   {
-    code: 'TR003',
-    name: 'Học viện Công nghệ Bưu chính Viễn thông',
+    code: "TR003",
+    name: "Học viện Công nghệ Bưu chính Viễn thông",
   },
 ];
 
 const educationLevels: LookupOption[] = [
   {
-    code: 'TD001',
-    name: 'Kỹ sư',
+    code: "TD001",
+    name: "Kỹ sư",
   },
   {
-    code: 'TD002',
-    name: 'Cử nhân',
+    code: "TD002",
+    name: "Cử nhân",
   },
   {
-    code: 'TD003',
-    name: 'Thạc sĩ',
+    code: "TD003",
+    name: "Thạc sĩ",
   },
 ];
 
 const trainingMajors: LookupOption[] = [
   {
-    code: 'NDT001',
-    name: 'Công nghệ thông tin',
+    code: "NDT001",
+    name: "Công nghệ thông tin",
   },
   {
-    code: 'NDT002',
-    name: 'An toàn thông tin',
+    code: "NDT002",
+    name: "An toàn thông tin",
   },
   {
-    code: 'NDT003',
-    name: 'Khoa học máy tính',
+    code: "NDT003",
+    name: "Khoa học máy tính",
   },
 ];
 
@@ -189,13 +144,13 @@ function EmployeePopover({
   onSelect: (emp: any) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   const filtered = search.trim()
     ? allEmployees.filter(
         (e) =>
           e.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-          e.employeeCode?.toLowerCase().includes(search.toLowerCase())
+          e.employeeCode?.toLowerCase().includes(search.toLowerCase()),
       )
     : allEmployees.slice(0, 20);
 
@@ -210,7 +165,7 @@ function EmployeePopover({
           <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 
           <span className="truncate flex-1">
-            {row.employeeName || 'Chọn nhân viên'}
+            {row.employeeName || "Chọn nhân viên"}
           </span>
 
           <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -232,7 +187,10 @@ function EmployeePopover({
           </div>
         </div>
 
-        <div className="max-h-56 overflow-y-auto " onWheel={(e) => e.stopPropagation()}>
+        <div
+          className="max-h-56 overflow-y-auto "
+          onWheel={(e) => e.stopPropagation()}
+        >
           {filtered.length > 0 ? (
             filtered.map((emp) => (
               <button
@@ -242,18 +200,12 @@ function EmployeePopover({
                   onSelect(emp);
 
                   setOpen(false);
-                  setSearch('');
+                  setSearch("");
                 }}
                 className={`w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors
-                ${
-                  row.employeeId === emp.id
-                    ? 'bg-green-50'
-                    : ''
-                }`}
+                ${row.employeeId === emp.id ? "bg-green-50" : ""}`}
               >
-                <div className="text-sm font-medium">
-                  {emp.fullName}
-                </div>
+                <div className="text-sm font-medium">{emp.fullName}</div>
 
                 <div className="text-xs text-muted-foreground">
                   {emp.employeeCode}
@@ -271,9 +223,6 @@ function EmployeePopover({
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Main Component
-// ─────────────────────────────────────────────────────────────
 
 export default function BulkAddRefresherModal({
   isOpen,
@@ -281,20 +230,13 @@ export default function BulkAddRefresherModal({
   onSuccess,
 
   // phase 1
-  mode = 'create',
+  mode = "create",
   initialRows = [],
 }: Props) {
   const [rows, setRows] = useState<TrainingEmployeeRow[]>([]);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
-
   const idCounter = useRef(1);
-
-  // ───────────────────────────────────────────────────────────
-  // Effects
-  // ───────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!isOpen) return;
@@ -305,16 +247,16 @@ export default function BulkAddRefresherModal({
       .catch(console.error);
 
     // EDIT MODE
-    if (mode === 'edit' && initialRows.length > 0) {
+    if (mode === "edit" && initialRows.length > 0) {
       setRows(
         initialRows.map((item) => ({
           ...item,
 
           tempId: idCounter.current++,
 
-          rowStatus: 'pending',
+          rowStatus: "pending",
           errorMessage: undefined,
-        }))
+        })),
       );
 
       return;
@@ -323,53 +265,47 @@ export default function BulkAddRefresherModal({
     // CREATE MODE
     setRows([makeRow()]);
   }, [isOpen, mode, initialRows]);
-
-  // ───────────────────────────────────────────────────────────
-  // Factory
-  // ───────────────────────────────────────────────────────────
+  console.log("row", rows);
 
   const makeRow = (): TrainingEmployeeRow => ({
     tempId: idCounter.current++,
 
     employeeId: 0,
-    employeeName: '',
-    employeeCode: '',
+    employeeName: "",
+    employeeCode: "",
 
     educationSystem: {
-      code: '',
-      name: '',
+      code: "",
+      name: "",
     },
 
     trainingMethod: {
-      code: '',
-      name: '',
+      code: "",
+      name: "",
     },
 
     trainingSchool: {
-      code: '',
-      name: '',
+      code: "",
+      name: "",
     },
 
     educationLevel: {
-      code: '',
-      name: '',
+      code: "",
+      name: "",
     },
 
     trainingMajor: {
-      code: '',
-      name: '',
+      code: "",
+      name: "",
     },
 
-    className: '',
-    studyDuration: '',
-    note: '',
+    className: "",
+    startDate: "",
+    endDate: "",
+    note: "",
 
-    rowStatus: 'pending',
+    rowStatus: "pending",
   });
-
-  // ───────────────────────────────────────────────────────────
-  // Actions
-  // ───────────────────────────────────────────────────────────
 
   const addRow = () => {
     setRows((prev) => [...prev, makeRow()]);
@@ -393,19 +329,15 @@ export default function BulkAddRefresherModal({
 
         tempId: idCounter.current++,
 
-        rowStatus: 'pending',
+        rowStatus: "pending",
         errorMessage: undefined,
       },
     ]);
 
-    toast.info('Đã sao chép dòng');
+    toast.info("Đã sao chép dòng");
   };
 
-  const update = (
-    id: number,
-    field: keyof TrainingEmployeeRow,
-    value: any
-  ) => {
+  const update = (id: number, field: keyof TrainingEmployeeRow, value: any) => {
     setRows((prev) =>
       prev.map((r) =>
         r.tempId === id
@@ -413,8 +345,8 @@ export default function BulkAddRefresherModal({
               ...r,
               [field]: value,
             }
-          : r
-      )
+          : r,
+      ),
     );
   };
 
@@ -430,35 +362,39 @@ export default function BulkAddRefresherModal({
         const errors: string[] = [];
 
         if (!r.employeeId) {
-          errors.push('Chưa chọn nhân viên');
+          errors.push("Chưa chọn nhân viên");
         }
 
         if (!r.educationSystem.code) {
-          errors.push('Thiếu hệ đào tạo');
+          errors.push("Thiếu hệ đào tạo");
         }
 
         if (!r.trainingMethod.code) {
-          errors.push('Thiếu hình thức');
+          errors.push("Thiếu hình thức");
         }
 
         if (!r.trainingSchool.code) {
-          errors.push('Thiếu trường đào tạo');
+          errors.push("Thiếu trường đào tạo");
         }
 
         if (!r.educationLevel.code) {
-          errors.push('Thiếu trình độ');
+          errors.push("Thiếu trình độ");
         }
 
         if (!r.trainingMajor.code) {
-          errors.push('Thiếu ngành đào tạo');
+          errors.push("Thiếu ngành đào tạo");
         }
 
         if (!r.className.trim()) {
-          errors.push('Thiếu tên lớp');
+          errors.push("Thiếu tên lớp");
         }
 
-        if (!r.studyDuration.trim()) {
-          errors.push('Thiếu thời gian học');
+        if (!r.startDate.trim()) {
+          errors.push("Thiếu ngày bắt đầu");
+        }
+
+        if (!r.endDate.trim()) {
+          errors.push("Thiếu ngày kết thúc");
         }
 
         if (errors.length > 0) {
@@ -467,81 +403,65 @@ export default function BulkAddRefresherModal({
           return {
             ...r,
 
-            rowStatus: 'error',
-            errorMessage: errors.join(' · '),
+            rowStatus: "error",
+            errorMessage: errors.join(" · "),
           };
         }
 
         return {
           ...r,
 
-          rowStatus: 'pending',
+          rowStatus: "pending",
           errorMessage: undefined,
         };
-      })
+      }),
     );
 
     return ok;
   };
 
-  // ───────────────────────────────────────────────────────────
-  // Submit
-  // ───────────────────────────────────────────────────────────
-
   const handleSubmit = async () => {
     if (!rows.length) {
-      toast.error('Vui lòng thêm ít nhất một dòng');
+      toast.error("Vui lòng thêm ít nhất một dòng");
       return;
     }
 
     if (!validate()) {
-      toast.error('Vui lòng kiểm tra các dòng bị lỗi');
+      toast.error("Vui lòng kiểm tra các dòng bị lỗi");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      console.log('MODE:', mode);
-
-      console.log('Payload gửi đi:', rows);
-
-      // phase 2
-      // if (mode === 'edit') {
-      //   await refresherApi.updateBulk(rows);
-      // } else {
-      //   await refresherApi.createBulk(rows);
-      // }
-
       setRows((prev) =>
         prev.map((r) => ({
           ...r,
 
-          rowStatus: 'success',
-        }))
+          rowStatus: "success",
+        })),
       );
 
       toast.success(
-        mode === 'edit'
+        mode === "edit"
           ? `Đã cập nhật ${rows.length} dòng thành công`
-          : `Đã thêm ${rows.length} dòng thành công`
+          : `Đã thêm ${rows.length} dòng thành công`,
       );
 
       onSuccess?.();
 
       handleClose();
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Có lỗi xảy ra');
+      toast.error(err?.response?.data?.message || "Có lỗi xảy ra");
 
       setRows((prev) =>
         prev.map((r) => ({
           ...r,
 
-          rowStatus: 'error',
+          rowStatus: "error",
 
-          errorMessage:
-            err?.response?.data?.message || 'Lỗi khi lưu',
-        }))
+          errorMessage: err?.response?.data?.message || "Lỗi khi lưu",
+        })),
       );
     } finally {
       setIsSubmitting(false);
@@ -561,13 +481,9 @@ export default function BulkAddRefresherModal({
   // Stats
   // ───────────────────────────────────────────────────────────
 
-  const successCount = rows.filter(
-    (r) => r.rowStatus === 'success'
-  ).length;
+  const successCount = rows.filter((r) => r.rowStatus === "success").length;
 
-  const errorCount = rows.filter(
-    (r) => r.rowStatus === 'error'
-  ).length;
+  const errorCount = rows.filter((r) => r.rowStatus === "error").length;
 
   // ───────────────────────────────────────────────────────────
   // Render
@@ -582,15 +498,15 @@ export default function BulkAddRefresherModal({
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5" />
 
-            {mode === 'edit'
-              ? 'Chỉnh sửa đào tạo bồi dưỡng hàng loạt'
-              : 'Thêm đào tạo bồi dưỡng hàng loạt'}
+            {mode === "edit"
+              ? "Chỉnh sửa đào tạo bồi dưỡng hàng loạt"
+              : "Thêm đào tạo bồi dưỡng hàng loạt"}
           </DialogTitle>
 
           <DialogDescription>
-            {mode === 'edit'
-              ? 'Cập nhật nhiều thông tin đào tạo bồi dưỡng cùng lúc'
-              : 'Thêm nhiều thông tin đào tạo bồi dưỡng cùng lúc'}
+            {mode === "edit"
+              ? "Cập nhật nhiều thông tin đào tạo bồi dưỡng cùng lúc"
+              : "Thêm nhiều thông tin đào tạo bồi dưỡng cùng lúc"}
           </DialogDescription>
         </DialogHeader>
 
@@ -604,7 +520,6 @@ export default function BulkAddRefresherModal({
             onClick={addRow}
           >
             <Plus className="h-3.5 w-3.5" />
-
             Thêm dòng
           </Button>
 
@@ -616,9 +531,7 @@ export default function BulkAddRefresherModal({
             )}
 
             {errorCount > 0 && (
-              <span className="text-red-500 font-medium">
-                ✗ {errorCount}
-              </span>
+              <span className="text-red-500 font-medium">✗ {errorCount}</span>
             )}
 
             <span>
@@ -647,41 +560,34 @@ export default function BulkAddRefresherModal({
                       Thao tác
                     </TableHead>
 
-                    <TableHead className="min-w-[220px]">
-                      Nhân viên *
-                    </TableHead>
+                    <TableHead className="min-w-[220px]">Nhân viên *</TableHead>
 
                     <TableHead className="min-w-[220px]">
                       Hệ đào tạo *
                     </TableHead>
 
-                    <TableHead className="min-w-[220px]">
-                      Hình thức *
-                    </TableHead>
+                    <TableHead className="min-w-[220px]">Hình thức *</TableHead>
 
                     <TableHead className="min-w-[240px]">
                       Trường đào tạo *
                     </TableHead>
 
-                    <TableHead className="min-w-[180px]">
-                      Trình độ *
-                    </TableHead>
+                    <TableHead className="min-w-[180px]">Trình độ *</TableHead>
 
                     <TableHead className="min-w-[220px]">
                       Ngành đào tạo *
                     </TableHead>
 
-                    <TableHead className="min-w-[220px]">
-                      Tên lớp *
+                    <TableHead className="min-w-[220px]">Tên lớp *</TableHead>
+
+                    <TableHead className="min-w-[160px]">
+                      Ngày bắt đầu *
+                    </TableHead>
+                    <TableHead className="min-w-[160px]">
+                      Ngày kết thúc *
                     </TableHead>
 
-                    <TableHead className="min-w-[240px]">
-                      Thời gian học *
-                    </TableHead>
-
-                    <TableHead className="min-w-[260px]">
-                      Ghi chú
-                    </TableHead>
+                    <TableHead className="min-w-[260px]">Ghi chú</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -690,11 +596,11 @@ export default function BulkAddRefresherModal({
                     <TableRow
                       key={row.tempId}
                       className={
-                        row.rowStatus === 'error'
-                          ? 'bg-red-50 border-l-2 border-l-red-400'
-                          : row.rowStatus === 'success'
-                          ? 'bg-green-50 border-l-2 border-l-green-400'
-                          : ''
+                        row.rowStatus === "error"
+                          ? "bg-red-50 border-l-2 border-l-red-400"
+                          : row.rowStatus === "success"
+                            ? "bg-green-50 border-l-2 border-l-green-400"
+                            : ""
                       }
                     >
                       {/* STT */}
@@ -738,18 +644,14 @@ export default function BulkAddRefresherModal({
                           row={row}
                           allEmployees={allEmployees}
                           onSelect={(emp) => {
-                            update(row.tempId, 'employeeId', emp.id);
+                            update(row.tempId, "employeeId", emp.id);
+
+                            update(row.tempId, "employeeName", emp.fullName);
 
                             update(
                               row.tempId,
-                              'employeeName',
-                              emp.fullName
-                            );
-
-                            update(
-                              row.tempId,
-                              'employeeCode',
-                              emp.employeeCode
+                              "employeeCode",
+                              emp.employeeCode,
                             );
                           }}
                         />
@@ -762,12 +664,12 @@ export default function BulkAddRefresherModal({
                           value={row.educationSystem.code}
                           onValueChange={(value) => {
                             const found = educationSystems.find(
-                              (x) => x.code === value
+                              (x) => x.code === value,
                             );
 
-                            update(row.tempId, 'educationSystem', {
-                              code: found?.code || '',
-                              name: found?.name || '',
+                            update(row.tempId, "educationSystem", {
+                              code: found?.code || "",
+                              name: found?.name || "",
                             });
                           }}
                         >
@@ -777,10 +679,7 @@ export default function BulkAddRefresherModal({
 
                           <SelectContent>
                             {educationSystems.map((item) => (
-                              <SelectItem
-                                key={item.code}
-                                value={item.code}
-                              >
+                              <SelectItem key={item.code} value={item.code}>
                                 {item.name}
                               </SelectItem>
                             ))}
@@ -795,12 +694,12 @@ export default function BulkAddRefresherModal({
                           value={row.trainingMethod.code}
                           onValueChange={(value) => {
                             const found = trainingMethods.find(
-                              (x) => x.code === value
+                              (x) => x.code === value,
                             );
 
-                            update(row.tempId, 'trainingMethod', {
-                              code: found?.code || '',
-                              name: found?.name || '',
+                            update(row.tempId, "trainingMethod", {
+                              code: found?.code || "",
+                              name: found?.name || "",
                             });
                           }}
                         >
@@ -810,10 +709,7 @@ export default function BulkAddRefresherModal({
 
                           <SelectContent>
                             {trainingMethods.map((item) => (
-                              <SelectItem
-                                key={item.code}
-                                value={item.code}
-                              >
+                              <SelectItem key={item.code} value={item.code}>
                                 {item.name}
                               </SelectItem>
                             ))}
@@ -828,12 +724,12 @@ export default function BulkAddRefresherModal({
                           value={row.trainingSchool.code}
                           onValueChange={(value) => {
                             const found = trainingSchools.find(
-                              (x) => x.code === value
+                              (x) => x.code === value,
                             );
 
-                            update(row.tempId, 'trainingSchool', {
-                              code: found?.code || '',
-                              name: found?.name || '',
+                            update(row.tempId, "trainingSchool", {
+                              code: found?.code || "",
+                              name: found?.name || "",
                             });
                           }}
                         >
@@ -843,10 +739,7 @@ export default function BulkAddRefresherModal({
 
                           <SelectContent>
                             {trainingSchools.map((item) => (
-                              <SelectItem
-                                key={item.code}
-                                value={item.code}
-                              >
+                              <SelectItem key={item.code} value={item.code}>
                                 {item.name}
                               </SelectItem>
                             ))}
@@ -861,12 +754,12 @@ export default function BulkAddRefresherModal({
                           value={row.educationLevel.code}
                           onValueChange={(value) => {
                             const found = educationLevels.find(
-                              (x) => x.code === value
+                              (x) => x.code === value,
                             );
 
-                            update(row.tempId, 'educationLevel', {
-                              code: found?.code || '',
-                              name: found?.name || '',
+                            update(row.tempId, "educationLevel", {
+                              code: found?.code || "",
+                              name: found?.name || "",
                             });
                           }}
                         >
@@ -876,10 +769,7 @@ export default function BulkAddRefresherModal({
 
                           <SelectContent>
                             {educationLevels.map((item) => (
-                              <SelectItem
-                                key={item.code}
-                                value={item.code}
-                              >
+                              <SelectItem key={item.code} value={item.code}>
                                 {item.name}
                               </SelectItem>
                             ))}
@@ -894,12 +784,12 @@ export default function BulkAddRefresherModal({
                           value={row.trainingMajor.code}
                           onValueChange={(value) => {
                             const found = trainingMajors.find(
-                              (x) => x.code === value
+                              (x) => x.code === value,
                             );
 
-                            update(row.tempId, 'trainingMajor', {
-                              code: found?.code || '',
-                              name: found?.name || '',
+                            update(row.tempId, "trainingMajor", {
+                              code: found?.code || "",
+                              name: found?.name || "",
                             });
                           }}
                         >
@@ -909,10 +799,7 @@ export default function BulkAddRefresherModal({
 
                           <SelectContent>
                             {trainingMajors.map((item) => (
-                              <SelectItem
-                                key={item.code}
-                                value={item.code}
-                              >
+                              <SelectItem key={item.code} value={item.code}>
                                 {item.name}
                               </SelectItem>
                             ))}
@@ -926,31 +813,36 @@ export default function BulkAddRefresherModal({
                         <Input
                           value={row.className}
                           onChange={(e) =>
-                            update(
-                              row.tempId,
-                              'className',
-                              e.target.value
-                            )
+                            update(row.tempId, "className", e.target.value)
                           }
                           className="h-8 text-sm"
                           placeholder="Tên lớp"
                         />
                       </TableCell>
 
-                      {/* Study Duration */}
+                      {/* StartDate _EndDate */}
 
                       <TableCell>
                         <Input
-                          value={row.studyDuration}
+                          type="date"
+                          value={row.startDate}
                           onChange={(e) =>
-                            update(
-                              row.tempId,
-                              'studyDuration',
-                              e.target.value
-                            )
+                            update(row.tempId, "startDate", e.target.value)
                           }
                           className="h-8 text-sm"
-                          placeholder="01/09/2020 - 30/06/2024"
+                          placeholder="01/09/2020"
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <Input
+                          type="date"
+                          value={row.endDate}
+                          onChange={(e) =>
+                            update(row.tempId, "endDate", e.target.value)
+                          }
+                          className="h-8 text-sm"
+                          placeholder="30/06/2024"
                         />
                       </TableCell>
 
@@ -960,11 +852,7 @@ export default function BulkAddRefresherModal({
                         <Textarea
                           value={row.note}
                           onChange={(e) =>
-                            update(
-                              row.tempId,
-                              'note',
-                              e.target.value
-                            )
+                            update(row.tempId, "note", e.target.value)
                           }
                           className="h-8 text-sm"
                           placeholder="Ghi chú"
@@ -999,12 +887,12 @@ export default function BulkAddRefresherModal({
               )}
 
               {isSubmitting
-                ? mode === 'edit'
-                  ? 'Đang cập nhật...'
-                  : 'Đang lưu...'
-                : mode === 'edit'
-                ? `Cập nhật (${rows.length} dòng)`
-                : `Xác nhận (${rows.length} dòng)`}
+                ? mode === "edit"
+                  ? "Đang cập nhật..."
+                  : "Đang lưu..."
+                : mode === "edit"
+                  ? `Cập nhật (${rows.length} dòng)`
+                  : `Xác nhận (${rows.length} dòng)`}
             </Button>
           </div>
         </DialogFooter>
