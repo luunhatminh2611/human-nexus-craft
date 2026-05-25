@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
@@ -44,48 +43,12 @@ import {
 import { toast } from "sonner";
 import { employeeApi } from "@/features/employees/api/employeeApi";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  LookupOption,
+  TrainingEmployeeType,
+} from "../types/refresherTrainingType";
 
-interface LookupOption {
-  code: string;
-  name: string;
-}
-
-export interface TrainingEmployee {
-  employeeId: number;
-  employeeName: string;
-  employeeCode: string;
-
-  educationSystem: {
-    code: string;
-    name: string;
-  };
-
-  trainingMethod: {
-    code: string;
-    name: string;
-  };
-
-  trainingSchool: {
-    code: string;
-    name: string;
-  };
-
-  educationLevel: {
-    code: string;
-    name: string;
-  };
-
-  trainingMajor: {
-    code: string;
-    name: string;
-  };
-
-  className: string;
-  studyDuration: string;
-  note: string;
-}
-
-interface TrainingEmployeeRow extends TrainingEmployee {
+interface TrainingEmployeeRow extends TrainingEmployeeType {
   tempId: number;
 
   rowStatus: "pending" | "success" | "error";
@@ -271,15 +234,12 @@ export default function BulkEditRefresherTrainingModal({
     },
 
     className: "",
-    studyDuration: "",
+    startDate: "",
+    endDate: "",
     note: "",
 
     rowStatus: "pending",
   });
-
-  // ───────────────────────────────────────────────────────────
-  // Actions
-  // ───────────────────────────────────────────────────────────
 
   const addRow = () => {
     setRows((prev) => [...prev, makeRow()]);
@@ -320,10 +280,6 @@ export default function BulkEditRefresherTrainingModal({
     );
   };
 
-  // ───────────────────────────────────────────────────────────
-  // Validation
-  // ───────────────────────────────────────────────────────────
-
   const validate = () => {
     let ok = true;
 
@@ -359,8 +315,12 @@ export default function BulkEditRefresherTrainingModal({
           errors.push("Thiếu tên lớp");
         }
 
-        if (!r.studyDuration.trim()) {
-          errors.push("Thiếu thời gian học");
+        if (!r.startDate.trim()) {
+          errors.push("Thiếu ngày bắt đầu");
+        }
+
+        if (!r.endDate.trim()) {
+          errors.push("Thiếu ngày kết thúc");
         }
 
         if (errors.length > 0) {
@@ -383,10 +343,6 @@ export default function BulkEditRefresherTrainingModal({
 
     return ok;
   };
-
-  // ───────────────────────────────────────────────────────────
-  // Submit
-  // ───────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
     if (!rows.length) {
@@ -433,26 +389,13 @@ export default function BulkEditRefresherTrainingModal({
     }
   };
 
-  // ───────────────────────────────────────────────────────────
-  // Close
-  // ───────────────────────────────────────────────────────────
-
   const handleClose = () => {
     setRows([]);
     onClose();
   };
 
-  // ───────────────────────────────────────────────────────────
-  // Stats
-  // ───────────────────────────────────────────────────────────
-
   const successCount = rows.filter((r) => r.rowStatus === "success").length;
-
   const errorCount = rows.filter((r) => r.rowStatus === "error").length;
-
-  // ───────────────────────────────────────────────────────────
-  // Render
-  // ───────────────────────────────────────────────────────────
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -539,7 +482,10 @@ export default function BulkEditRefresherTrainingModal({
                     <TableHead className="min-w-[220px]">Tên lớp *</TableHead>
 
                     <TableHead className="min-w-[220px]">
-                      Thời gian học *
+                      Ngày bắt đầu *
+                    </TableHead>
+                    <TableHead className="min-w-[220px]">
+                      Ngày kết thúc *
                     </TableHead>
 
                     <TableHead className="min-w-[260px]">Ghi chú</TableHead>
@@ -594,7 +540,6 @@ export default function BulkEditRefresherTrainingModal({
                         <EmployeePopover
                           row={row}
                           allEmployees={allEmployees}
-                          
                           onSelect={(emp) => {
                             update(row.tempId, "employeeId", emp.id);
                             update(row.tempId, "employeeName", emp.fullName);
@@ -774,12 +719,24 @@ export default function BulkEditRefresherTrainingModal({
 
                       <TableCell>
                         <Input
-                          value={row.studyDuration}
+                          type="date"
+                          value={row.startDate}
                           onChange={(e) =>
-                            update(row.tempId, "studyDuration", e.target.value)
+                            update(row.tempId, "startDate", e.target.value)
                           }
                           className="h-8 text-sm"
-                          placeholder="01/09/2020 - 30/06/2024"
+                          placeholder="Ngày bắt đầu"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="date"
+                          value={row.endDate}
+                          onChange={(e) =>
+                            update(row.tempId, "endDate", e.target.value)
+                          }
+                          className="h-8 text-sm"
+                          placeholder="Ngày kết thúc"
                         />
                       </TableCell>
 

@@ -31,166 +31,69 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/features/employees/hooks/useAuth";
 import RefresherTrainingModal from "../../components/RefresherTrainingModal";
 import BulkAddRefresherModal from "../../components/BulkAddRefresherTrainingModal";
+import { TrainingEmployeeType } from "../../types/refresherTrainingType";
 
-interface TrainingHistory {
-  id: number;
-  educationSystem: string;
-  trainingMethod: string;
-  school: string;
-  level: string;
-  major: string;
-  className: string;
-  duration: string;
-  note: string;
-}
-
-interface TrainingEmployee {
-  employeeId: number;
-  employeeName: string;
-  employeeCode: string;
-  educationSystem: {
-    code: string;
-    name: string;
-  };
-  trainingMethod: {
-    code: string;
-    name: string;
-  };
-  trainingSchool: {
-    code: string;
-    name: string;
-  };
-  educationLevel: {
-    code: string;
-    name: string;
-  };
-  trainingMajor: {
-    code: string;
-    name: string;
-  };
-  className: string;
-  studyDuration: string;
-  note: string;
-}
-
-const fakeData: TrainingEmployee[] = [
+const fakeData: TrainingEmployeeType[] = [
   {
     employeeId: 1,
     employeeName: "Nguyễn Văn An",
     employeeCode: "CB001",
-    educationSystem: {
-      code: "HDT001",
-      name: "Đại học chính quy",
-    },
-    trainingMethod: {
-      code: "HT001",
-      name: "Tập trung",
-    },
-    trainingSchool: {
-      code: "TR001",
-      name: "Đại học Bách Khoa Hà Nội",
-    },
-    educationLevel: {
-      code: "TD001",
-      name: "Kỹ sư",
-    },
-    trainingMajor: {
-      code: "NDT001",
-      name: "Công nghệ thông tin",
-    },
+    educationSystem: { code: "HDT001", name: "Đại học chính quy" },
+    trainingMethod: { code: "HT001", name: "Tập trung" },
+    trainingSchool: { code: "TR001", name: "Đại học Bách Khoa Hà Nội" },
+    educationLevel: { code: "TD001", name: "Kỹ sư" },
+    trainingMajor: { code: "NDT001", name: "Công nghệ thông tin" },
     className: "Lớp Kỹ sư CNTT K65",
-    studyDuration: "01/09/2019 - 30/06/2024",
+    startDate: "2019-09-01",
+    endDate: "2024-06-30",
     note: "Đã tốt nghiệp loại Khá",
   },
-
   {
     employeeId: 2,
     employeeName: "Trần Thị Mai",
     employeeCode: "CB002",
-    educationSystem: {
-      code: "HDT002",
-      name: "Sau đại học",
-    },
-    trainingMethod: {
-      code: "HT002",
-      name: "Vừa học vừa làm",
-    },
-    trainingSchool: {
-      code: "TR002",
-      name: "Đại học Kinh tế Quốc dân",
-    },
-    educationLevel: {
-      code: "TD002",
-      name: "Thạc sĩ",
-    },
-    trainingMajor: {
-      code: "NDT002",
-      name: "Quản trị kinh doanh",
-    },
+    educationSystem: { code: "HDT002", name: "Sau đại học" },
+    trainingMethod: { code: "HT002", name: "Vừa học vừa làm" },
+    trainingSchool: { code: "TR002", name: "Đại học Kinh tế Quốc dân" },
+    educationLevel: { code: "TD002", name: "Thạc sĩ" },
+    trainingMajor: { code: "NDT002", name: "Quản trị kinh doanh" },
     className: "MBA Executive 2024",
-    studyDuration: "10/03/2024 - 10/12/2025",
+    startDate: "2019-09-01",
+    endDate: "2024-06-30",
     note: "Đang theo học",
   },
-
   {
     employeeId: 3,
     employeeName: "Lê Quốc Huy",
     employeeCode: "CB003",
-    educationSystem: {
-      code: "HDT003",
-      name: "Liên thông",
-    },
-    trainingMethod: {
-      code: "HT003",
-      name: "Online",
-    },
+    educationSystem: { code: "HDT003", name: "Liên thông" },
+    trainingMethod: { code: "HT003", name: "Online" },
     trainingSchool: {
       code: "TR003",
       name: "Học viện Công nghệ Bưu chính Viễn thông",
     },
-    educationLevel: {
-      code: "TD003",
-      name: "Cử nhân",
-    },
-    trainingMajor: {
-      code: "NDT003",
-      name: "An toàn thông tin",
-    },
+    educationLevel: { code: "TD003", name: "Cử nhân" },
+    trainingMajor: { code: "NDT003", name: "An toàn thông tin" },
     className: "ATTT Chất lượng cao",
-    studyDuration: "05/05/2023 - 05/11/2024",
+    startDate: "2019-09-01",
+    endDate: "2024-06-30",
     note: "Có chứng chỉ quốc tế",
   },
-
   {
     employeeId: 4,
     employeeName: "Phạm Thu Hà",
     employeeCode: "CB004",
-    educationSystem: {
-      code: "HDT004",
-      name: "Cao đẳng",
-    },
-    trainingMethod: {
-      code: "HT001",
-      name: "Tập trung",
-    },
-    trainingSchool: {
-      code: "TR004",
-      name: "Cao đẳng FPT Polytechnic",
-    },
-    educationLevel: {
-      code: "TD004",
-      name: "Cao đẳng",
-    },
-    trainingMajor: {
-      code: "NDT004",
-      name: "Thiết kế đồ họa",
-    },
+    educationSystem: { code: "HDT004", name: "Cao đẳng" },
+    trainingMethod: { code: "HT001", name: "Tập trung" },
+    trainingSchool: { code: "TR004", name: "Cao đẳng FPT Polytechnic" },
+    educationLevel: { code: "TD004", name: "Cao đẳng" },
+    trainingMajor: { code: "NDT004", name: "Thiết kế đồ họa" },
     className: "Thiết kế đồ họa K18",
-    studyDuration: "01/08/2020 - 01/08/2023",
+    startDate: "2019-09-01",
+    endDate: "2024-06-30",
     note: "Đã hoàn thành chương trình",
   },
 ];
-
 export default function AdminRefresherTraining() {
   const { user } = useAuthStore();
 
@@ -198,17 +101,12 @@ export default function AdminRefresherTraining() {
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [defaultEditing, setDefaultEditing] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-
-  const [selectedRows, setSelectedRows] = useState<TrainingEmployee[]>([]);
-
-  const [selectedEmployee, setSelectedEmployee] = useState<
-    TrainingEmployee | TrainingEmployee[] | TrainingHistory[] | null
-  >(null);
-
-  console.log("selectedEmployee", selectedEmployee);
+  const [selectedRows, setSelectedRows] = useState<TrainingEmployeeType[]>([]);
+  const [selectedEmployee, setSelectedEmployee] =
+    useState<TrainingEmployeeType | null>(null);
 
   // client-side pagination state (fake data)
   const [page, setPage] = useState(0);
@@ -450,7 +348,7 @@ export default function AdminRefresherTraining() {
                   </TableCell>
                   <TableCell>
                     <p className="text-sm whitespace-nowrap">
-                      {item.studyDuration}
+                      {item.startDate} - {item.endDate}
                     </p>
                   </TableCell>
                   <TableCell>
@@ -466,6 +364,7 @@ export default function AdminRefresherTraining() {
                         title="Xem chi tiết"
                         onClick={() => {
                           setSelectedEmployee(item);
+                          setDefaultEditing(false);
                           setIsDetailModalOpen(true);
                         }}
                       >
@@ -473,7 +372,16 @@ export default function AdminRefresherTraining() {
                       </Button>
                       {isAdmin && (
                         <>
-                          <Button variant="ghost" size="sm" title="Chỉnh sửa">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Chỉnh sửa"
+                            onClick={() => {
+                              setSelectedEmployee(item);
+                              setDefaultEditing(true);
+                              setIsDetailModalOpen(true);
+                            }}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
 
@@ -576,6 +484,7 @@ export default function AdminRefresherTraining() {
         }}
         employee={selectedEmployee || null}
         isAdmin={isAdmin}
+        defaultEditing={defaultEditing}
       />
 
       <BulkAddRefresherModal
