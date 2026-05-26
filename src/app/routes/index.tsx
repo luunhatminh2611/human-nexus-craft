@@ -40,6 +40,7 @@ import PermissionManagementUI from '@/features/permission/pages/Permission';
 import MyFamilyMembersPage from '@/features/fanilyVisit/pages/EmployeeFamilyPage';
 import AdminWorkProcess from '@/features/workProcess/pages/admin/AdminWorkProcess';
 import AdminRefresherTraining from '@/features/refresher-training/pages/admin/AdminRefresherTraining';
+import SalaryProcessAdmin from '@/features/salaryProcess/pages/admin/SalaryProcessAdmin';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('@/features/auth/pages/Login'));
@@ -136,6 +137,7 @@ export const router = createBrowserRouter([
       { path: ROUTES.ADMIN_WORK_PROCESS.slice(1), element: <AdminWorkProcess /> },
       { path: ROUTES.ADMIN_WORK_PROCESS.slice(1), element: <AdminWorkProcess /> },
       { path: ROUTES.ADMIN_REFRESHER_TRAINING, element: <AdminRefresherTraining /> },
+      { path: ROUTES.ADMIN_SALARY_PROCESS, element: <SalaryProcessAdmin /> },
       // Manager Routes
       { path: ROUTES.MANAGER_DASHBOARD.slice(1), element: <ManagerDashboard /> },
       { path: ROUTES.MANAGER_EMPLOYEES.slice(1), element: <ManagerEmployees /> },

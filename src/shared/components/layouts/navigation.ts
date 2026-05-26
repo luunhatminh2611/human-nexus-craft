@@ -135,9 +135,10 @@ export const getNavigationItems = (role: string): NavigationItem[] => {
         { label: 'Hồ sơ', icon: FolderClosed, path: '/file' },
         { label: 'Y tế', icon: HeartPulse, path: '/admin/employees/health' },
         // { label: 'KPI', icon: Sparkle, path: '/admin/employees/kpi' },
-        // { label: 'Lương', icon: CircleDollarSign, path: '/admin/employees/salary' },
+        
         { label: 'Quá trình công tác', icon: History, path: '/admin/work-process' },
         { label: 'Đào tạo bồi dưỡng', icon: Presentation, path: '/admin/refresher-training' },
+        { label: 'Quá trình lương', icon: CircleDollarSign, path: '/admin/salary-process' },
         // { label: 'Hợp đồng', icon: FileText, path: '/admin/employees/contract' },
         // { label: 'Nghỉ phép', icon: FileText, path: '/admin/employees/leave-requests' }
       ]
